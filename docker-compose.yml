@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "3007:3007"               # 管理面板
+      - "9528:3007"               # 管理面板
       - "18000-18999:18000-18999" # 抓包登录 MITM 代理端口池（iPhone Wi-Fi 代理连入）
 
     volumes:

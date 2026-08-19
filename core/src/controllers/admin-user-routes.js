@@ -2,7 +2,6 @@ function registerAdminUserRoutes({
   app,
   requireAdminToken,
   requireAdminRole,
-  requireSuperAdminRole,
   requireDangerConfirmation,
   getAdminUserMutationError,
   userStore,
@@ -21,7 +20,7 @@ function registerAdminUserRoutes({
   app.get(
     "/api/admin/users-with-password",
     requireAdminToken,
-    requireSuperAdminRole,
+    requireAdminRole,
     (req, res) => {
       try {
         res.json({ ok: true, data: userStore.getAllUsersWithPassword() });

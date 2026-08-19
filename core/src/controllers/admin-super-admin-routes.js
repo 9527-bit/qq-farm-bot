@@ -4,14 +4,14 @@ function registerAdminSuperAdminRoutes({
   userStore,
   logger,
   requireAdminToken,
-  requireSuperAdminRole,
+  requireAdminRole,
   requireDangerConfirmation,
   checkAccountLimit,
 }) {
   app.post(
     "/api/super-admin/clear-data",
     requireAdminToken,
-    requireSuperAdminRole,
+    requireAdminRole,
     (req, res) => {
       try {
         if (!requireDangerConfirmation(req, res, "CLEAR_ALL_DATA")) return;
@@ -33,7 +33,7 @@ function registerAdminSuperAdminRoutes({
   app.get(
     "/api/super-admin/anti-resale-config",
     requireAdminToken,
-    requireSuperAdminRole,
+    requireAdminRole,
     (req, res) => {
       try {
         res.json({ ok: true, config: store.getAntiResaleConfig() });
@@ -46,7 +46,7 @@ function registerAdminSuperAdminRoutes({
   app.post(
     "/api/super-admin/anti-resale-config",
     requireAdminToken,
-    requireSuperAdminRole,
+    requireAdminRole,
     (req, res) => {
       try {
         if (!requireDangerConfirmation(req, res, "UPDATE_ANTI_RESALE_CONFIG")) {
@@ -70,7 +70,7 @@ function registerAdminSuperAdminRoutes({
   app.post(
     "/api/super-admin/check-account-limit",
     requireAdminToken,
-    requireSuperAdminRole,
+    requireAdminRole,
     (req, res) => {
       try {
         const result = checkAccountLimit("manual");

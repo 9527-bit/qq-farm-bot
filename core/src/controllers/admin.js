@@ -370,7 +370,6 @@ function startAdminServer(dataProvider) {
     getAdminUserMutationError,
     requireAdminRole,
     requireDangerConfirmation,
-    requireSuperAdminRole,
     sendProviderError,
   } = adminRouteHelpers;
 
@@ -513,7 +512,7 @@ function startAdminServer(dataProvider) {
     userStore,
     logger: adminLogger,
     requireAdminToken,
-    requireSuperAdminRole,
+    requireAdminRole,
     requireDangerConfirmation,
     checkAccountLimit,
   });
@@ -523,7 +522,6 @@ function startAdminServer(dataProvider) {
     logger: adminLogger,
     requireAdminToken,
     requireAdminRole,
-    requireSuperAdminRole,
     requireDangerConfirmation,
     getDefaultSystemConfig,
     getRuntimeConfig,
@@ -554,7 +552,6 @@ function startAdminServer(dataProvider) {
     app,
     requireAdminToken,
     requireAdminRole,
-    requireSuperAdminRole,
     requireDangerConfirmation,
     getAdminUserMutationError,
     userStore,
