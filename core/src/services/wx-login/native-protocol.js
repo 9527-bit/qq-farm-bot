@@ -37,6 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNativeWxLoginCode = getNativeWxLoginCode;
+exports.targets = targets;
 const node_crypto_1 = __importDefault(require("node:crypto"));
 const net = __importStar(require("node:net"));
 const U8 = Buffer.from;
@@ -457,24 +458,77 @@ function asRecord(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 function errorMessage(error) {
-    return error instanceof Error ? error.message : String(error);
+    if (error instanceof Error) {
+        if (error.cause && error.cause.message) {
+            return `${error.message} (${error.cause.message})`;
+        }
+        return error.message;
+    }
+    return String(error);
 }
+const DEFAULT_LONG_TARGETS = [
+    { ip: "180.111.196.173", port: 8080 },
+    { ip: "101.226.142.220", port: 8080 },
+    { ip: "101.226.142.222", port: 8080 },
+    { ip: "117.89.177.75", port: 8080 },
+    { ip: "180.153.202.85", port: 8080 },
+    { ip: "101.32.110.197", port: 8080 },
+    { ip: "101.32.107.5", port: 8080 },
+    { ip: "120.241.131.173", port: 8080 },
+    { ip: "180.111.196.173", port: 443 },
+    { ip: "101.226.142.220", port: 443 },
+    { ip: "180.153.202.85", port: 443 },
+    { ip: "180.111.196.173", port: 80 },
+    { ip: "101.226.142.220", port: 80 },
+    { ip: "120.241.131.173", port: 80 },
+];
+const DEFAULT_SHORT_TARGETS = [
+    { ip: "101.91.29.36", port: 80 },
+    { ip: "101.226.150.200", port: 80 },
+    { ip: "180.101.242.186", port: 80 },
+    { ip: "117.89.176.107", port: 80 },
+    { ip: "120.241.131.173", port: 80 },
+    { ip: "43.153.246.212", port: 80 },
+    { ip: "43.153.248.117", port: 80 },
+    { ip: "101.91.29.36", port: 8080 },
+    { ip: "101.226.150.200", port: 8080 },
+    { ip: "180.153.202.85", port: 8080 },
+    { ip: "101.91.29.36", port: 443 },
+    { ip: "101.226.150.200", port: 443 },
+];
 async function targets(kind) {
-    const r = await fetch("http://aedns.weixin.qq.com/cgi-bin/default/getdns?clientversion=0&devicetype=Windows&uin=0&format=json", { headers: { "User-Agent": "MicroMessenger Client" } });
-    const data = await r.json();
-    const dns = asRecord(asRecord(data).dns);
-    const domainList = Array.isArray(dns.domainlist) ? dns.domainlist.map(asRecord) : [];
-    const item = domainList.find((entry) => entry.name === (kind === "long" ? "longcloud.weixin.com" : "shortcloud.weixin.com"));
-    const proto = kind === "long" ? "mmtlsovertcp" : "http";
-    const protocolList = Array.isArray(item?.protocollist) ? item.protocollist.map(asRecord) : [];
-    const portList = protocolList.find((entry) => entry.name === proto)?.portlist;
-    const ports = Array.isArray(portList) ? portList.filter((port) => typeof port === "number") : [];
-    // 端口排序：8080/443/5000 优先（服务器响应快，失败也立即拒绝），80 最后（最常挂起到 read timeout）
-    const orderedPorts = [8080, 443, 5000, 80].filter((p) => ports.includes(p));
-    const ipList = Array.isArray(item?.iplist) ? item.iplist.map(asRecord) : [];
-    const ips = ipList.map((entry) => entry.ip).filter((ip) => typeof ip === "string" && ip.length > 0);
-    const out = ips.flatMap((ip) => orderedPorts.map((port) => ({ ip, port })));
-    return out.length ? out : [{ ip: kind === "long" ? "180.153.202.85" : "120.241.131.173", port: kind === "long" ? 8080 : 80 }];
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3500);
+        const r = await fetch("http://aedns.weixin.qq.com/cgi-bin/default/getdns?clientversion=0&devicetype=Windows&uin=0&format=json", {
+            headers: { "User-Agent": "MicroMessenger Client" },
+            signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (r.ok) {
+            const data = await r.json();
+            const dns = asRecord(asRecord(data).dns);
+            const domainList = Array.isArray(dns.domainlist) ? dns.domainlist.map(asRecord) : [];
+            const domainNames = kind === "long"
+                ? ["longcloud.weixin.com", "aelong.iot-tencent.com", "aeproxy.weixin.qq.com", "sgilinklong.wechat.com"]
+                : ["shortcloud.weixin.com", "aeshort.iot-tencent.com", "ae.weixin.qq.com", "sgilinkshort.wechat.com"];
+            const item = domainList.find((entry) => domainNames.includes(entry.name));
+            const proto = kind === "long" ? "mmtlsovertcp" : "http";
+            const protocolList = Array.isArray(item?.protocollist) ? item.protocollist.map(asRecord) : [];
+            const portList = protocolList.find((entry) => entry.name === proto)?.portlist;
+            const ports = Array.isArray(portList) ? portList.filter((port) => typeof port === "number") : [];
+            // 端口排序：8080/443/5000 优先（服务器响应快，失败也立即拒绝），80 最后（最常挂起到 read timeout）
+            const orderedPorts = [8080, 443, 5000, 80].filter((p) => ports.includes(p));
+            const effectivePorts = orderedPorts.length ? orderedPorts : (kind === "long" ? [8080, 443, 80] : [80, 8080, 443]);
+            const ipList = Array.isArray(item?.iplist) ? item.iplist.map(asRecord) : [];
+            const ips = ipList.map((entry) => entry.ip).filter((ip) => typeof ip === "string" && ip.length > 0);
+            const out = ips.flatMap((ip) => effectivePorts.map((port) => ({ ip, port })));
+            if (out.length) return out;
+        }
+    } catch {
+        // HTTPDNS 请求失败（网络超时/代理拦截/DNS异常等）时降级到内置目标列表
+    }
+    return kind === "long" ? DEFAULT_LONG_TARGETS : DEFAULT_SHORT_TARGETS;
 }
 async function getNativeWxLoginCode(loginBuffer, appId) {
     const { req, device, host } = manualRequest(loginBuffer, node_crypto_1.default.randomBytes(32));
