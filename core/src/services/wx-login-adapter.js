@@ -34,7 +34,13 @@ function asRecord(value) {
         : {};
 }
 function errorMessage(error) {
-    return error instanceof Error ? error.message : String(error);
+    if (error instanceof Error) {
+        if (error.cause && error.cause.message) {
+            return `${error.message} (${error.cause.message})`;
+        }
+        return error.message;
+    }
+    return String(error);
 }
 function asRotatedCredentialError(error) {
     return (error instanceof Error ? error : new Error(String(error)));
@@ -159,8 +165,8 @@ function humanizeWxCodeError(raw) {
     if (s.includes('ManualAuth rejected')) {
         return '微信登录凭证已失效，请在面板重新扫码登录';
     }
-    if (s.includes('socket read timeout') || s.includes('Unable to establish') || s.includes('invalid HTTP response')) {
-        return '无法连接微信服务器（网络波动），请稍后重试；若持续失败请重新扫码登录';
+    if (s.includes('socket read timeout') || s.includes('Unable to establish') || s.includes('invalid HTTP response') || s.includes('fetch failed') || s.includes('ECONNREFUSED') || s.includes('ETIMEDOUT') || s.includes('ENOTFOUND')) {
+        return '无法连接微信服务器（网络请求失败/被代理拦截），请检查网络连接或系统代理设置后重试';
     }
     return s;
 }
