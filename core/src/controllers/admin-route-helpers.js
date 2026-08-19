@@ -123,23 +123,12 @@ function createAdminRouteHelpers({ store, userStore, logger, getProvider }) {
     next();
   }
 
-  function requireSuperAdminRole(req, res, next) {
-    if (!req.currentUser || req.currentUser.role !== 'super_admin') {
-      return res.status(403).json({
-        ok: false,
-        error: '需要超级管理员权限',
-      });
-    }
-    next();
-  }
-
   return {
     checkAccountLimit,
     checkAccountLimitInterval,
     getAdminUserMutationError,
     requireAdminRole,
     requireDangerConfirmation,
-    requireSuperAdminRole,
     sendProviderError,
   };
 }

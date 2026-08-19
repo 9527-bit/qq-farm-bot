@@ -51,7 +51,6 @@ function registerAdminSystemRoutes({
   logger,
   requireAdminToken,
   requireAdminRole,
-  requireSuperAdminRole,
   requireDangerConfirmation,
   getDefaultSystemConfig,
   getRuntimeConfig,
@@ -83,7 +82,7 @@ function registerAdminSystemRoutes({
   app.post(
     "/api/super-admin/announcement",
     requireAdminToken,
-    requireSuperAdminRole,
+    requireAdminRole,
     (req, res) => {
       try {
         if (
