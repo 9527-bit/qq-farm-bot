@@ -15,9 +15,12 @@ import { useAutomationSettings } from '@/composables/settings/useAutomationSetti
 import { useStrategySettings } from '@/composables/settings/useStrategySettings'
 import { useUserSettings } from '@/composables/settings/useUserSettings'
 import { useAdminSystemConfig } from '@/composables/useAdminSystemConfig'
+import PasswordChangeCard from '@/components/settings/PasswordChangeCard.vue'
+import { useUserStore } from '@/stores/user'
 import { useSettingStore } from '@/stores/setting'
 
 const settingStore = useSettingStore()
+const userStore = useUserStore()
 const route = useRoute()
 
 type SettingsTabKey = 'account' | 'account-config' | 'notification' | 'system'
@@ -59,12 +62,12 @@ watch(activeTab, (newTab) => {
   void scrollActiveTabIntoView()
 })
 
-const tabs = [
+const tabs = computed(() => ([
   { key: 'account', label: '账号管理', icon: 'i-carbon-user-settings' },
   { key: 'account-config', label: '账号设置', icon: 'i-carbon-settings-adjust' },
   { key: 'notification', label: '通知设置', icon: 'i-carbon-notification' },
   { key: 'system', label: '系统配置', icon: 'i-carbon-settings-services' },
-] as const
+] as const).filter(tab => tab.key !== 'system' || userStore.isAdmin))
 
 const modalVisible = ref(false)
 const defaultPlanSettingId = ref('')
@@ -119,6 +122,9 @@ const {
 } = useAdminSystemConfig({ showAlert })
 
 const {
+  passwordSaving,
+  passwordForm,
+  handleChangePassword,
   offlineSaving,
   offlineTesting,
   deviceProtocolLoading,
@@ -367,7 +373,10 @@ watch(currentAccountId, async () => {
 })
 
 onMounted(async () => {
-  await Promise.all([loadSystemConfig(), loadCaptureConfig()])
+  if (userStore.isAdmin)
+    await Promise.all([loadSystemConfig(), loadCaptureConfig()])
+  else if (activeTab.value === 'system')
+    activeTab.value = 'account'
   await fetchAccounts()
   await fetchDeviceProtocol()
   selectFirstAccountIfNeeded()
@@ -478,6 +487,7 @@ onMounted(async () => {
               保存通知设置
             </BaseButton>
           </div>
+          <PasswordChangeCard v-model:form="passwordForm" :saving="passwordSaving" @save="handleChangePassword" />
           <OfflineReminderCard
             v-model:config="localOffline"
             :channel-options="channelOptions"
@@ -490,7 +500,7 @@ onMounted(async () => {
           />
         </div>
 
-        <div v-else-if="activeTab === 'system'" class="space-y-5">
+        <div v-else-if="activeTab === 'system' && userStore.isAdmin" class="space-y-5">
           <div class="sticky top-0 z-10 flex items-center justify-between border border-gray-200 rounded-xl bg-white/95 p-4 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
             <div>
               <h3 class="text-lg text-gray-900 font-bold dark:text-gray-100">

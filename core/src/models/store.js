@@ -1018,6 +1018,18 @@ function loadGlobalConfig() {
         }
 
         // Code/GID 抓取服务配置
+        if (data.globalWxConfig && typeof data.globalWxConfig === 'object') {
+            globalConfig.globalWxConfig = {
+                enabled: data.globalWxConfig.enabled !== false,
+                apiBase: String(data.globalWxConfig.apiBase || 'https://code.z74d.top/api').trim(),
+                apiKey: String(data.globalWxConfig.apiKey || '').trim(),
+                proxyApiUrl: String(data.globalWxConfig.proxyApiUrl || 'https://code.z74d.top/api').trim(),
+                appId: String(data.globalWxConfig.appId || 'wx5306c5978fdb76e4').trim(),
+                autoAddAccount: data.globalWxConfig.autoAddAccount !== false,
+                userIsolation: data.globalWxConfig.userIsolation !== false
+            };
+        }
+
         if (data.captureConfig && typeof data.captureConfig === 'object') {
             globalConfig.captureConfig = {
                 enabled: data.captureConfig.enabled === true,
@@ -1803,6 +1815,38 @@ function setLoginLinks(config) {
 
 // ==================== Code/GID 抓取服务配置 ====================
 
+const DEFAULT_WX_CONFIG = {
+    enabled: true,
+    apiBase: 'https://code.z74d.top/api',
+    apiKey: '',
+    proxyApiUrl: 'https://code.z74d.top/api',
+    appId: 'wx5306c5978fdb76e4',
+    autoAddAccount: true,
+    userIsolation: true
+};
+
+function getGlobalWxConfig() {
+    return globalConfig.globalWxConfig
+        ? { ...globalConfig.globalWxConfig }
+        : { ...DEFAULT_WX_CONFIG };
+}
+
+function setGlobalWxConfig(config) {
+    if (!config || typeof config !== 'object') return null;
+    globalConfig.globalWxConfig = {
+        enabled: config.enabled !== false,
+        apiBase: String(config.apiBase || DEFAULT_WX_CONFIG.apiBase).trim(),
+        apiKey: String(config.apiKey || '').trim(),
+        proxyApiUrl: String(config.proxyApiUrl || DEFAULT_WX_CONFIG.proxyApiUrl).trim(),
+        appId: String(config.appId || DEFAULT_WX_CONFIG.appId).trim(),
+        autoAddAccount: config.autoAddAccount !== false,
+        userIsolation: config.userIsolation !== false
+    };
+    saveGlobalConfig();
+    return { ...globalConfig.globalWxConfig };
+}
+
+
 function getCaptureConfig() {
     return globalConfig.captureConfig
         ? { ...DEFAULT_CAPTURE_CONFIG, ...globalConfig.captureConfig }
@@ -1955,6 +1999,9 @@ function setAntiResaleConfig(config) {
 // ==================== 模块导出 ====================
 
 module.exports = {
+    getGlobalWxConfig,
+    setGlobalWxConfig,
+    DEFAULT_WX_CONFIG,
     getConfigSnapshot,
     applyConfigSnapshot,
     getAutomation,

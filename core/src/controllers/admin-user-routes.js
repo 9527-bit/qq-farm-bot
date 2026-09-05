@@ -23,7 +23,7 @@ function registerAdminUserRoutes({
     requireAdminRole,
     (req, res) => {
       try {
-        res.json({ ok: true, data: userStore.getAllUsersWithPassword() });
+        res.json({ ok: true, data: userStore.getAllUsers() });
       } catch (error) {
         res.status(500).json({ ok: false, error: error.message });
       }
@@ -74,6 +74,15 @@ function registerAdminUserRoutes({
         const user = userStore.updateUser(username, req.body || {});
         if (!user) {
           return res.status(404).json({ ok: false, error: "用户不存在" });
+        }
+
+        if (user.card?.enabled === false || (user.card?.expiresAt && user.card.expiresAt <= Date.now())) {
+          invalidateAdminSessions((session) => session.username === username);
+        } else {
+          updateAdminSessions(
+            (session) => session.username === username,
+            (session) => { session.card = user.card; },
+          );
         }
 
         adminLogger.warn("更新用户状态", {
