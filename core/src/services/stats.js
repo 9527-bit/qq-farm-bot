@@ -296,11 +296,13 @@ function getStats(farmUser, userState, connected, limits) {
   const gold = us.gold ?? fu.gold;
   const exp = us.exp ?? fu.exp;
   const coupon = us.coupon ?? fu.coupon;
+  const diamond = us.diamond ?? fu.diamond;
   const goldBean = us.goldBean ?? fu.goldBean;
 
   const g = Number.isFinite(Number(gold)) ? Number(gold) : 0;
   const e = Number.isFinite(Number(exp)) ? Number(exp) : 0;
   const c = Number.isFinite(Number(coupon)) ? Number(coupon) : 0;
+  const d = Number.isFinite(Number(diamond)) ? Number(diamond) : 0;
   const gb = Number.isFinite(Number(goldBean)) ? Number(goldBean) : 0;
 
   // 如果已连接，更新内部追踪并重新计算会话增益
@@ -318,6 +320,7 @@ function getStats(farmUser, userState, connected, limits) {
       level: fu.level || us.level || 0,
       gold: g,
       coupon: Number.isFinite(Number(us.coupon)) ? Number(us.coupon) : 0,
+      diamond: d,
       goldBean: gb,
       exp: e,
       platform: fu.platform || us.platform || 'qq',

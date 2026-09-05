@@ -16,7 +16,7 @@ test.after(() => {
 test('default plans keep only strategy and automation fields', () => {
   const plan = store.setUserDefaultAccountPlan('alice', {
     plantingStrategy: 'max_profit',
-    automation: { farm: true, friend: true },
+    automation: { farm: true, friend: true, friend_auto_accept: false },
     intervals: { farmMin: 7, farmMax: 9 },
     friendBlacklist: [10001],
     knownFriendGids: [10002],
@@ -29,6 +29,7 @@ test('default plans keep only strategy and automation fields', () => {
   assert.equal(plan.enabled, true);
   assert.equal(plan.config.plantingStrategy, 'max_profit');
   assert.equal(plan.config.automation.farm, true);
+  assert.equal(plan.config.automation.friend_auto_accept, false);
   assert.equal(plan.config.intervals.farmMin, 7);
   assert.equal(plan.config.goldenBugKeepCount, 5);
   assert.equal(plan.config.goldenBugRoundLimit, 12);
@@ -48,9 +49,27 @@ test('new accounts inherit an enabled user default plan', () => {
 
   assert.equal(config.plantingStrategy, 'max_profit');
   assert.equal(config.automation.farm, true);
+  assert.equal(config.automation.friend_auto_accept, false);
   assert.equal(config.intervals.farmMin, 7);
   assert.equal(config.goldenBugKeepCount, 5);
   assert.equal(config.goldenBugRoundLimit, 12);
+});
+
+test('saving an existing default plan overwrites it on disk', () => {
+  const before = store.getUserDefaultAccountPlan('alice');
+  const saved = store.setUserDefaultAccountPlan('alice', {
+    ...before.config,
+    plantingStrategy: 'level',
+    automation: { ...before.config.automation, farm: false, task: true },
+  });
+
+  const persisted = JSON.parse(fs.readFileSync(path.join(dataDir, 'store.json'), 'utf8'));
+  assert.equal(saved.config.plantingStrategy, 'level');
+  assert.equal(saved.config.automation.farm, false);
+  assert.equal(saved.config.automation.task, true);
+  assert.equal(persisted.userDefaultAccountPlans.alice.config.plantingStrategy, 'level');
+  assert.equal(persisted.userDefaultAccountPlans.alice.config.automation.farm, false);
+  assert.equal(persisted.userDefaultAccountPlans.alice.config.automation.task, true);
 });
 
 test('disabled plans do not change new account defaults', () => {

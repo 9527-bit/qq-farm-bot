@@ -1,31 +1,47 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api'
+import AdminSystemPanel from '@/components/admin/AdminSystemPanel.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
+import AccountFeatureSettings from '@/components/settings/AccountFeatureSettings.vue'
 import AccountSettingsTab from '@/components/settings/AccountSettingsTab.vue'
-import AutomationSettingsTab from '@/components/settings/AutomationSettingsTab.vue'
-import DefaultPlanSettingsTab from '@/components/settings/DefaultPlanSettingsTab.vue'
-import StrategySettingsTab from '@/components/settings/StrategySettingsTab.vue'
-import UserSettingsTab from '@/components/settings/UserSettingsTab.vue'
+import AutoCodeRefreshCard from '@/components/settings/AutoCodeRefreshCard.vue'
+import DeviceProtocolCard from '@/components/settings/DeviceProtocolCard.vue'
+import OfflineReminderCard from '@/components/settings/OfflineReminderCard.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import { useAccountSettings } from '@/composables/settings/useAccountSettings'
 import { useAutomationSettings } from '@/composables/settings/useAutomationSettings'
 import { useStrategySettings } from '@/composables/settings/useStrategySettings'
 import { useUserSettings } from '@/composables/settings/useUserSettings'
+import { useAdminSystemConfig } from '@/composables/useAdminSystemConfig'
 import { useSettingStore } from '@/stores/setting'
 
 const settingStore = useSettingStore()
 const route = useRoute()
 
-type SettingsTabKey = 'account' | 'strategy' | 'automation' | 'default-plan' | 'user'
+type SettingsTabKey = 'account' | 'account-config' | 'notification' | 'system'
+
+const SETTINGS_TAB_KEYS: SettingsTabKey[] = ['account', 'account-config', 'notification', 'system']
+const LEGACY_SETTINGS_TABS: Record<string, SettingsTabKey> = {
+  'strategy': 'account-config',
+  'automation': 'account-config',
+  'default-plan': 'account-config',
+  'user': 'notification',
+  'capture': 'system',
+}
 
 function getInitialSettingsTab(): SettingsTabKey {
   const requested = String(route.query.tab || '')
-  if (requested === 'account' || requested === 'strategy' || requested === 'automation' || requested === 'default-plan' || requested === 'user')
-    return requested
+  if (LEGACY_SETTINGS_TABS[requested])
+    return LEGACY_SETTINGS_TABS[requested]
+  if (SETTINGS_TAB_KEYS.includes(requested as SettingsTabKey))
+    return requested as SettingsTabKey
   const saved = localStorage.getItem('settings-active-tab')
-  return saved === 'strategy' || saved === 'automation' || saved === 'default-plan' || saved === 'user'
-    ? saved
+  if (saved && LEGACY_SETTINGS_TABS[saved])
+    return LEGACY_SETTINGS_TABS[saved]
+  return SETTINGS_TAB_KEYS.includes(saved as SettingsTabKey)
+    ? saved as SettingsTabKey
     : 'account'
 }
 
@@ -45,14 +61,31 @@ watch(activeTab, (newTab) => {
 
 const tabs = [
   { key: 'account', label: '账号管理', icon: 'i-carbon-user-settings' },
-  { key: 'strategy', label: '策略设置', icon: 'i-fas-cogs' },
-  { key: 'automation', label: '自动控制', icon: 'i-carbon-toggle-on' },
-  { key: 'default-plan', label: '默认方案', icon: 'i-carbon-settings-adjust' },
-  { key: 'user', label: '用户管理', icon: 'i-carbon-user' },
+  { key: 'account-config', label: '账号设置', icon: 'i-carbon-settings-adjust' },
+  { key: 'notification', label: '通知设置', icon: 'i-carbon-notification' },
+  { key: 'system', label: '系统配置', icon: 'i-carbon-settings-services' },
 ] as const
 
 const modalVisible = ref(false)
+const defaultPlanSettingId = ref('')
 const defaultPlanApplyingId = ref('')
+const defaultPlanConfirmation = ref<{
+  action: 'set' | 'apply'
+  account: any
+} | null>(null)
+const defaultPlanConfirmationVisible = computed(() => !!defaultPlanConfirmation.value)
+const defaultPlanConfirmationTitle = computed(() =>
+  defaultPlanConfirmation.value?.action === 'set' ? '设置默认方案' : '应用默认方案',
+)
+const defaultPlanConfirmationMessage = computed(() => {
+  const pending = defaultPlanConfirmation.value
+  if (!pending)
+    return ''
+  const accountName = pending.account?.name || pending.account?.id
+  return pending.action === 'set'
+    ? `确定将 ${accountName} 的当前配置设置为默认方案吗？这会覆盖此前保存的默认方案。`
+    : `确定将默认方案应用到 ${accountName} 吗？这会覆盖该账号当前的相关配置。`
+})
 const modalConfig = ref({
   title: '',
   message: '',
@@ -71,12 +104,25 @@ function showAlert(message: string, type: 'primary' | 'danger' = 'primary') {
 }
 
 const {
-  passwordSaving,
+  systemConfigSaving,
+  captureConfigSaving,
+  captureConfigTesting,
+  localSystemConfig,
+  defaultSystemConfig,
+  localCaptureConfig,
+  platformOptions,
+  osOptions,
+  loadCaptureConfig,
+  handleTestCaptureConfig,
+  loadSystemConfig,
+  handleResetSystemConfig,
+} = useAdminSystemConfig({ showAlert })
+
+const {
   offlineSaving,
   offlineTesting,
   deviceProtocolLoading,
   deviceProtocolSaving,
-  passwordForm,
   deviceProtocolPresetOptions,
   selectedDevicePreset,
   deviceProtocolForm,
@@ -90,8 +136,6 @@ const {
   applyDevicePreset,
   fetchDeviceProtocol,
   syncLocalOfflineSettings,
-  handleSaveDeviceProtocol,
-  handleChangePassword,
   handleSaveOffline,
   handleTestOffline,
 } = useUserSettings(showAlert)
@@ -116,7 +160,6 @@ const {
   isAccountOpsDisabled,
   fetchAccounts,
   selectFirstAccountIfNeeded,
-  openSettings,
   openAddModal,
   openEditModal,
   handleDelete,
@@ -132,12 +175,10 @@ const {
 const {
   localAutomationSettings,
   localAutoCodeRefresh,
-  automationSaving,
   autoCodeRefreshing,
   fertilizerLandTypeOptions,
   fertilizerOptions,
   syncLocalAutomationSettings,
-  saveAutomationSettings,
   runAutoCodeRefreshNow,
 } = useAutomationSettings({
   currentAccountId,
@@ -146,24 +187,11 @@ const {
 
 const {
   settingsLoading,
-  strategySaving,
   localStrategySettings,
   plantingStrategyOptions,
   bagFallbackStrategyOptions,
-  bagSeeds,
-  bagSeedsLoading,
-  bagSeedsError,
-  sortedBagSeeds,
-  preferredSeedOptions,
   strategyPreviewLabel,
-  resetBagSeedPriority,
-  moveBagSeed,
-  removeBagSeedPriority,
-  startBagSeedDrag,
-  dragOverBagSeed,
-  dropBagSeed,
   loadStrategyData,
-  saveStrategySettings,
   resetStrategyState,
 } = useStrategySettings({
   currentAccountId,
@@ -171,8 +199,96 @@ const {
   showAlert,
 })
 
+const accountSettingsSaving = ref(false)
+const autoCodeRefreshSaving = ref(false)
+const systemSettingsSaving = ref(false)
+const anySystemSaving = computed(() => systemSettingsSaving.value || systemConfigSaving.value || captureConfigSaving.value || deviceProtocolSaving.value)
+
+function buildCurrentAccountConfig() {
+  return {
+    ...settingStore.settings,
+    ...localStrategySettings.value,
+    ...localAutomationSettings.value,
+    autoCodeRefresh: localAutoCodeRefresh.value,
+  }
+}
+
+async function saveCurrentAccountSettings(_module?: string, quiet = false) {
+  if (!currentAccountId.value || accountSettingsSaving.value)
+    return
+  accountSettingsSaving.value = true
+  try {
+    const result = await settingStore.saveSettings(String(currentAccountId.value), buildCurrentAccountConfig())
+    if (!result.ok)
+      throw new Error(result.error || '保存失败')
+    if (!quiet)
+      showAlert('账号设置已保存')
+  }
+  catch (error: any) {
+    showAlert(error.response?.data?.error || error.message || '账号设置保存失败', 'danger')
+  }
+  finally {
+    accountSettingsSaving.value = false
+  }
+}
+
+async function saveAutoCodeRefreshSettings() {
+  if (!currentAccountId.value || autoCodeRefreshSaving.value)
+    return
+  autoCodeRefreshSaving.value = true
+  try {
+    const result = await settingStore.saveAutoCodeRefresh(String(currentAccountId.value), localAutoCodeRefresh.value)
+    if (!result.ok)
+      throw new Error(result.error || '保存失败')
+    showAlert('微信定时刷新重登设置已保存')
+  }
+  catch (error: any) {
+    showAlert(error.response?.data?.error || error.message || '刷新设置保存失败', 'danger')
+  }
+  finally {
+    autoCodeRefreshSaving.value = false
+  }
+}
+
+function openAccountSettings(account: any) {
+  selectAccount(account)
+  activeTab.value = 'account-config'
+}
+
+async function saveSystemSettings() {
+  if (anySystemSaving.value)
+    return
+  systemSettingsSaving.value = true
+  try {
+    const devicePayload = {
+      enabled: !!deviceProtocolForm.value.enabled,
+      userAgent: String(deviceProtocolForm.value.userAgent || '').trim(),
+      deviceBrand: String(deviceProtocolForm.value.deviceBrand || '').trim(),
+      deviceModel: String(deviceProtocolForm.value.deviceModel || '').trim(),
+      deviceMac: String(deviceProtocolForm.value.deviceMac || '').trim(),
+      deviceId: String(deviceProtocolForm.value.deviceId || '').trim(),
+      imei: String(deviceProtocolForm.value.imei || '').trim(),
+    }
+    const [systemResult, captureResult, deviceResult] = await Promise.all([
+      api.post('/api/admin/system-config', { ...localSystemConfig.value, confirmed: true }),
+      api.post('/api/admin/capture-config', { ...localCaptureConfig.value, confirmed: true }),
+      api.post('/api/user/device-protocol', devicePayload),
+    ])
+    if (!systemResult.data?.ok || !captureResult.data?.ok || !deviceResult.data?.ok)
+      throw new Error('部分系统配置保存失败')
+    await Promise.all([loadSystemConfig(), loadCaptureConfig(), fetchDeviceProtocol()])
+    showAlert('系统配置已统一保存并生效')
+  }
+  catch (error: any) {
+    showAlert(error.response?.data?.error || error.message || '系统配置保存失败', 'danger')
+  }
+  finally {
+    systemSettingsSaving.value = false
+  }
+}
+
 async function applyDefaultPlan(account: any) {
-  if (!account?.id || defaultPlanApplyingId.value)
+  if (!account?.id || defaultPlanSettingId.value || defaultPlanApplyingId.value)
     return
   const accountId = String(account.id)
   defaultPlanApplyingId.value = accountId
@@ -198,6 +314,48 @@ async function applyDefaultPlan(account: any) {
   }
 }
 
+async function setDefaultPlan(account: any) {
+  if (!account?.id || defaultPlanSettingId.value || defaultPlanApplyingId.value)
+    return
+  const accountId = String(account.id)
+  defaultPlanSettingId.value = accountId
+  try {
+    const { data } = await api.post('/api/settings/default-plan/import', {}, {
+      headers: { 'x-account-id': accountId },
+    })
+    if (!data?.ok)
+      throw new Error(data?.error || '设置失败')
+    showAlert(`已将 ${account.name || account.id} 的配置设置为默认方案`)
+  }
+  catch (error: any) {
+    showAlert(error.response?.data?.error || error.message || '设置默认方案失败', 'danger')
+  }
+  finally {
+    defaultPlanSettingId.value = ''
+  }
+}
+
+function requestDefaultPlanConfirmation(action: 'set' | 'apply', account: any) {
+  if (!account?.id || defaultPlanSettingId.value || defaultPlanApplyingId.value)
+    return
+  defaultPlanConfirmation.value = { action, account }
+}
+
+function closeDefaultPlanConfirmation() {
+  defaultPlanConfirmation.value = null
+}
+
+function confirmDefaultPlanOperation() {
+  const pending = defaultPlanConfirmation.value
+  if (!pending)
+    return
+  closeDefaultPlanConfirmation()
+  if (pending.action === 'set')
+    void setDefaultPlan(pending.account)
+  else
+    void applyDefaultPlan(pending.account)
+}
+
 watch(currentAccountId, async () => {
   settingStore.clearSettingsState()
   resetStrategyState()
@@ -209,6 +367,7 @@ watch(currentAccountId, async () => {
 })
 
 onMounted(async () => {
+  await Promise.all([loadSystemConfig(), loadCaptureConfig()])
   await fetchAccounts()
   await fetchDeviceProtocol()
   selectFirstAccountIfNeeded()
@@ -269,14 +428,16 @@ onMounted(async () => {
           :show-clear-stopped-confirm="showClearStoppedConfirm"
           :clear-stopped-loading="clearStoppedLoading"
           :refresh-wx-codes-loading="refreshWxCodesLoading"
+          :default-plan-setting-id="defaultPlanSettingId"
           :default-plan-applying-id="defaultPlanApplyingId"
           @add="openAddModal"
           @clear-stopped="openClearStoppedConfirm"
           @refresh-wx-codes="refreshWxCodesNow"
           @select="selectAccount"
           @toggle="toggleAccount"
-          @settings="openSettings"
-          @apply-default-plan="applyDefaultPlan"
+          @settings="openAccountSettings"
+          @set-default-plan="requestDefaultPlanConfirmation('set', $event)"
+          @apply-default-plan="requestDefaultPlanConfirmation('apply', $event)"
           @edit="openEditModal"
           @delete="handleDelete"
           @saved="handleSaved"
@@ -287,87 +448,131 @@ onMounted(async () => {
           @confirm-clear-stopped="confirmClearStopped"
         />
 
-        <StrategySettingsTab
-          v-else-if="activeTab === 'strategy'"
-          v-model:settings="localStrategySettings"
+        <AccountFeatureSettings
+          v-else-if="activeTab === 'account-config'"
+          v-model:strategy="localStrategySettings"
+          v-model:automation="localAutomationSettings"
           :current-account-name="currentAccountName"
           :current-account-id="currentAccountId"
           :loading="settingsLoading"
-          :saving="strategySaving"
+          :saving="accountSettingsSaving"
           :planting-strategy-options="plantingStrategyOptions"
-          :preferred-seed-options="preferredSeedOptions"
           :bag-fallback-strategy-options="bagFallbackStrategyOptions"
           :strategy-preview-label="strategyPreviewLabel"
-          :bag-seeds="bagSeeds"
-          :sorted-bag-seeds="sortedBagSeeds"
-          :bag-seeds-loading="bagSeedsLoading"
-          :bag-seeds-error="bagSeedsError"
-          @reset-bag-seed-priority="resetBagSeedPriority"
-          @move-bag-seed="moveBagSeed"
-          @remove-bag-seed="removeBagSeedPriority"
-          @start-bag-seed-drag="startBagSeedDrag"
-          @drag-over-bag-seed="dragOverBagSeed"
-          @drop-bag-seed="dropBagSeed"
-          @save="saveStrategySettings"
-        />
-
-        <!-- 自动控制 -->
-        <AutomationSettingsTab
-          v-else-if="activeTab === 'automation'"
-          v-model:settings="localAutomationSettings"
-          v-model:auto-code-refresh="localAutoCodeRefresh"
-          :current-account-name="currentAccountName"
-          :current-account-id="currentAccountId"
-          :loading="settingsLoading"
-          :saving="automationSaving"
-          :auto-code-refreshing="autoCodeRefreshing"
           :fertilizer-land-type-options="fertilizerLandTypeOptions"
           :fertilizer-options="fertilizerOptions"
-          @run-auto-code-refresh="runAutoCodeRefreshNow"
-          @save="saveAutomationSettings"
+          @save="saveCurrentAccountSettings"
         />
 
-        <DefaultPlanSettingsTab
-          v-else-if="activeTab === 'default-plan'"
-          :current-account-id="currentAccountId"
-          :current-account-name="currentAccountName"
-          :planting-strategy-options="plantingStrategyOptions"
-          :preferred-seed-options="preferredSeedOptions"
-          :bag-fallback-strategy-options="bagFallbackStrategyOptions"
-          :bag-seeds="bagSeeds"
-          :bag-seeds-loading="bagSeedsLoading"
-          :bag-seeds-error="bagSeedsError"
-          :fertilizer-land-type-options="fertilizerLandTypeOptions"
-          :fertilizer-options="fertilizerOptions"
-          @notify="showAlert"
-        />
+        <div v-else-if="activeTab === 'notification'" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg text-gray-900 font-bold dark:text-gray-100">
+                通知设置
+              </h3>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                配置账号离线后的通知渠道和消息内容。
+              </p>
+            </div>
+            <BaseButton size="sm" :loading="offlineSaving" :disabled="offlineTesting" @click="handleSaveOffline">
+              保存通知设置
+            </BaseButton>
+          </div>
+          <OfflineReminderCard
+            v-model:config="localOffline"
+            :channel-options="channelOptions"
+            :current-channel-doc-url="currentChannelDocUrl"
+            :saving="offlineSaving"
+            :testing="offlineTesting"
+            :show-save="false"
+            @open-docs="openChannelDocs"
+            @test="handleTestOffline"
+          />
+        </div>
 
-        <UserSettingsTab
-          v-else-if="activeTab === 'user'"
-          v-model:device-protocol-form="deviceProtocolForm"
-          v-model:selected-device-preset="selectedDevicePreset"
-          v-model:password-form="passwordForm"
-          v-model:offline-config="localOffline"
-          :device-protocol-loading="deviceProtocolLoading"
-          :device-protocol-saving="deviceProtocolSaving"
-          :device-protocol-preset-options="deviceProtocolPresetOptions"
-          :password-saving="passwordSaving"
-          :channel-options="channelOptions"
-          :current-channel-doc-url="currentChannelDocUrl"
-          :offline-saving="offlineSaving"
-          :offline-testing="offlineTesting"
-          @apply-device-preset="applyDevicePreset"
-          @random-mac="fillRandomDeviceMac"
-          @random-device-id="fillRandomDeviceId"
-          @random-imei="fillRandomImei"
-          @save-device-protocol="handleSaveDeviceProtocol"
-          @change-password="handleChangePassword"
-          @open-docs="openChannelDocs"
-          @test-offline="handleTestOffline"
-          @save-offline="handleSaveOffline"
-        />
+        <div v-else-if="activeTab === 'system'" class="space-y-5">
+          <div class="sticky top-0 z-10 flex items-center justify-between border border-gray-200 rounded-xl bg-white/95 p-4 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
+            <div>
+              <h3 class="text-lg text-gray-900 font-bold dark:text-gray-100">
+                系统配置
+              </h3>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                统一管理连接参数、设备协议和抓包服务。
+              </p>
+            </div>
+            <BaseButton size="sm" :loading="anySystemSaving" @click="saveSystemSettings">
+              保存系统配置
+            </BaseButton>
+          </div>
+
+          <AdminSystemPanel
+            v-model:local-system-config="localSystemConfig"
+            v-model:local-capture-config="localCaptureConfig"
+            section="system"
+            :show-heading="false"
+            :show-save="false"
+            :default-system-config="defaultSystemConfig"
+            :platform-options="platformOptions"
+            :os-options="osOptions"
+            :system-config-saving="systemConfigSaving"
+            :capture-config-saving="captureConfigSaving"
+            :capture-config-testing="captureConfigTesting"
+            @reset-system="handleResetSystemConfig"
+            @test-capture="handleTestCaptureConfig"
+          />
+
+          <DeviceProtocolCard
+            v-model:form="deviceProtocolForm"
+            v-model:selected-preset="selectedDevicePreset"
+            :loading="deviceProtocolLoading"
+            :saving="deviceProtocolSaving"
+            :preset-options="deviceProtocolPresetOptions"
+            :show-save="false"
+            @apply-preset="applyDevicePreset"
+            @random-mac="fillRandomDeviceMac"
+            @random-device-id="fillRandomDeviceId"
+            @random-imei="fillRandomImei"
+          />
+
+          <AutoCodeRefreshCard
+            v-model:config="localAutoCodeRefresh"
+            :current-account-name="currentAccountName"
+            :current-account-id="currentAccountId"
+            :loading="settingsLoading"
+            :saving="autoCodeRefreshSaving"
+            :refreshing="autoCodeRefreshing"
+            @save="saveAutoCodeRefreshSettings"
+            @refresh="runAutoCodeRefreshNow"
+          />
+
+          <AdminSystemPanel
+            v-model:local-system-config="localSystemConfig"
+            v-model:local-capture-config="localCaptureConfig"
+            section="capture"
+            :show-heading="false"
+            :show-save="false"
+            :default-system-config="defaultSystemConfig"
+            :platform-options="platformOptions"
+            :os-options="osOptions"
+            :system-config-saving="systemConfigSaving"
+            :capture-config-saving="captureConfigSaving"
+            :capture-config-testing="captureConfigTesting"
+            @test-capture="handleTestCaptureConfig"
+          />
+        </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="defaultPlanConfirmationVisible"
+      :title="defaultPlanConfirmationTitle"
+      :message="defaultPlanConfirmationMessage"
+      type="danger"
+      confirm-text="确认执行"
+      @confirm="confirmDefaultPlanOperation"
+      @close="closeDefaultPlanConfirmation"
+      @cancel="closeDefaultPlanConfirmation"
+    />
 
     <ConfirmModal
       :show="modalVisible"

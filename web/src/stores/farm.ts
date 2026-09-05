@@ -25,12 +25,19 @@ export const useFarmStore = defineStore('farm', () => {
   const lands = ref<Land[]>([])
   const seeds = ref<any[]>([])
   const summary = ref<any>({})
+  const weather = ref<any>(null)
   const loading = ref(false)
+  const dogSkillGiftPendingCount = ref(0)
+  const dogSkillGiftLoading = ref(false)
+  const dogSkillGiftError = ref('')
 
   function clearFarmData() {
     lands.value = []
     seeds.value = []
     summary.value = {}
+    weather.value = null
+    dogSkillGiftPendingCount.value = 0
+    dogSkillGiftError.value = ''
   }
 
   function isCurrentAccount(accountId: string) {
@@ -53,6 +60,7 @@ export const useFarmStore = defineStore('farm', () => {
       if (data && data.ok) {
         lands.value = data.data.lands || []
         summary.value = data.data.summary || {}
+        weather.value = data.data.weather || null
       }
     }
     finally {
@@ -71,6 +79,52 @@ export const useFarmStore = defineStore('farm', () => {
       return
     if (data && data.ok)
       seeds.value = data.data || []
+  }
+
+  async function fetchDogSkillGiftStatus(accountId: string) {
+    if (!accountId)
+      return
+    dogSkillGiftLoading.value = true
+    dogSkillGiftError.value = ''
+    try {
+      const { data } = await api.get('/api/dog/skill-gifts', {
+        headers: { 'x-account-id': accountId },
+      })
+      if (isCurrentAccount(accountId) && data?.ok)
+        dogSkillGiftPendingCount.value = Math.max(0, Number(data.data?.pendingCount) || 0)
+    }
+    catch (error: any) {
+      if (isCurrentAccount(accountId))
+        dogSkillGiftError.value = String(error?.response?.data?.error || error?.message || '礼包状态读取失败')
+    }
+    finally {
+      dogSkillGiftLoading.value = false
+    }
+  }
+
+  async function claimDogSkillGifts(accountId: string) {
+    if (!accountId)
+      return null
+    dogSkillGiftLoading.value = true
+    dogSkillGiftError.value = ''
+    try {
+      const { data } = await api.post('/api/dog/skill-gifts/claim', {}, {
+        headers: { 'x-account-id': accountId },
+      })
+      if (!data?.ok)
+        throw new Error(data?.error || '礼包拾取失败')
+      if (isCurrentAccount(accountId))
+        dogSkillGiftPendingCount.value = Math.max(0, Number(data.data?.pending) || 0)
+      return data.data
+    }
+    catch (error: any) {
+      if (isCurrentAccount(accountId))
+        dogSkillGiftError.value = String(error?.response?.data?.error || error?.message || '礼包拾取失败')
+      return null
+    }
+    finally {
+      dogSkillGiftLoading.value = false
+    }
   }
 
   async function operate(accountId: string, opType: string) {
@@ -112,5 +166,23 @@ export const useFarmStore = defineStore('farm', () => {
     return data
   }
 
-  return { lands, summary, seeds, loading, clearFarmData, fetchLands, fetchSeeds, operate, fertilizeLand, removePlant, removeAllPlants }
+  return {
+    lands,
+    summary,
+    weather,
+    seeds,
+    loading,
+    dogSkillGiftPendingCount,
+    dogSkillGiftLoading,
+    dogSkillGiftError,
+    clearFarmData,
+    fetchLands,
+    fetchSeeds,
+    fetchDogSkillGiftStatus,
+    claimDogSkillGifts,
+    operate,
+    fertilizeLand,
+    removePlant,
+    removeAllPlants,
+  }
 })

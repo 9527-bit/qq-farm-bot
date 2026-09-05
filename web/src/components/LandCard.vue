@@ -133,6 +133,12 @@ const landTextureUrl = computed(() => {
   return `/game-config/land_images/${landTextureName.value}.png`
 })
 
+const shouldRotateLandTexture = computed(() => {
+  const level = Number(land.value?.level) || 1
+  // 与 FarmPanel 的 Canvas 保持一致，避免选中 2x2 土地后再次翻转。
+  return level === 5 && Number(land.value?.plantSize) <= 1
+})
+
 const mutantEffects = computed(() => {
   const effects = Array.isArray(land.value?.mutantEffects) ? land.value.mutantEffects : []
   return effects
@@ -142,7 +148,9 @@ const mutantEffects = computed(() => {
         id: Number(effect?.id) || 0,
         name: String(effect?.name || effect?.effect_name || icon || '变异').trim(),
         icon,
-        image: icon ? `/game-config/seed_images_named/mutant/${icon}.png` : '',
+        image: icon === 'lightning'
+          ? '/activity/rain-poem/lightning-sense.png?v=2'
+          : (icon ? `/game-config/seed_images_named/mutant/${icon}.png` : ''),
         tag: String(effect?.tag || '').trim(),
         description: String(effect?.description || effect?.desc || effect?.tips || '').trim(),
       }
@@ -164,6 +172,7 @@ const hasFrozenMutation = computed(() => hasMutation(1, 'frozen'))
 const hasLoveMutation = computed(() => hasMutation(2, 'love'))
 const hasDarkMutation = computed(() => hasMutation(3, 'dark'))
 const hasMoistMutation = computed(() => hasMutation(4, 'moist'))
+const hasLightningMutation = computed(() => hasMutation(12, 'lightning'))
 const darkSmokeImageUrl = '/game-config/effect_images/mutant/dark-smoke.png'
 const darkParticleImageUrl = '/game-config/effect_images/mutant/dark-particle.png'
 
@@ -341,12 +350,28 @@ function getIsometricBubbleClass(targetLand: any) {
       <img
         :src="landTextureUrl"
         alt=""
-        :class="Number(land.plantSize) > 1 ? 'land-ground-merged' : 'land-ground-single'"
+        :class="[
+          Number(land.plantSize) > 1 ? 'land-ground-merged' : 'land-ground-single',
+          { 'land-ground-rotated': shouldRotateLandTexture },
+        ]"
       >
     </div>
 
     <div class="land-card-id absolute left-1 top-1 text-[10px] text-gray-400 font-mono">
       #{{ land.id }}
+    </div>
+
+    <div
+      v-if="land?.qixiDew?.applied"
+      class="qixi-dew-effect pointer-events-none absolute"
+      title="鹊羽灵露已生效"
+      aria-label="鹊羽灵露已生效"
+    >
+      <img class="qixi-dew-feather qixi-dew-feather-1" src="/game-config/effect_images/qixi-dew/effect_yumao.png" alt="">
+      <img class="qixi-dew-feather qixi-dew-feather-2" src="/game-config/effect_images/qixi-dew/effect_yumao.png" alt="">
+      <img class="qixi-dew-feather qixi-dew-feather-3" src="/game-config/effect_images/qixi-dew/effect_yumao.png" alt="">
+      <img class="qixi-dew-feather qixi-dew-feather-4" src="/game-config/effect_images/qixi-dew/effect_yumao.png" alt="">
+      <img class="qixi-dew-feather qixi-dew-feather-5" src="/game-config/effect_images/qixi-dew/effect_yumao.png" alt="">
     </div>
 
     <div
@@ -376,6 +401,7 @@ function getIsometricBubbleClass(targetLand: any) {
           'land-card-image-love': hasLoveMutation && Boolean(cropImageUrl),
           'land-card-image-dark': hasDarkMutation && Boolean(cropImageUrl),
           'land-card-image-moist': hasMoistMutation && Boolean(cropImageUrl),
+          'land-card-image-lightning': hasLightningMutation && Boolean(cropImageUrl),
         },
       ]"
     >
@@ -395,6 +421,15 @@ function getIsometricBubbleClass(targetLand: any) {
       </div>
       <div v-if="hasMoistMutation && cropImageUrl" class="moist-mutation-layer" aria-hidden="true">
         <i v-for="index in 4" :key="index" />
+      </div>
+      <div v-if="hasLightningMutation && cropImageUrl" class="lightning-mutation-layer" aria-hidden="true">
+        <img
+          v-for="index in 4"
+          :key="`lightning-frame-${index}`"
+          :src="`/game-config/effect_images/rain-poem/lightning-0${index - 1}.png`"
+          :class="`lightning-mutation-frame lightning-mutation-frame-${index}`"
+          alt=""
+        >
       </div>
       <img
         v-if="cropImageUrl"
@@ -573,6 +608,109 @@ function getIsometricBubbleClass(targetLand: any) {
 </template>
 
 <style scoped>
+.qixi-dew-effect {
+  z-index: 6;
+  left: 50%;
+  top: 46%;
+  width: 70%;
+  height: 72%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+}
+
+.qixi-dew-effect img {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+}
+
+.qixi-dew-feather {
+  top: -20%;
+  width: 22%;
+  opacity: 0;
+  transform-origin: center;
+  filter: brightness(1.55) saturate(0.7) drop-shadow(0 0 3px rgb(255 244 249 / 0.82));
+  animation: qixi-dew-feather-fall 4.8s linear infinite backwards;
+}
+
+.qixi-dew-feather-1 {
+  left: 4%;
+  animation-delay: -0.4s;
+}
+
+.qixi-dew-feather-2 {
+  left: 26%;
+  width: 17%;
+  animation-delay: -3.2s;
+  animation-duration: 5.4s;
+}
+
+.qixi-dew-feather-3 {
+  left: 48%;
+  width: 24%;
+  animation-delay: -1.8s;
+  animation-duration: 5.8s;
+}
+
+.qixi-dew-feather-4 {
+  left: 68%;
+  width: 15%;
+  animation-delay: -4.3s;
+  animation-duration: 4.5s;
+}
+
+.qixi-dew-feather-5 {
+  left: 81%;
+  width: 12%;
+  animation-delay: -2.7s;
+  animation-duration: 6.2s;
+}
+
+.land-isometric-size-2 .qixi-dew-effect {
+  top: 45%;
+  width: 52%;
+  height: 68%;
+}
+
+@keyframes qixi-dew-feather-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(-8%, -8%, 0) rotate(-18deg) scale(0.72);
+  }
+  16% {
+    opacity: 0.3;
+    transform: translate3d(10%, 18%, 0) rotate(4deg) scale(0.82);
+  }
+  42% {
+    opacity: 0.58;
+    transform: translate3d(-12%, 58%, 0) rotate(-12deg) scale(0.92);
+  }
+  72% {
+    opacity: 0.4;
+    transform: translate3d(14%, 108%, 0) rotate(11deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-5%, 160%, 0) rotate(-8deg) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qixi-dew-effect img {
+    animation: none !important;
+  }
+  .qixi-dew-feather {
+    display: none;
+  }
+  .qixi-dew-feather-3 {
+    display: block;
+    top: 38%;
+    opacity: 0.38;
+    transform: rotate(-8deg);
+  }
+}
+
 .land-card-image-golden {
   position: relative;
   isolation: isolate;
@@ -656,7 +794,8 @@ function getIsometricBubbleClass(targetLand: any) {
 .land-card-image-frozen,
 .land-card-image-love,
 .land-card-image-dark,
-.land-card-image-moist {
+.land-card-image-moist,
+.land-card-image-lightning {
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -672,7 +811,8 @@ function getIsometricBubbleClass(targetLand: any) {
 .frozen-mutation-layer,
 .love-mutation-layer,
 .dark-mutation-layer,
-.moist-mutation-layer {
+.moist-mutation-layer,
+.lightning-mutation-layer {
   position: absolute;
   z-index: 3;
   inset: 0;
@@ -731,11 +871,6 @@ function getIsometricBubbleClass(targetLand: any) {
 
 .land-card-image-love .land-crop-image {
   filter: saturate(1.22) brightness(1.05) drop-shadow(0 0 5px rgb(244 63 94 / 0.82));
-}
-
-.love-mutation-layer {
-  background: radial-gradient(circle, rgb(251 113 133 / 0.2) 10%, transparent 68%);
-  box-shadow: inset 0 0 7px rgb(244 114 182 / 0.34);
 }
 
 .love-mutation-layer i {
@@ -867,6 +1002,38 @@ function getIsometricBubbleClass(targetLand: any) {
 .moist-mutation-layer i:nth-child(4) {
   left: 84%;
   animation-delay: -1.2s;
+}
+
+.land-card-image-lightning .land-crop-image {
+  position: relative;
+  z-index: 2;
+}
+
+.lightning-mutation-layer {
+  z-index: 4;
+  overflow: visible;
+}
+
+.lightning-mutation-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 145%;
+  height: 145%;
+  object-fit: contain;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: official-lightning-frame 1s steps(1, end) infinite;
+}
+
+.lightning-mutation-frame-2 {
+  animation-delay: -0.75s;
+}
+.lightning-mutation-frame-3 {
+  animation-delay: -0.5s;
+}
+.lightning-mutation-frame-4 {
+  animation-delay: -0.25s;
 }
 
 @keyframes golden-crop-glow {
@@ -1006,6 +1173,17 @@ function getIsometricBubbleClass(targetLand: any) {
   }
 }
 
+@keyframes official-lightning-frame {
+  0%,
+  24.99% {
+    opacity: 1;
+  }
+  25%,
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .land-card-image-golden .land-crop-image,
   .golden-mutation-aura,
@@ -1017,8 +1195,13 @@ function getIsometricBubbleClass(targetLand: any) {
   .love-mutation-layer i,
   .dark-mutation-smoke,
   .dark-mutation-particle,
-  .moist-mutation-layer i {
+  .moist-mutation-layer i,
+  .lightning-mutation-frame {
     animation: none;
+  }
+
+  .lightning-mutation-frame-1 {
+    opacity: 1;
   }
 
   .land-card-image-golden .land-crop-image {
@@ -1244,6 +1427,11 @@ function getIsometricBubbleClass(targetLand: any) {
   transform: translate(-50%, -50%);
   opacity: 0.82;
   filter: saturate(1.05) drop-shadow(0 3px 4px rgba(71, 53, 35, 0.14));
+}
+
+.land-ground-single.land-ground-rotated,
+.land-ground-merged.land-ground-rotated {
+  transform: translate(-50%, -50%) rotate(180deg);
 }
 
 .land-card > :not(.land-ground-layer) {

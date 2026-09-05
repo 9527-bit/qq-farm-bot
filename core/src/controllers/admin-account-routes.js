@@ -33,6 +33,40 @@ function stripProtectedWxCredentials(source) {
   return result;
 }
 
+const CLIENT_VERSION_RE = /^\d+(?:\.\d+){2,4}_\d{8}$/;
+
+function parseOfficialGatewayUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "wss:"
+    || url.hostname !== "gate-obt.nqf.qq.com"
+    || url.pathname !== "/prod/ws") return null;
+  const code = String(url.searchParams.get("code") || "").trim();
+  const clientVersion = String(url.searchParams.get("ver") || "").trim();
+  if (!code || !CLIENT_VERSION_RE.test(clientVersion)) return null;
+  return { code, clientVersion };
+}
+
+function syncGatewayClientVersion(gateway, store, updateRuntimeConfig) {
+  if (!gateway || !store || typeof store.getSystemConfig !== "function") return false;
+  const currentSystemConfig = store.getSystemConfig() || {};
+  if (String(currentSystemConfig.clientVersion || "") === gateway.clientVersion) return false;
+  const savedSystemConfig = store.setSystemConfig({
+    ...currentSystemConfig,
+    clientVersion: gateway.clientVersion,
+  });
+  if (savedSystemConfig && typeof updateRuntimeConfig === "function") {
+    updateRuntimeConfig(savedSystemConfig);
+  }
+  return !!savedSystemConfig;
+}
+
 function registerAdminAccountRoutes({
   app,
   provider,
@@ -47,6 +81,8 @@ function registerAdminAccountRoutes({
   getAccessibleAccountIdsFromRequest,
   userStore,
   sendProviderError,
+  store,
+  updateRuntimeConfig,
 }) {
   app.get("/api/accounts", (req, res) => {
     try {
@@ -171,6 +207,12 @@ function registerAdminAccountRoutes({
     try {
       const rawBody = req.body && typeof req.body === "object" ? req.body : {};
       const body = stripProtectedWxCredentials(rawBody);
+      const gateway = parseOfficialGatewayUrl(body.gatewayUrl);
+      if (body.gatewayUrl && !gateway) {
+        return res.status(400).json({ ok: false, error: "WebSocket URL 无效或缺少有效的 code/ver" });
+      }
+      if (gateway) body.code = gateway.code;
+      delete body.gatewayUrl;
       const currentUser = req.currentUser;
       const isUpdate = !!body.id;
       const isAdmin =
@@ -257,6 +299,7 @@ function registerAdminAccountRoutes({
 
       if (!isUpdate && currentUser) nextAccount.username = currentUser.username;
       const data = addOrUpdateAccount(nextAccount);
+      const clientVersionUpdated = syncGatewayClientVersion(gateway, store, updateRuntimeConfig);
       if (body.wxSessionId && body.wxid && currentUser) {
         const wxLoginAdapter = require("../services/wx-login-adapter");
         wxLoginAdapter.consumePendingWxInfo(body.wxSessionId, body.wxid, currentUser.username);
@@ -312,6 +355,8 @@ function registerAdminAccountRoutes({
         ok: true,
         data: provider.getAccounts(),
         startup: { queued: startQueued, autoRefreshEnabled },
+        clientVersion: gateway ? gateway.clientVersion : "",
+        clientVersionUpdated,
       });
     } catch (error) {
       res.status(500).json({ ok: false, error: error.message });
@@ -461,4 +506,9 @@ function registerAdminAccountRoutes({
   });
 }
 
-module.exports = { registerAdminAccountRoutes, stripProtectedWxCredentials };
+module.exports = {
+  parseOfficialGatewayUrl,
+  registerAdminAccountRoutes,
+  stripProtectedWxCredentials,
+  syncGatewayClientVersion,
+};

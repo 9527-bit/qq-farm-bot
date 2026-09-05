@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { types, loadProto } = require('../src/utils/proto');
-const { normalizeQixiActivity } = require('../src/services/activity');
+const { normalizeQixiActivity, isQixiDewLandCandidate } = require('../src/services/activity');
 const { getItemById } = require('../src/config/gameConfig');
 
 test('鹊桥活动协议解析阶段、材料和香囊次数', async () => {
@@ -39,6 +39,26 @@ test('鹊桥活动协议解析阶段、材料和香囊次数', async () => {
 test('鹊羽灵露使用真实背包 ID 301103 并具有名称映射', () => {
   assert.equal(getItemById(1024)?.name, '鹊羽');
   assert.equal(getItemById(301103)?.name, '鹊羽灵露');
+});
+
+test('土地协议保留鹊羽灵露 field_40 状态', async () => {
+  if (!types.AllLandsReply) await loadProto();
+  const encoded = types.AllLandsReply.encode(types.AllLandsReply.create({
+    lands: [{
+      id: 1,
+      unlocked: true,
+      plant: { id: 1020008, field_40: { value_1: 10, value_2: 1 } },
+    }],
+  })).finish();
+  const decoded = types.AllLandsReply.decode(encoded);
+  assert.equal(Number(decoded.lands[0].plant.field_40.value_1), 10);
+  assert.equal(Number(decoded.lands[0].plant.field_40.value_2), 1);
+});
+
+test('鹊羽灵露选地排除服务端已确认生效的土地', () => {
+  assert.equal(isQixiDewLandCandidate({ plantId: 1, status: 'growing', qixiDew: { applied: true } }), false);
+  assert.equal(isQixiDewLandCandidate({ plantId: 1, status: 'growing', qixiDew: { applied: false } }), true);
+  assert.equal(isQixiDewLandCandidate({ plantId: 1, status: 'dead', qixiDew: { applied: false } }), false);
 });
 
 test('香囊赠送参数使用独立 field 124 并保留好友优先目标', async () => {

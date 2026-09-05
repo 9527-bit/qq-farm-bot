@@ -3,8 +3,7 @@
  * QQ Farm Automation Bot - 管理面板服务器
  *
  * 提供 Express + Socket.IO 管理面板后端：
- * - 用户认证（登录/注册/密码修改/密码重置）
- * - 卡密管理（创建/查询/续费/领取记录）
+ * - 默认管理员会话
  * - 账号管理（增删改查/启动停止/备注）
  * - 农场操作（种植/施肥/铲除/收获）
  * - 好友管理（列表/操作/拉黑）
@@ -27,6 +26,8 @@ const store = require("../models/store");
 const { addOrUpdateAccount, deleteAccount } = store;
 const { findAccountByRef } = require("../services/account-resolver");
 const { createModuleLogger } = require("../services/logger");
+const { createScheduler } = require("../services/scheduler");
+const adminScheduler = createScheduler("admin");
 const { registerAdminActivityRoutes } = require("./admin-activity-routes");
 const {
   registerAdminAccountRuntimeRoutes,
@@ -36,7 +37,6 @@ const { registerAdminAnalyticsRoutes } = require("./admin-analytics-routes");
 const { createAdminAccountAccess } = require("./admin-account-access");
 const { registerAdminAuthRoutes } = require("./admin-auth-routes");
 const { registerAdminBagRoutes } = require("./admin-bag-routes");
-const { registerAdminCardRoutes } = require("./admin-card-routes");
 const { registerAdminCareerRoutes } = require("./admin-career-routes");
 const { registerAdminCaptureRoutes, setEmbeddedCapture } = require("./admin-capture-routes");
 const { createCaptureCore } = require("../capture/index");
@@ -49,7 +49,7 @@ const {
 } = require("./admin-farm-resource-routes");
 const { registerAdminFriendRoutes } = require("./admin-friend-routes");
 const { registerAdminIllustratedRoutes } = require("./admin-illustrated-routes");
-const { registerAdminLoginLogRoutes } = require("./admin-login-log-routes");
+const { registerAdminPetRoutes } = require("./admin-pet-routes");
 const {
   registerAdminPlantBlacklistRoutes,
 } = require("./admin-plant-blacklist-routes");
@@ -60,9 +60,7 @@ const { createAdminRouteHelpers } = require("./admin-route-helpers");
 const { registerAdminSettingsRoutes } = require("./admin-settings-routes");
 const { registerAdminShopRoutes } = require("./admin-shop-routes");
 const { createAdminSessionManager } = require("./admin-session-manager");
-const { registerAdminSuperAdminRoutes } = require("./admin-super-admin-routes");
 const { registerAdminSystemRoutes } = require("./admin-system-routes");
-const { registerAdminUserRoutes } = require("./admin-user-routes");
 const userStore = require("../models/user-store");
 
 const adminLogger = createModuleLogger("admin");
@@ -73,19 +71,12 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ];
 const PUBLIC_API_PATHS = new Set([
   "/login",
+  "/auto-login",
   "/qr/create",
   "/qr/check",
-  "/card-claim/status",
-  "/card-claim/claim",
   "/game-version",
   "/public/login-links",
-  "/user-count",
-  "/super-admin-announcement",
-  "/super-admin-announcement/verify",
   "/changelog",
-  "/public/renew",
-  "/public/reset-password/verify",
-  "/public/reset-password/confirm",
   "/health",
 ]);
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
@@ -101,6 +92,7 @@ let app = null;
 let server = null;
 let provider = null;
 let io = null;
+let embeddedCaptureCore = null;
 
 function emitRealtimeStatus(accountId, status) {
   if (!io) return;
@@ -140,7 +132,7 @@ function configureCorsMiddleware(expressApp) {
     res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, PUT");
     res.header(
       "Access-Control-Allow-Headers",
-      "Content-Type, x-account-id, x-admin-token, x-proxy-api-key, x-proxy-api-url, x-proxy-app-id",
+      "Content-Type, x-account-id, x-admin-token",
     );
     res.header("Access-Control-Allow-Credentials", "true");
     res.header("Access-Control-Max-Age", "86400");
@@ -296,30 +288,52 @@ function getSocketHandshakeToken(socket) {
 }
 
 /**
- * 启动嵌入本进程的抓包服务核心（默认模式）。
+ * 启动嵌入本进程的抓包服务核心。
  * 需要 CA 生成与 proto 加载，均在后台上完成（core.ready）。
  */
 function startEmbeddedCaptureService() {
   try {
     const captureConfig = store.getCaptureConfig();
+    if (captureConfig.enabled !== true) {
+      adminLogger.info("抓包服务未启动（enabled=false）");
+      return null;
+    }
     if (captureConfig.embedded === false) {
       adminLogger.info("抓包服务未嵌入本进程（embedded=false，使用独立服务）");
       return null;
     }
+    if (embeddedCaptureCore) return embeddedCaptureCore;
     const captureLog = (level, message, extra) => {
       const fn = adminLogger[level] || adminLogger.info;
       fn.call(adminLogger, message, extra);
     };
     const core = createCaptureCore({ log: captureLog });
+    embeddedCaptureCore = core;
     setEmbeddedCapture(core);
     core.ready.catch((error) => {
       adminLogger.warn("抓包服务嵌入初始化失败", { error: error.message });
     });
-    adminLogger.info("抓包服务已嵌入本进程：面板开启“允许使用抓包登录”后可直接使用，无需单独启动服务");
+    adminLogger.info("抓包服务已嵌入本进程：手机代理端口 18000");
     return core;
   } catch (error) {
     adminLogger.warn("抓包服务嵌入启动失败", { error: error.message });
     return null;
+  }
+}
+
+function ensureEmbeddedCaptureService() {
+  return startEmbeddedCaptureService();
+}
+
+async function stopEmbeddedCaptureService() {
+  const core = embeddedCaptureCore;
+  embeddedCaptureCore = null;
+  setEmbeddedCapture(null);
+  if (!core || typeof core.stop !== "function") return;
+  try {
+    await core.stop();
+  } catch (error) {
+    adminLogger.warn("抓包服务嵌入停止失败", { error: error.message });
   }
 }
 
@@ -365,11 +379,9 @@ function startAdminServer(dataProvider) {
     getProvider: () => provider,
   });
   const {
-    checkAccountLimit,
-    checkAccountLimitInterval,
-    getAdminUserMutationError,
     requireAdminRole,
     requireDangerConfirmation,
+    requireSuperAdminRole,
     sendProviderError,
   } = adminRouteHelpers;
 
@@ -395,8 +407,9 @@ function startAdminServer(dataProvider) {
     }),
   );
   app.use("/login-assets", (req, res) => res.sendStatus(404));
-  setInterval(cleanupInvalidAdminSessions, FIVE_MINUTES_MS);
-  setInterval(checkAccountLimitInterval, ONE_MINUTE_MS);
+  adminScheduler.setIntervalTask("session_cleanup", FIVE_MINUTES_MS, cleanupInvalidAdminSessions, {
+    preventOverlap: true,
+  });
 
   registerAdminAuthRoutes({
     app,
@@ -423,6 +436,14 @@ function startAdminServer(dataProvider) {
   registerAdminFarmResourceRoutes({
     app,
     provider,
+    getAccountIdFromRequest,
+    canAccessAccount,
+    sendProviderError,
+  });
+  registerAdminPetRoutes({
+    app,
+    provider,
+    store,
     getAccountIdFromRequest,
     canAccessAccount,
     sendProviderError,
@@ -478,6 +499,7 @@ function startAdminServer(dataProvider) {
   registerAdminBagRoutes({
     app,
     provider,
+    store,
     emitRealtimeLog,
     getAccountIdFromRequest,
     canAccessAccount,
@@ -506,29 +528,19 @@ function startAdminServer(dataProvider) {
     canAccessAccount,
     requireDangerConfirmation,
   });
-  registerAdminSuperAdminRoutes({
-    app,
-    store,
-    userStore,
-    logger: adminLogger,
-    requireAdminToken,
-    requireAdminRole,
-    requireDangerConfirmation,
-    checkAccountLimit,
-  });
   registerAdminSystemRoutes({
     app,
     store,
     logger: adminLogger,
     requireAdminToken,
     requireAdminRole,
+    requireSuperAdminRole,
     requireDangerConfirmation,
     getDefaultSystemConfig,
     getRuntimeConfig,
     updateRuntimeConfig,
   });
-  // 抓包服务嵌入本进程：无需独立进程/端口（手机只需连 MITM 代理端口）
-  startEmbeddedCaptureService();
+  adminLogger.info("抓包服务默认关闭，未随管理面板启动运行");
   registerAdminCaptureRoutes({
     app,
     store,
@@ -539,25 +551,8 @@ function startAdminServer(dataProvider) {
     requireDangerConfirmation,
     canAccessAccount,
     resolveAccountReference,
-  });
-  registerAdminCardRoutes({
-    app,
-    requireAdminToken,
-    requireAdminRole,
-    requireDangerConfirmation,
-    userStore,
-    adminLogger,
-  });
-  registerAdminUserRoutes({
-    app,
-    requireAdminToken,
-    requireAdminRole,
-    requireDangerConfirmation,
-    getAdminUserMutationError,
-    userStore,
-    adminLogger,
-    invalidateAdminSessions,
-    updateAdminSessions,
+    ensureEmbeddedCaptureService,
+    stopEmbeddedCaptureService,
   });
   registerAdminCurrentUserRoutes({
     app,
@@ -580,17 +575,11 @@ function startAdminServer(dataProvider) {
     getAccessibleAccountIdsFromRequest,
     userStore,
     sendProviderError,
+    store,
+    updateRuntimeConfig,
   });
   registerAdminQrLoginRoutes({ app });
   registerAdminProxyRoutes({ app, logger: adminLogger });
-  registerAdminLoginLogRoutes({
-    app,
-    userStore,
-    logger: adminLogger,
-    requireAdminToken,
-    requireAdminRole,
-    requireDangerConfirmation,
-  });
   registerSpaFallback(app, webDist);
 
   const subscribeSocketToAccount = (socket, accountRef = "") => {

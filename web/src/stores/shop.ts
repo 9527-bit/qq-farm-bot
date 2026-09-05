@@ -49,10 +49,19 @@ export interface ShopMallItem {
   name: string
   images?: string[]
   price: number
+  currencyId?: number
+  currencyName?: string
+  currencyBalance?: number
+  balanceKnown?: boolean
   isFree?: boolean
   canBuy?: boolean
   isSoldOut?: boolean
   discount?: string
+  limitType?: number
+  limitCount?: number
+  boughtNum?: number
+  isActivity?: boolean
+  endTime?: number
 }
 
 export interface MysteryShopOffer {
@@ -72,6 +81,12 @@ export interface MysteryShopOffer {
   endTime: number
 }
 
+export interface MysteryShopHistoryRecord extends Omit<MysteryShopOffer, 'active' | 'purchased' | 'startTime' | 'endTime'> {
+  id: string
+  purchasedAt: number
+  source: 'manual' | 'auto'
+}
+
 export const useShopStore = defineStore('shop', () => {
   const seeds = ref<ShopSeedItem[]>([])
   const pets = ref<ShopPetItem[]>([])
@@ -79,6 +94,7 @@ export const useShopStore = defineStore('shop', () => {
   const mallGoods = ref<ShopMallItem[]>([])
   const mysteryOffer = ref<MysteryShopOffer | null>(null)
   const mysteryOfferAccountId = ref('')
+  const mysteryHistory = ref<MysteryShopHistoryRecord[]>([])
 
   const loading = ref(false)
   const petLoading = ref(false)
@@ -95,6 +111,7 @@ export const useShopStore = defineStore('shop', () => {
   const userGold = ref(0)
   const userGoldBean = ref(0)
   const userTicket = ref(0)
+  const userDiamond = ref(0)
 
   let seedRequestId = 0
   let petRequestId = 0
@@ -109,6 +126,7 @@ export const useShopStore = defineStore('shop', () => {
     mallGoods.value = []
     mysteryOffer.value = null
     mysteryOfferAccountId.value = ''
+    mysteryHistory.value = []
     loading.value = false
     petLoading.value = false
     decorationLoading.value = false
@@ -122,6 +140,7 @@ export const useShopStore = defineStore('shop', () => {
     userGold.value = 0
     userGoldBean.value = 0
     userTicket.value = 0
+    userDiamond.value = 0
   }
 
   function isCurrentAccount(accountId: string) {
@@ -237,6 +256,7 @@ export const useShopStore = defineStore('shop', () => {
       if (data.ok) {
         mallGoods.value = data.data || []
         userTicket.value = data.userTicket || 0
+        userDiamond.value = data.userDiamond || 0
       }
       else {
         mallError.value = data.error || '获取道具商城失败'
@@ -280,6 +300,23 @@ export const useShopStore = defineStore('shop', () => {
     finally {
       if (requestId === mysteryRequestId)
         mysteryLoading.value = false
+    }
+  }
+
+  async function fetchMysteryHistory(accountId: string) {
+    if (!accountId)
+      return
+    const requestedId = String(accountId)
+    try {
+      const { data } = await api.get('/api/shop/mystery/history', {
+        headers: { 'x-account-id': accountId },
+      })
+      if (isCurrentAccount(requestedId) && data.ok)
+        mysteryHistory.value = data.data || []
+    }
+    catch {
+      if (isCurrentAccount(requestedId))
+        mysteryHistory.value = []
     }
   }
 
@@ -327,6 +364,7 @@ export const useShopStore = defineStore('shop', () => {
       fetchDecorations(accountId),
       fetchMall(accountId),
       fetchMysteryShop(accountId),
+      fetchMysteryHistory(accountId),
     ])
   }
 
@@ -337,6 +375,7 @@ export const useShopStore = defineStore('shop', () => {
     mallGoods,
     mysteryOffer,
     mysteryOfferAccountId,
+    mysteryHistory,
     loading,
     petLoading,
     decorationLoading,
@@ -350,12 +389,14 @@ export const useShopStore = defineStore('shop', () => {
     userGold,
     userGoldBean,
     userTicket,
+    userDiamond,
     clearShopData,
     fetchSeeds,
     fetchPets,
     fetchDecorations,
     fetchMall,
     fetchMysteryShop,
+    fetchMysteryHistory,
     refreshAll,
     buyGoods,
     buyMallGoods,

@@ -71,9 +71,37 @@ function buildUseItemMessage(usedItemName, usedCount, newItems) {
   return `使用 ${usedItemName} x${usedCount}，获得: ${rewards}`;
 }
 
+async function sellMergedBagItems(provider, accountId, items) {
+  const normalized = items.map((item) => ({
+    id: toNum(item.id),
+    count: Math.max(1, toNum(item.count) || 1),
+    uid: toNum(item.uid),
+  }));
+  const idCounts = new Map();
+  for (const item of normalized)
+    idCounts.set(item.id, (idCounts.get(item.id) || 0) + 1);
+
+  const uniqueItems = normalized.filter(item => idCounts.get(item.id) === 1);
+  const stackedItems = normalized.filter(item => idCounts.get(item.id) > 1);
+  const results = [];
+
+  if (uniqueItems.length > 0)
+    results.push(await provider.sellItems(accountId, uniqueItems));
+
+  // 同一物品在背包中可能按 UID 分成多个实例；官方客户端逐个 UID 出售。
+  for (const item of stackedItems) {
+    results.push(await provider.sellItems(accountId, [item]));
+    if (stackedItems.length > 1)
+      await wait(100);
+  }
+
+  return results.length === 1 ? results[0] : results;
+}
+
 function registerAdminBagRoutes({
   app,
   provider,
+  store,
   emitRealtimeLog,
   getAccountIdFromRequest,
   canAccessAccount,
@@ -99,7 +127,7 @@ function registerAdminBagRoutes({
       return;
 
     try {
-      const { itemId, count } = req.body;
+      const { itemId, count, uid } = req.body;
       if (!itemId)
         return res.status(400).json({ ok: false, error: "缺少 itemId" });
 
@@ -108,7 +136,7 @@ function registerAdminBagRoutes({
       const usedItemName = getItemName(usedItemId);
       const bagBefore = await provider.getBag(accountId);
 
-      await provider.useItem(accountId, usedItemId, usedCount);
+      await provider.useItem(accountId, usedItemId, usedCount, toNum(uid));
       await wait(500);
 
       const bagAfter = await provider.getBag(accountId);
@@ -147,7 +175,7 @@ function registerAdminBagRoutes({
       if (!Array.isArray(items) || items.length === 0)
         return res.status(400).json({ ok: false, error: "缺少出售物品列表" });
 
-      const result = await provider.sellItems(accountId, items);
+      const result = await sellMergedBagItems(provider, accountId, items);
       res.json({ ok: true, data: result });
     }
     catch (error) {
@@ -162,7 +190,17 @@ function registerAdminBagRoutes({
 
     try {
       const seeds = await provider.getBagSeeds(accountId);
-      res.json({ ok: true, data: seeds });
+      const result = store.syncBagSeedPriority(accountId, seeds);
+      if (result.changed && typeof provider.syncAccountConfig === "function")
+        provider.syncAccountConfig(accountId);
+      res.json({
+        ok: true,
+        data: {
+          seeds: result.seeds,
+          priority: result.priority,
+          knownIds: result.knownIds,
+        },
+      });
     }
     catch (error) {
       sendProviderError(res, error);
@@ -184,4 +222,4 @@ function registerAdminBagRoutes({
   });
 }
 
-module.exports = { registerAdminBagRoutes };
+module.exports = { registerAdminBagRoutes, sellMergedBagItems };

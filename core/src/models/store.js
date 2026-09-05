@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { getDataFile, ensureDataDir } = require('../config/runtime-paths');
 const { readTextFile, readJsonFile, writeJsonFileAtomic } = require('../services/json-db');
+const { compareBagSeedGameOrder } = require('../utils/bag-seed-order');
 
 // ==================== 文件路径 ====================
 
@@ -67,12 +68,28 @@ function getFriendDogInfoCacheFile(accountId) {
     return path.join(ensureFriendDogInfoDir(), `${safeName  }.json`);
 }
 
+function getLocalDateKey(timestamp = Date.now()) {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function normalizeFriendDogInfoCache(data, now = Date.now()) {
+    if (!data || typeof data.dogInfo !== 'object' || data.dogInfo === null) return null;
+    const cacheDate = String(data.cacheDate || getLocalDateKey(data.updatedAt));
+    if (!cacheDate || cacheDate !== getLocalDateKey(now)) return null;
+    return data.dogInfo;
+}
+
 function readFriendDogInfoCache(accountId) {
     try {
         const filePath = getFriendDogInfoCacheFile(accountId);
         if (fs.existsSync(filePath)) {
             const data = readJsonFile(filePath);
-            if (data && typeof data.dogInfo === 'object') return data.dogInfo;
+            return normalizeFriendDogInfoCache(data);
         }
     } catch { }
     return null;
@@ -81,8 +98,33 @@ function readFriendDogInfoCache(accountId) {
 function writeFriendDogInfoCache(accountId, dogInfo) {
     try {
         const filePath = getFriendDogInfoCacheFile(accountId);
-        writeJsonFileAtomic(filePath, { dogInfo: dogInfo || {}, updatedAt: Date.now() });
+        const updatedAt = Date.now();
+        writeJsonFileAtomic(filePath, {
+            dogInfo: dogInfo || {},
+            cacheDate: getLocalDateKey(updatedAt),
+            updatedAt,
+        });
     } catch { }
+}
+
+function updateFriendDogInfoCache(accountId, gid, dogInfo) {
+    const numericGid = Number(gid) || 0;
+    if (!accountId || !numericGid) return false;
+    const cache = readFriendDogInfoCache(accountId) || {};
+    const dogId = Number(dogInfo && dogInfo.dogId) || 0;
+    if (dogId === 90021) {
+        const current = cache[numericGid];
+        if (current && Number(current.dogId) === dogId && current.dogName === (dogInfo.dogName || '护主犬')) {
+            return false;
+        }
+        cache[numericGid] = { dogId, dogName: dogInfo.dogName || '护主犬' };
+    } else if (Object.hasOwn(cache, numericGid)) {
+        delete cache[numericGid];
+    } else {
+        return false;
+    }
+    writeFriendDogInfoCache(accountId, cache);
+    return true;
 }
 
 // ==================== 好友列表缓存 ====================
@@ -165,7 +207,7 @@ function deleteAccountCaches(accountId) {
 // ==================== 允许的策略 ====================
 
 const ALLOWED_PLANTING_STRATEGIES = [
-    'preferred', 'level', 'max_exp', 'max_fert_exp',
+    'level', 'max_exp', 'max_fert_exp',
     'max_profit', 'max_fert_profit', 'bag_priority'
 ];
 const ALLOWED_BAG_SEED_FALLBACK_STRATEGIES = ALLOWED_PLANTING_STRATEGIES.filter(s => s !== 'bag_priority');
@@ -204,6 +246,7 @@ const DEFAULT_AUTOMATION = {
     farm_push: true,
     land_upgrade: false,
     friend: true,
+    friend_auto_accept: true,
     friend_help_exp_limit: true,
     friend_steal: true,
     friend_help: true,
@@ -211,6 +254,7 @@ const DEFAULT_AUTOMATION = {
     friend_golden_bug: false,
     task: true,
     star_passport_claim: false,
+    star_solar_claim: false,
     star_record_claim: false,
     qingmei_seed_claim: false,
     qingmei_wine_brew: false,
@@ -218,6 +262,15 @@ const DEFAULT_AUTOMATION = {
     qixi_bridge_build: false,
     qixi_sachet_gift: false,
     qixi_friend_priority: [],
+    rain_poem_bottle_buy: false,
+    rain_poem_weather_collect: false,
+    rain_poem_summon_use: false,
+    rain_poem_prank_use: false,
+    rain_poem_research_unlock: false,
+    charity_flower_share_claim: false,
+    charity_flower_donate: false,
+    charity_flower_reward_claim: false,
+    charity_flower_public_fund_claim: false,
     fertilizer_gift: false,
     fertilizer_buy_organic: false,
     fertilizer_buy_normal: false,
@@ -233,6 +286,67 @@ const DEFAULT_AUTOMATION = {
     skip_own_weed_bug: true,
     golden_bug_clear: true
 };
+
+// 已从前端隐藏的限时活动。即使旧配置或客户端提交 true，也必须在配置边界
+// 统一关闭，避免活动入口隐藏后后台任务继续执行。
+const HIDDEN_ACTIVITY_AUTOMATION_KEYS = new Set([
+    'star_passport_claim',
+    'star_solar_claim',
+    'star_record_claim',
+    'qingmei_seed_claim',
+    'qingmei_wine_brew',
+    'qixi_dew_use',
+    'qixi_bridge_build',
+    'qixi_sachet_gift'
+]);
+
+const CHARITY_FLOWER_AUTOMATION_KEYS = [
+    'charity_flower_share_claim',
+    'charity_flower_donate',
+    'charity_flower_reward_claim',
+    'charity_flower_public_fund_claim'
+];
+const RAIN_POEM_AUTOMATION_KEYS = [
+    'rain_poem_bottle_buy',
+    'rain_poem_weather_collect',
+    'rain_poem_summon_use',
+    'rain_poem_prank_use',
+    'rain_poem_research_unlock'
+];
+
+const TIMED_ACTIVITY_AUTOMATION_GROUPS = [
+    {
+        startTime: 1788192000,
+        endTime: 1788969599,
+        keys: CHARITY_FLOWER_AUTOMATION_KEYS
+    },
+    {
+        startTime: 1787709600,
+        endTime: 1788883199,
+        keys: RAIN_POEM_AUTOMATION_KEYS
+    }
+];
+
+function isActivityWindowActive(group, nowSeconds = Math.floor(Date.now() / 1000)) {
+    const startTime = Number(group && group.startTime) || 0;
+    const endTime = Number(group && group.endTime) || 0;
+    return (!startTime || nowSeconds >= startTime) && (!endTime || nowSeconds <= endTime);
+}
+
+function getInactiveActivityAutomationKeys(nowSeconds = Math.floor(Date.now() / 1000)) {
+    const keys = new Set(HIDDEN_ACTIVITY_AUTOMATION_KEYS);
+    for (const group of TIMED_ACTIVITY_AUTOMATION_GROUPS) {
+        if (isActivityWindowActive(group, nowSeconds)) continue;
+        for (const key of group.keys || []) keys.add(key);
+    }
+    return keys;
+}
+
+function disableHiddenActivityAutomation(automation, nowSeconds = Math.floor(Date.now() / 1000)) {
+    if (!automation || typeof automation !== 'object') return automation;
+    for (const key of getInactiveActivityAutomationKeys(nowSeconds)) automation[key] = false;
+    return automation;
+}
 
 /** 默认间隔配置（秒） */
 const DEFAULT_INTERVALS = {
@@ -254,6 +368,17 @@ const DEFAULT_QUIET_HOURS = {
 
 /** 默认植物黑名单（一些特殊/活动作物ID） */
 const DEFAULT_PLANT_BLACKLIST = [20002, 26739, 20059, 20065, 20064, 20060, 20061];
+const DEFAULT_CAPITAL_MODE = { enabled: false, dogId: 0, leadSeconds: 10 };
+
+function normalizeCapitalMode(value, fallback = DEFAULT_CAPITAL_MODE) {
+    const input = value && typeof value === 'object' ? value : {};
+    const base = fallback && typeof fallback === 'object' ? fallback : DEFAULT_CAPITAL_MODE;
+    return {
+        enabled: input.enabled !== undefined ? input.enabled === true : base.enabled === true,
+        dogId: Math.max(0, Number(input.dogId ?? input.selectedDogId ?? base.dogId) || 0),
+        leadSeconds: Math.max(5, Math.min(300, Number(input.leadSeconds ?? input.secondsBeforeMature ?? base.leadSeconds) || 10))
+    };
+}
 
 /** 默认账号配置 */
 const DEFAULT_ACCOUNT_CONFIG = {
@@ -263,7 +388,6 @@ const DEFAULT_ACCOUNT_CONFIG = {
         intervalMinutes: 60
     },
     plantingStrategy: 'max_exp',
-    preferredSeedId: 0,
     prioritize2x2Crops: false,
     friendBadRetryDate: '',
     intervals: DEFAULT_INTERVALS,
@@ -272,8 +396,6 @@ const DEFAULT_ACCOUNT_CONFIG = {
     friendBlacklist: [],
     plantBlacklist: DEFAULT_PLANT_BLACKLIST,
     stealDelaySeconds: 1,
-    plantOrderRandom: true,
-    plantDelaySeconds: 2,
     fertilizerBuyOrganicCount: 1,
     fertilizerBuyOrganicThresholdHours: 10,
     fertilizerBuyNormalCount: 1,
@@ -284,7 +406,8 @@ const DEFAULT_ACCOUNT_CONFIG = {
     bagSeedFallbackStrategy: 'level',
     autoAcceptFriendMinLevel: 0,
     goldenBugKeepCount: 0,
-    goldenBugRoundLimit: 24
+    goldenBugRoundLimit: 24,
+    capitalMode: DEFAULT_CAPITAL_MODE
 };
 
 const ALLOWED_AUTOMATION_KEYS = new Set(Object.keys(DEFAULT_ACCOUNT_CONFIG.automation));
@@ -313,6 +436,47 @@ function normalizeBagSeedPriority(rawList) {
         result.push(seedId);
     }
     return result;
+}
+
+function syncBagSeedPriority(accountId, bagSeeds, options = {}) {
+    const cfg = getAccountConfigSnapshot(accountId);
+    const currentSeeds = (Array.isArray(bagSeeds) ? bagSeeds : [])
+        .map(seed => ({
+            ...seed,
+            seedId: Number(seed && seed.seedId) || 0,
+            count: Number(seed && seed.count) || 0,
+            requiredLevel: Number(seed && seed.requiredLevel) || 0,
+            rarity: Number(seed && seed.rarity) || 0,
+            plantExp: Number(seed && seed.plantExp) || 0,
+            plantingPriority: Number(seed && seed.plantingPriority) || 0,
+            plantSize: Number(seed && seed.plantSize) || 1,
+        }))
+        .filter(seed => seed.seedId > 0 && seed.count > 0 && seed.plantSize === 1)
+        .sort(compareBagSeedGameOrder);
+    const currentIds = currentSeeds.map(seed => seed.seedId);
+    const priority = normalizeBagSeedPriority(cfg.bagSeedPriority);
+    const knownIds = normalizeBagSeedPriority(cfg.bagSeedKnownIds);
+    const nextPriority = [...currentIds];
+
+    const nextKnownIds = [...new Set([...knownIds, ...priority, ...currentIds])];
+    const changed = JSON.stringify(nextPriority) !== JSON.stringify(priority)
+        || JSON.stringify(nextKnownIds) !== JSON.stringify(knownIds);
+    if (changed) {
+        applyConfigSnapshot({
+            bagSeedPriority: nextPriority,
+            bagSeedKnownIds: nextKnownIds,
+        }, {
+            accountId,
+            persist: options.persist !== false,
+        });
+    }
+
+    return {
+        seeds: currentSeeds,
+        priority: nextPriority,
+        knownIds: nextKnownIds,
+        changed,
+    };
 }
 
 function normalizeBagSeedFallbackStrategy(rawStrategy, fallback = 'level') {
@@ -468,12 +632,9 @@ function cloneAccountConfig(config = DEFAULT_ACCOUNT_CONFIG) {
         friendBlacklist: friendBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0),
         plantingStrategy: ALLOWED_PLANTING_STRATEGIES.includes(String(config.plantingStrategy || ''))
             ? String(config.plantingStrategy) : DEFAULT_ACCOUNT_CONFIG.plantingStrategy,
-        preferredSeedId: Math.max(0, Number.parseInt(config.preferredSeedId, 10) || 0),
         prioritize2x2Crops: config.prioritize2x2Crops === true,
         plantBlacklist: plantBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0),
         stealDelaySeconds: Math.max(0, Math.min(60, Number(config.stealDelaySeconds) || 1)),
-        plantOrderRandom: !!config.plantOrderRandom,
-        plantDelaySeconds: Math.max(0, Math.min(60, Number(config.plantDelaySeconds) || 2)),
         fertilizerBuyOrganicCount: Math.max(0, Math.min(999, Number(config.fertilizerBuyOrganicCount) || 1)),
         fertilizerBuyOrganicThresholdHours: Math.max(0, Math.min(720, Number(config.fertilizerBuyOrganicThresholdHours) || 10)),
         fertilizerBuyNormalCount: Math.max(0, Math.min(999, Number(config.fertilizerBuyNormalCount) || 1)),
@@ -484,7 +645,8 @@ function cloneAccountConfig(config = DEFAULT_ACCOUNT_CONFIG) {
         goldenBugRoundLimit: Math.max(1, Math.min(100, Number(config.goldenBugRoundLimit) || 24)),
         bagSeedPriority: normalizeBagSeedPriority(config.bagSeedPriority),
         bagSeedKnownIds: normalizeBagSeedPriority(config.bagSeedKnownIds),
-        bagSeedFallbackStrategy: normalizeBagSeedFallbackStrategy(config.bagSeedFallbackStrategy)
+        bagSeedFallbackStrategy: normalizeBagSeedFallbackStrategy(config.bagSeedFallbackStrategy),
+        capitalMode: normalizeCapitalMode(config.capitalMode)
     };
 }
 
@@ -536,7 +698,6 @@ const globalConfig = {
     superAdminAnnouncement: { content: '', password: '', updatedAt: 0 },
     systemConfig: null,
     loginLinks: null,
-    globalWxConfig: null,
     captureConfig: null,
     deviceProtocol: null,
     userDeviceProtocols: {},
@@ -566,6 +727,7 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
             }
         }
     }
+    disableHiddenActivityAutomation(cfg.automation);
 
     // 自动刷新 Code
     if (input.autoCodeRefresh && typeof input.autoCodeRefresh === 'object') {
@@ -575,15 +737,15 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
         };
     }
 
+    if (input.capitalMode && typeof input.capitalMode === 'object') {
+        cfg.capitalMode = normalizeCapitalMode(input.capitalMode, cfg.capitalMode);
+    }
+
     // 种植策略
     if (input.plantingStrategy && ALLOWED_PLANTING_STRATEGIES.includes(input.plantingStrategy)) {
         cfg.plantingStrategy = input.plantingStrategy;
     }
 
-    // 首选种子
-    if (input.preferredSeedId !== undefined && input.preferredSeedId !== null) {
-        cfg.preferredSeedId = Math.max(0, Number.parseInt(input.preferredSeedId, 10) || 0);
-    }
     if (input.prioritize2x2Crops !== undefined && input.prioritize2x2Crops !== null) {
         cfg.prioritize2x2Crops = input.prioritize2x2Crops === true;
     }
@@ -630,16 +792,6 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
     // 偷菜延迟
     if (input.stealDelaySeconds !== undefined && input.stealDelaySeconds !== null) {
         cfg.stealDelaySeconds = Math.max(0, Math.min(60, Number.parseInt(input.stealDelaySeconds, 10) || 1));
-    }
-
-    // 种植顺序随机
-    if (input.plantOrderRandom !== undefined && input.plantOrderRandom !== null) {
-        cfg.plantOrderRandom = !!input.plantOrderRandom;
-    }
-
-    // 种植延迟
-    if (input.plantDelaySeconds !== undefined && input.plantDelaySeconds !== null) {
-        cfg.plantDelaySeconds = Math.max(0, Math.min(60, Number(input.plantDelaySeconds) || 2));
     }
 
     // 肥料购买配置
@@ -692,13 +844,10 @@ function pickDefaultPlanConfig(raw) {
         automation: { ...cfg.automation },
         autoCodeRefresh: { ...cfg.autoCodeRefresh },
         plantingStrategy: cfg.plantingStrategy,
-        preferredSeedId: cfg.preferredSeedId,
         prioritize2x2Crops: cfg.prioritize2x2Crops === true,
         intervals: { ...cfg.intervals },
         friendQuietHours: { ...cfg.friendQuietHours },
         stealDelaySeconds: cfg.stealDelaySeconds,
-        plantOrderRandom: cfg.plantOrderRandom,
-        plantDelaySeconds: cfg.plantDelaySeconds,
         fertilizerBuyOrganicCount: cfg.fertilizerBuyOrganicCount,
         fertilizerBuyOrganicThresholdHours: cfg.fertilizerBuyOrganicThresholdHours,
         fertilizerBuyNormalCount: cfg.fertilizerBuyNormalCount,
@@ -868,19 +1017,6 @@ function loadGlobalConfig() {
             };
         }
 
-        // 微信配置
-        if (data.globalWxConfig && typeof data.globalWxConfig === 'object') {
-            globalConfig.globalWxConfig = {
-                enabled: data.globalWxConfig.enabled !== false,
-                apiBase: String(data.globalWxConfig.apiBase || 'https://code.z74d.top/api').trim(),
-                apiKey: String(data.globalWxConfig.apiKey || '').trim(),
-                proxyApiUrl: String(data.globalWxConfig.proxyApiUrl || 'https://code.z74d.top/api').trim(),
-                appId: String(data.globalWxConfig.appId || 'wx5306c5978fdb76e4').trim(),
-                autoAddAccount: data.globalWxConfig.autoAddAccount !== false,
-                userIsolation: data.globalWxConfig.userIsolation !== false
-            };
-        }
-
         // Code/GID 抓取服务配置
         if (data.captureConfig && typeof data.captureConfig === 'object') {
             globalConfig.captureConfig = {
@@ -996,7 +1132,7 @@ function sanitizeGlobalConfigBeforeSave() {
     globalConfig.userDeviceProtocols = cleanProtocols;
 }
 
-function saveGlobalConfig() {
+function saveGlobalConfig(options = {}) {
     ensureDataDir();
     try {
         const oldContent = readTextFile(STORE_FILE, '');
@@ -1008,6 +1144,7 @@ function saveGlobalConfig() {
         }
     } catch (err) {
         console.error('保存配置失败:', err.message);
+        if (options.throwOnError === true) throw err;
     }
 }
 
@@ -1030,7 +1167,7 @@ function getAutomation(accountId) {
     const auto = { ...getAccountConfigSnapshot(accountId).automation };
     auto.fertilizer_land_types = normalizeFertilizerLandTypes(auto.fertilizer_land_types);
     auto.qixi_friend_priority = normalizeKnownFriendGids(auto.qixi_friend_priority, []);
-    return auto;
+    return disableHiddenActivityAutomation(auto);
 }
 
 function getConfigSnapshot(accountId) {
@@ -1041,7 +1178,6 @@ function getConfigSnapshot(accountId) {
         automation: auto,
         autoCodeRefresh: { ...cfg.autoCodeRefresh },
         plantingStrategy: cfg.plantingStrategy,
-        preferredSeedId: cfg.preferredSeedId,
         prioritize2x2Crops: cfg.prioritize2x2Crops === true,
         friendBadRetryDate: String(cfg.friendBadRetryDate || ''),
         intervals: { ...cfg.intervals },
@@ -1050,8 +1186,6 @@ function getConfigSnapshot(accountId) {
         friendBlacklist: [...cfg.friendBlacklist || []],
         plantBlacklist: [...cfg.plantBlacklist || []],
         stealDelaySeconds: Math.max(0, Math.min(60, Number(cfg.stealDelaySeconds) || 1)),
-        plantOrderRandom: !!cfg.plantOrderRandom,
-        plantDelaySeconds: Math.max(0, Math.min(60, Number(cfg.plantDelaySeconds) || 2)),
         fertilizerBuyOrganicCount: Math.max(0, Math.min(999, Number(cfg.fertilizerBuyOrganicCount) || 1)),
         fertilizerBuyOrganicThresholdHours: Math.max(0, Math.min(720, Number(cfg.fertilizerBuyOrganicThresholdHours) || 10)),
         fertilizerBuyNormalCount: Math.max(0, Math.min(999, Number(cfg.fertilizerBuyNormalCount) || 1)),
@@ -1059,6 +1193,8 @@ function getConfigSnapshot(accountId) {
         fertilizerBuyCheckIntervalMinutes: Math.max(1, Math.min(1440, Number(cfg.fertilizerBuyCheckIntervalMinutes) || 60)),
         goldenBugKeepCount: Math.max(0, Math.min(9999, Number(cfg.goldenBugKeepCount) || 0)),
         goldenBugRoundLimit: Math.max(1, Math.min(100, Number(cfg.goldenBugRoundLimit) || 24)),
+        bagSeedPriority: [...cfg.bagSeedPriority || []],
+        bagSeedKnownIds: [...cfg.bagSeedKnownIds || []],
         ui
     };
 }
@@ -1086,6 +1222,7 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
             }
         }
     }
+    disableHiddenActivityAutomation(cfg.automation);
 
     if (patch.autoCodeRefresh && typeof patch.autoCodeRefresh === 'object') {
         cfg.autoCodeRefresh = {
@@ -1096,9 +1233,6 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
 
     if (patch.plantingStrategy && ALLOWED_PLANTING_STRATEGIES.includes(patch.plantingStrategy)) {
         cfg.plantingStrategy = patch.plantingStrategy;
-    }
-    if (patch.preferredSeedId !== undefined && patch.preferredSeedId !== null) {
-        cfg.preferredSeedId = Math.max(0, Number.parseInt(patch.preferredSeedId, 10) || 0);
     }
     if (patch.prioritize2x2Crops !== undefined && patch.prioritize2x2Crops !== null) {
         cfg.prioritize2x2Crops = patch.prioritize2x2Crops === true;
@@ -1136,12 +1270,6 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
     if (patch.stealDelaySeconds !== undefined && patch.stealDelaySeconds !== null) {
         cfg.stealDelaySeconds = Math.max(0, Math.min(60, Number(patch.stealDelaySeconds) || 1));
     }
-    if (patch.plantOrderRandom !== undefined && patch.plantOrderRandom !== null) {
-        cfg.plantOrderRandom = !!patch.plantOrderRandom;
-    }
-    if (patch.plantDelaySeconds !== undefined && patch.plantDelaySeconds !== null) {
-        cfg.plantDelaySeconds = Math.max(0, Math.min(60, Number(patch.plantDelaySeconds) || 2));
-    }
     if (patch.fertilizerBuyOrganicCount !== undefined && patch.fertilizerBuyOrganicCount !== null) {
         cfg.fertilizerBuyOrganicCount = Math.max(0, Math.min(999, Number(patch.fertilizerBuyOrganicCount) || 1));
     }
@@ -1174,6 +1302,9 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
     }
     if (patch.bagSeedFallbackStrategy !== undefined && patch.bagSeedFallbackStrategy !== null) {
         cfg.bagSeedFallbackStrategy = normalizeBagSeedFallbackStrategy(patch.bagSeedFallbackStrategy);
+    }
+    if (patch.capitalMode && typeof patch.capitalMode === 'object') {
+        cfg.capitalMode = normalizeCapitalMode(patch.capitalMode, cfg.capitalMode);
     }
     if (patch.ui && typeof patch.ui === 'object') {
         const theme = String(patch.ui.theme || '').toLowerCase();
@@ -1214,12 +1345,16 @@ function setAutoCodeRefresh(accountId, config) {
     return result.autoCodeRefresh;
 }
 
-function isAutomationOn(key, accountId) {
-    return !!getAccountConfigSnapshot(accountId).automation[key];
+function getCapitalMode(accountId) {
+    return normalizeCapitalMode(getAccountConfigSnapshot(accountId).capitalMode);
 }
 
-function getPreferredSeed(accountId) {
-    return getAccountConfigSnapshot(accountId).preferredSeedId;
+function setCapitalMode(accountId, config) {
+    return applyConfigSnapshot({ capitalMode: config || {} }, { accountId }).capitalMode;
+}
+
+function isAutomationOn(key, accountId) {
+    return !!getAccountConfigSnapshot(accountId).automation[key];
 }
 
 function getPlantingStrategy(accountId) {
@@ -1293,14 +1428,6 @@ function addFriendToBlacklist(accountId, gid) {
 
 function getStealDelaySeconds(accountId) {
     return Math.max(0, Math.min(60, Number(getAccountConfigSnapshot(accountId).stealDelaySeconds) || 1));
-}
-
-function getPlantOrderRandom(accountId) {
-    return !!getAccountConfigSnapshot(accountId).plantOrderRandom;
-}
-
-function getPlantDelaySeconds(accountId) {
-    return Math.max(0, Math.min(60, Number(getAccountConfigSnapshot(accountId).plantDelaySeconds) || 2));
 }
 
 function getAutoAcceptFriendMinLevel(accountId) {
@@ -1540,13 +1667,21 @@ function getUserDefaultAccountPlan(username) {
 function setUserDefaultAccountPlan(username, rawConfig, options = {}) {
     const key = String(username || '').trim();
     if (!key) throw new Error('Missing username');
+    const previousPlan = globalConfig.userDefaultAccountPlans[key];
     const plan = {
         enabled: options.enabled !== false,
         config: pickDefaultPlanConfig(rawConfig),
         updatedAt: Date.now()
     };
     globalConfig.userDefaultAccountPlans[key] = plan;
-    saveGlobalConfig();
+    try {
+        // 默认方案的接口会向用户明确报告保存结果，因此必须在真正落盘后才能返回成功。
+        saveGlobalConfig({ throwOnError: true });
+    } catch (error) {
+        if (previousPlan === undefined) delete globalConfig.userDefaultAccountPlans[key];
+        else globalConfig.userDefaultAccountPlans[key] = previousPlan;
+        throw error;
+    }
     return { exists: true, ...normalizeUserDefaultPlan(plan) };
 }
 
@@ -1664,39 +1799,6 @@ function setLoginLinks(config) {
     };
     saveGlobalConfig();
     return { ...globalConfig.loginLinks };
-}
-
-// ==================== 微信配置 ====================
-
-const DEFAULT_WX_CONFIG = {
-    enabled: true,
-    apiBase: 'https://code.z74d.top/api',
-    apiKey: '',
-    proxyApiUrl: 'https://code.z74d.top/api',
-    appId: 'wx5306c5978fdb76e4',
-    autoAddAccount: true,
-    userIsolation: true
-};
-
-function getGlobalWxConfig() {
-    return globalConfig.globalWxConfig
-        ? { ...globalConfig.globalWxConfig }
-        : { ...DEFAULT_WX_CONFIG };
-}
-
-function setGlobalWxConfig(config) {
-    if (!config || typeof config !== 'object') return null;
-    globalConfig.globalWxConfig = {
-        enabled: config.enabled !== false,
-        apiBase: String(config.apiBase || DEFAULT_WX_CONFIG.apiBase).trim(),
-        apiKey: String(config.apiKey || '').trim(),
-        proxyApiUrl: String(config.proxyApiUrl || DEFAULT_WX_CONFIG.proxyApiUrl).trim(),
-        appId: String(config.appId || DEFAULT_WX_CONFIG.appId).trim(),
-        autoAddAccount: config.autoAddAccount !== false,
-        userIsolation: config.userIsolation !== false
-    };
-    saveGlobalConfig();
-    return { ...globalConfig.globalWxConfig };
 }
 
 // ==================== Code/GID 抓取服务配置 ====================
@@ -1859,12 +1961,14 @@ module.exports = {
     setAutomation,
     getAutoCodeRefresh,
     setAutoCodeRefresh,
+    getCapitalMode,
+    setCapitalMode,
     isAutomationOn,
-    getPreferredSeed,
     getPlantingStrategy,
     getPrioritize2x2Crops,
     getFriendBadRetryDate,
     getBagSeedPriority,
+    syncBagSeedPriority,
     getBagSeedFallbackStrategy,
     getIntervals,
     getFriendQuietHours,
@@ -1874,8 +1978,6 @@ module.exports = {
     setFriendBlacklist,
     addFriendToBlacklist,
     getStealDelaySeconds,
-    getPlantOrderRandom,
-    getPlantDelaySeconds,
     getAutoAcceptFriendMinLevel,
     getFertilizerBuyOrganicCount,
     getFertilizerBuyOrganicThresholdHours,
@@ -1916,9 +2018,6 @@ module.exports = {
     getLoginLinks,
     setLoginLinks,
     DEFAULT_LOGIN_LINKS,
-    getGlobalWxConfig,
-    setGlobalWxConfig,
-    DEFAULT_WX_CONFIG,
     getCaptureConfig,
     setCaptureConfig,
     DEFAULT_CAPTURE_CONFIG,
@@ -1931,6 +2030,7 @@ module.exports = {
     deleteUserDeviceProtocol,
     readFriendDogInfoCache,
     writeFriendDogInfoCache,
+    updateFriendDogInfoCache,
     readFriendListCache,
     writeFriendListCache,
     getFriendListCacheFile,
@@ -1938,4 +2038,16 @@ module.exports = {
     getAntiResaleConfig,
     setAntiResaleConfig,
     DEFAULT_ANTI_RESALE_CONFIG
+};
+
+module.exports._test = {
+    ...(module.exports._test || {}),
+    normalizeCapitalMode,
+    disableHiddenActivityAutomation,
+    HIDDEN_ACTIVITY_AUTOMATION_KEYS,
+    RAIN_POEM_AUTOMATION_KEYS,
+    CHARITY_FLOWER_AUTOMATION_KEYS,
+    getInactiveActivityAutomationKeys,
+    getLocalDateKey,
+    normalizeFriendDogInfoCache
 };

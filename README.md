@@ -6,7 +6,7 @@
 
 🌱 一位会自己浇水、除草、收菜的 QQ 农场小帮手
 
-[能做什么](#-能做什么) · [微信扫码](#-微信扫码登录) · [开始种田](#-开始种田) · [Docker 部署](#-docker-部署) · [更新记录](docs/CHANGELOG.md) · [使用文档](#-使用文档) · [赛博义父](#-赛博义父)
+[能做什么](#-能做什么) · [微信扫码](#-微信扫码登录) · [开始种田](#-开始种田) · [Docker 部署](#-docker-部署) · [更新记录](docs/CHANGELOG.md) · [使用文档](#-使用文档) · [支持项目](#-支持项目)
 
 </div>
 
@@ -25,26 +25,9 @@
 
 > 🌱 想看看这片农场是怎么一步步长大的吗？前往[农场成长记录](docs/CHANGELOG.md)查看最新更新和完整历史。
 
-> 🐛 问题反馈？可加QQ群：1105296443。或点击链接加入：https://qm.qq.com/q/L3E9Yp03Ys
-
 ## <th><img src="https://cdn.simpleicons.org/wechat/07C160" height="20" alt="微信" /></th> 微信扫码登录
 
 微信玩家可直接在“添加账号 → 微信扫码”中完成登录。扫码链路已内置到 Bot 进程，通过应用宝 OAuth 获取微信会话，并使用内置 MMTLS 协议换取农场短时效 Code，无需额外部署 YYB-GO、第三方登录 API 或代理容器。
-
-扫码添加成功后会：
-
-- 保存 `loginBuffer` 及滚动刷新凭证，并避免将敏感凭证返回浏览器。
-- 默认启动账号，并自动开启“自动刷新获取 Code”，默认间隔为 60 分钟。
-- 每 30 分钟主动滚动保活微信凭证；手动启动、程序启动及定时刷新前都会获取新 Code。
-- 微信账号的 WebSocket 返回 400 时，由主进程调用同一套内置应用宝协议刷新凭据和 Code，成功后自动重启账号；同账号的并发刷新会合并为一次，避免滚动 Token 被旧值覆盖。
-- Worker 每 30 秒响应一次主进程存活探测；超过 90 秒无响应会自动重启，一小时内已自动重启 3 次仍未恢复则停止账号，等待人工检查。
-- 自动恢复按账号限制为每日最多 8 次；连续刷新失败 3 次后熔断，避免网络异常、凭据失效或手机端占线时无限重登。
-- 管理接口禁止直接提交 `loginBuffer`、Refresh Token 和 Access Token；更换 `wxid` 会清除旧凭据，必须通过当前面板用户的有效扫码会话重新写入。
-- 掉线后按账号的自动刷新间隔延迟重登，避免旧 Code 反复重连。
-
-旧版外部 API 配置仍作为缺少内置凭证的兼容回退；新扫码账号始终优先使用进程内协议。正常情况下不需要代理池。如确需使用代理，应优先采用账号固定出口，避免随机切换 IP 导致微信会话环境变化。
-
-> 本轮自愈只处理登录凭据刷新、Worker 无响应和重登熔断；尚未引入业务请求合并、心跳请求容量预留或资源包完整性校验。
 
 ## 🧺 小推车里装了什么
 
@@ -121,8 +104,11 @@ docker compose up -d --build
 | 用途 | 端口或目录 |
 | --- | --- |
 | Web 管理面板 | `3007` |
-| 抓包代理端口池 | `18000-18999` |
+| 抓包代理端口 | `18000` |
 | 持久化数据 | 仓库上级目录的 `data/` |
+
+源码运行、Docker 和二进制发布版的抓包服务均默认关闭；只有在
+“系统配置 → Code/GID 抓取服务”中开启后才会启动，并且只使用代理端口 `18000`。
 
 如需指定抓包服务对外地址，可在仓库根目录创建 `.env`：
 
@@ -151,7 +137,7 @@ iPhone及安卓用户也可使用内置抓包登录服务自动获取登录 Code
 
 抓包基本流程：
 
-1. 在“系统设置”中开启抓包登录。
+1. 在“系统配置 → Code/GID 抓取服务”中开启抓包登录。
 2. 进入“添加账号 → 抓包登录”，点击“开始抓取”。
 3. 按页面提示安装并信任 CA 证书，设置手机 Wi-Fi 代理。
 4. 完全关闭并重新打开 QQ 农场，等待面板获取 Code。
@@ -204,37 +190,17 @@ qq-farm-bot/
 - 日志、缓存和临时文件
 - `node_modules/` 与构建产物
 
-## ☕ 赛博义父
+## 💖 支持项目
 
-本项目会一直保持免费开源。如果这位农场小帮手替你省下了一点时间，欢迎赛博义父打赏作者。赞助完全自愿，不附带功能承诺、优先服务或专属权益；点一颗 Star、提一次建议，也都是很棒的鼓励。
-
-<table align="center" style="border-collapse: collapse; border: none;">
-  <tr>
-    <!-- 左侧：微信 -->
-    <th style="padding: 10px 20px 5px 20px; border: none; text-align: center; font-size: 16px; font-weight: bold; color: #333;">
-      <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <img src="https://cdn.simpleicons.org/wechat/07C160" height="28" alt="微信" />
-        <span>微信</span>
-      </div>
-    </th>
-    <!-- 右侧：支付宝 -->
-    <th style="padding: 10px 20px 5px 20px; border: none; text-align: center; font-size: 16px; font-weight: bold; color: #333;">
-      <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <img src="https://cdn.simpleicons.org/alipay/1677FF" height="28" alt="支付宝" />
-        <span>支付宝</span>
-      </div>
-    </th>
-  </tr>
-  <tr>
-    <td style="padding: 5px 15px 15px 15px; border: none; text-align: center;">
-      <img src="docs/images/sponsor-wechat.png" width="220" alt="微信收款码" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-    </td>
-    <td style="padding: 5px 15px 15px 15px; border: none; text-align: center;">
-      <img src="docs/images/sponsor-alipay.png" width="220" alt="支付宝收款码" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-    </td>
-  </tr>
-</table>
+如果这个项目对你有帮助，可以通过[爱发电支持 xxxscarlxrd404](https://afdian.com/a/xxxscarlxrd404)。支持完全自愿，不影响项目功能与正常使用。
 
 ## 📌 免责声明
+本项目仅供学习与研究用途。使用本工具可能违反游戏服务条款，由此产生的一切后果由使用者自行承担。
 
-本项目仅作为研究型项目使用，不对因使用本项目造成的账号限制、数据损失或其他后果承担责任。请勿将本项目用于商业运营、破坏游戏公平性或其他违法违规用途。
+**盈利声明**
+-  本项目为开源学习项目，任何形式的付费倒卖、源码售卖、付费代部署、收费授权、付费二开等行为均与作者无关。
+- 作者自身以及从未授权任何第三方以任何形式向他人收费或牟利。若你通过付费渠道获取本项目，请知悉该费用与作者无关。
+- 因倒卖、二次转售造成的损失、账号风险或纠纷，均与作者无关，请自行联系售卖者。
+
+**风险说明**：
+- 部署、使用本项目产生的任何封号、数据丢失、法律或其他后果，均由使用者自行承担，作者不作任何担保。

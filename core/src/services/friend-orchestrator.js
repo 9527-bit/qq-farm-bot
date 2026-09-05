@@ -20,6 +20,9 @@ const {
   normalizeFriendGids,
   acceptFriends,
   getApplications,
+  enterFriendFarm,
+  leaveFriendFarm,
+  handleFriendEnterError,
   clearAllInvalidKnownFriendGidCooldown,
 } = require('./friend-api');
 const {
@@ -35,10 +38,21 @@ const {
   visitFriendForSteal,
   visitFriendForHelp,
 } = require('./friend-visit');
+const { buildFriendVisitPlan } = require('./friend-visit-plan');
+const { selectFriendVisitBatch } = require('./friend-visit-pacing');
+const {
+  observeFriendSummary,
+  observeFriendLands,
+  claimDueFriends,
+  isCalibrationDue,
+  markCalibrated,
+  selectCalibrationFriends,
+  getNextStealDelayMs,
+  resetFriendMaturityPlans,
+} = require('./friend-maturity-plan');
 const { sellAllFruits } = require('./warehouse');
 const {
   getFriendsList,
-  fetchFriendsDogInfo,
   setFriendsListCache,
 } = require('./friend-land-analyzer');
 
@@ -51,6 +65,7 @@ let badExecutedOnStartup = false;
 let consecutiveBadFailureCount = 0;
 let dogInfoBootstrapAttempted = false;
 let dogInfoBootstrapReadyAt = 0;
+let onFriendLandsObserved = null;
 
 const BAD_FAILURE_LIMIT = 3;
 
@@ -85,16 +100,11 @@ async function bootstrapFriendDogInfoCacheIfNeeded() {
   if (dogInfoCache && Object.keys(dogInfoCache).length > 0) return;
 
   dogInfoBootstrapAttempted = true;
-  try {
-    log('好友', '护主犬缓存为空，上号稳定后自动获取一次好友狗信息', {
-      module: 'friend',
-      event: '自动获取好友狗信息',
-      source: 'friend_loop_bootstrap',
-    });
-    await fetchFriendsDogInfo();
-  } catch (err) {
-    logWarn('好友', `自动获取好友狗信息失败: ${err.message}`);
-  }
+  log('好友', '护主犬缓存将随好友成熟计划和实际访问渐进补齐', {
+    module: 'friend',
+    event: '好友信息渐进同步',
+    source: 'friend_loop_bootstrap',
+  });
 }
 
 function syncAutomationPatchToMaster(patch) {
@@ -108,40 +118,12 @@ function resetBadFailureCount() {
   consecutiveBadFailureCount = 0;
 }
 
-function getLocalDateKey(offsetDays = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + offsetDays);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function pauseFriendBadUntilTomorrow(reason) {
-  const accountId = process.env.FARM_ACCOUNT_ID || '';
-  const retryDate = getLocalDateKey(1);
-  applyConfigSnapshot(
-    { friendBadRetryDate: retryDate },
-    { accountId }
-  );
-  syncAutomationPatchToMaster({ friendBadRetryDate: retryDate });
-  resetBadFailureCount();
-  log('好友', `捣乱连续失败 ${BAD_FAILURE_LIMIT} 次，已暂停至 ${retryDate} 再尝试。最后错误: ${reason || '未知'}`, {
-    module: 'friend',
-    event: '自动暂停捣乱',
-    result: 'paused',
-    failureCount: BAD_FAILURE_LIMIT,
-    retryDate,
-    reason,
-  });
-}
-
 function isFriendBadPaused() {
   const accountId = process.env.FARM_ACCOUNT_ID || '';
   const retryDate = getFriendBadRetryDate(accountId);
   if (!retryDate) return false;
-  if (getLocalDateKey() < retryDate) return true;
-
+  // Generic target failures no longer pause all bad operations. Clear a pause
+  // persisted by older versions so the corrected limit logic takes effect now.
   applyConfigSnapshot({ friendBadRetryDate: '' }, { accountId });
   syncAutomationPatchToMaster({ friendBadRetryDate: '' });
   resetBadFailureCount();
@@ -160,11 +142,9 @@ function recordBadFailure(reason, context = {}) {
     ...context,
   });
 
-  if (consecutiveBadFailureCount >= BAD_FAILURE_LIMIT) {
-    pauseFriendBadUntilTomorrow(reason);
-    return true;
-  }
-
+  // A target-specific failure does not prove the shared daily limit is exhausted.
+  // Keep scanning other friends; operation_limits is the authoritative stop signal.
+  if (consecutiveBadFailureCount >= BAD_FAILURE_LIMIT) resetBadFailureCount();
   return false;
 }
 
@@ -246,6 +226,7 @@ async function checkFriends(options = {}) {
   try {
     const allFriendsReply = await getAllFriends();
     const rawFriends = extractReplyFriends(allFriendsReply);
+    for (const friend of rawFriends) observeFriendSummary(friend);
 
     if (rawFriends.length === 0) {
       log('好友', '没有好友', {
@@ -366,9 +347,31 @@ async function checkFriends(options = {}) {
     // ---- Execute ----
     const tally = { steal: 0, water: 0, weed: 0, bug: 0, putBug: 0, putWeed: 0 };
 
-    // Steal
-    if (stealTargets.length > 0 && doSteal) {
-      for (const target of stealTargets) {
+    const combinedVisitPlanRaw = doSteal && doHelp && !helpExpReached
+      ? buildFriendVisitPlan({ stealTargets, helpTargets })
+      : [];
+    const combinedVisitPlan = selectFriendVisitBatch(combinedVisitPlanRaw, {
+      accountId,
+      mode: 'combined',
+    });
+
+    // A combined visit lets visitFriend perform all enabled operations while the
+    // friend farm is open, so a friend present in both lists is entered once.
+    if (combinedVisitPlan.length > 0) {
+      for (const target of combinedVisitPlan) {
+        try {
+          await visitFriend(target, tally, userState.gid, userState.accountId);
+        } catch {
+          // Skip individual failures
+        }
+        await randomDelay(500, 1200);
+      }
+    }
+
+    // Steal-only runs retain their narrower behaviour.
+    if (combinedVisitPlan.length === 0 && stealTargets.length > 0 && doSteal) {
+      const visitBatch = selectFriendVisitBatch(stealTargets, { accountId, mode: 'steal' });
+      for (const target of visitBatch) {
         if (!canOperate(0x2714)) break; // 10004 = steal
         try {
           await visitFriendForSteal(target, tally, userState.gid, userState.accountId);
@@ -389,8 +392,9 @@ async function checkFriends(options = {}) {
     }
 
     // Help
-    if (helpTargets.length > 0 && doHelp) {
-      for (const target of helpTargets) {
+    if (combinedVisitPlan.length === 0 && helpTargets.length > 0 && doHelp) {
+      const visitBatch = selectFriendVisitBatch(helpTargets, { accountId, mode: 'help' });
+      for (const target of visitBatch) {
         try {
           await visitFriendForHelp(
             target, tally, userState.gid, userState.accountId,
@@ -439,12 +443,11 @@ async function checkFriends(options = {}) {
 
       badCandidates.sort((a, b) => b.level - a.level);
 
-      const topCount = Math.min(20, badCandidates.length);
-      const topTargets = badCandidates.slice(0, topCount);
+      const topTargets = selectFriendVisitBatch(badCandidates, { accountId, mode: 'bad' });
 
       if (topTargets.length > 0) {
         log('好友',
-          `找到 ${badCandidates.length} 个可捣乱的好友，处理等级最高的前${topTargets.length}个`,
+          `找到 ${badCandidates.length} 个可捣乱的好友，按等级从高到低处理`,
           {
             module: 'friend',
             event: '放虫放草好友列表',
@@ -513,6 +516,85 @@ async function checkFriends(options = {}) {
   }
 }
 
+async function runScheduledStealCheck() {
+  const accountId = process.env.FARM_ACCOUNT_ID || '';
+  const userState = getUserState();
+  if (!isAutomationOn('friend') || !isAutomationOn('friend_steal') || !isConnected()) {
+    return getNextStealDelayMs();
+  }
+  if (isCheckingFriends || !userState.gid || inFriendQuietHours()) {
+    return 60 * 1000;
+  }
+
+  isCheckingFriends = true;
+  const tally = { steal: 0, water: 0, weed: 0, bug: 0, putBug: 0, putWeed: 0 };
+  try {
+    const targets = new Map();
+    for (const target of claimDueFriends({ limit: 12 })) targets.set(toNum(target.gid), target);
+
+    let rawFriends = [];
+    if (isCalibrationDue()) {
+      const allFriendsReply = await getAllFriends();
+      rawFriends = extractReplyFriends(allFriendsReply);
+      const blacklist = new Set(getFriendBlacklist(accountId));
+      for (const friend of rawFriends) {
+        const gid = toNum(friend && friend.gid);
+        if (!gid || gid === userState.gid || blacklist.has(gid)) continue;
+        observeFriendSummary(friend);
+        if (toNum(friend.plant && friend.plant.steal_plant_num) > 0) {
+          targets.set(gid, {
+            gid,
+            name: friend.remark || friend.name || `GID:${gid}`,
+          });
+        }
+      }
+      markCalibrated();
+    }
+
+    const visitTargets = [...targets.values()].slice(0, 12);
+    for (const target of visitTargets) {
+      if (!canOperate(0x2714)) break;
+      try {
+        await visitFriendForSteal(target, tally, userState.gid, accountId);
+      } catch (err) {
+        if (!isTransientNetworkError(err)) {
+          logWarn('好友', `定时偷菜检查失败: ${target.name || target.gid}: ${err.message}`);
+        }
+      }
+      await randomDelay(800, 1600);
+    }
+
+    if (rawFriends.length > 0) {
+      const visited = new Set(visitTargets.map(item => toNum(item.gid)));
+      const calibrationTargets = selectCalibrationFriends(
+        rawFriends.filter(friend => !visited.has(toNum(friend && friend.gid))),
+        { limit: 3 }
+      );
+      for (const friend of calibrationTargets) {
+        const gid = toNum(friend && friend.gid);
+        if (!gid || gid === userState.gid) continue;
+        try {
+          await enterFriendFarm(gid);
+          await leaveFriendFarm(gid);
+        } catch (err) {
+          handleFriendEnterError(gid, friend.name || `GID:${gid}`, err);
+        }
+        await randomDelay(800, 1600);
+      }
+    }
+
+    if (tally.steal > 0) {
+      try { await sellAllFruits(); } catch { }
+    }
+  } catch (err) {
+    if (!isTransientNetworkError(err)) logWarn('好友', `成熟计划校准失败: ${err.message}`);
+    markCalibrated(Date.now(), 60 * 1000);
+  } finally {
+    isCheckingFriends = false;
+  }
+  return getNextStealDelayMs();
+}
+
 // ===== Friend check loop =====
 
 async function friendCheckLoop() {
@@ -542,6 +624,16 @@ function startFriendCheckLoop(opts = {}) {
 
   // Listen for friend application events
   networkEvents.on('friendApplicationReceived', onFriendApplicationReceived);
+  if (onFriendLandsObserved) networkEvents.off('friendLandsObserved', onFriendLandsObserved);
+  onFriendLandsObserved = payload => {
+    const gid = toNum(payload && payload.gid);
+    if (!gid) return;
+    observeFriendLands(gid, payload.lands || [], {
+      name: payload.name || '',
+      source: payload.source || 'lands',
+    });
+  };
+  networkEvents.on('friendLandsObserved', onFriendLandsObserved);
 
   if (!externalSchedulerMode) {
     // Start after a 2-minute delay
@@ -569,6 +661,11 @@ function stopFriendCheckLoop() {
   dogInfoBootstrapReadyAt = 0;
   clearAllInvalidKnownFriendGidCooldown();
   networkEvents.off('friendApplicationReceived', onFriendApplicationReceived);
+  if (onFriendLandsObserved) {
+    networkEvents.off('friendLandsObserved', onFriendLandsObserved);
+    onFriendLandsObserved = null;
+  }
+  resetFriendMaturityPlans();
   friendScheduler.clearAll();
 }
 
@@ -584,6 +681,8 @@ function refreshFriendCheckLoop(delayMs = 0) {
 // ===== Friend application handling =====
 
 function onFriendApplicationReceived(applications) {
+  if (!isAutomationOn('friend_auto_accept') || !isAutomationOn('friend') || !isConnected()) return;
+
   const names = applications
     .map(app => app.name || `GID:${toNum(app.gid)}`)
     .join(', ');
@@ -617,6 +716,8 @@ function onFriendApplicationReceived(applications) {
 
 async function checkAndAcceptApplications() {
   try {
+    if (!isAutomationOn('friend_auto_accept') || !isAutomationOn('friend') || !isConnected()) return;
+
     const reply = await getApplications();
     const apps = reply.applications || [];
     if (apps.length === 0) return;
@@ -783,7 +884,7 @@ async function runBadOnceOnStartup(force = false) {
 
     badCandidates.sort((a, b) => b.level - a.level);
 
-    const topCount = Math.min(20, badCandidates.length);
+    const topCount = badCandidates.length;
     const topTargets = badCandidates.slice(0, topCount);
 
     log('好友',
@@ -926,6 +1027,7 @@ async function syncFriendsFromGids(gids) {
 // ===== Exports =====
 module.exports = {
   checkFriends,
+  runScheduledStealCheck,
   startFriendCheckLoop,
   stopFriendCheckLoop,
   refreshFriendCheckLoop,

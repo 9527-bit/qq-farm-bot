@@ -17,7 +17,8 @@ const {
   randomDelay,
   sleep,
 } = require('../utils/utils');
-const { getUserState } = require('../utils/network');
+const { getGatewayHealth, getUserState } = require('../utils/network');
+const { runWithRequestPriority } = require('../utils/request-priority');
 const {
   getPlantBlacklist,
   getFriendBlacklist,
@@ -35,7 +36,9 @@ const {
   buildLandMap,
   getDisplayLandContext,
   isOccupiedSlaveLand,
+  getQixiDewStatus,
 } = require('./farm-land-analyzer');
+const { classifyGatewayDefer, planNextSyncPacing } = require('./friend-dog-sync-pacing');
 
 const GOLDEN_BUG_ITEM_ID = 301101;
 const GOLDEN_BUG_SOCIAL_TYPE = 2;
@@ -182,6 +185,9 @@ async function batchGetFriendDogInfo(friends) {
   const friendList = Array.isArray(friends) ? friends : [];
   let noDogCount = 0;
   let blacklistCount = 0;
+  let cleanRounds = 0;
+  let quota = 10;
+  let roundCount = 0;
   const BATCH_LOG_INTERVAL = 30;
   const BATCH_SLEEP_MS = 1000;
   const accountId = process.env.FARM_ACCOUNT_ID || '';
@@ -197,14 +203,19 @@ async function batchGetFriendDogInfo(friends) {
     })
     .filter(e => e.gid > 0);
 
-  log('好友', `batchGetFriendDogInfo 开始: 共 ${entries.length} 个好友`, {
-    module: 'friend',
-    event: 'batchGetFriendDogInfo',
-    step: 'start',
-    count: entries.length,
-  });
-
   for (let i = 0; i < entries.length; i++) {
+    const health = getGatewayHealth();
+    const deferredKind = classifyGatewayDefer(health);
+    if (deferredKind) {
+      return {
+        map: dogMap,
+        failCount: noDogCount,
+        blacklistCount,
+        deferredGids: entries.slice(i).map(entry => entry.gid),
+        deferredKind,
+        retryMs: planNextSyncPacing({ cleanRounds, deferredKind }).retryMs,
+      };
+    }
     const entry = entries[i];
     const gid = entry.gid;
 
@@ -221,30 +232,24 @@ async function batchGetFriendDogInfo(friends) {
       blacklist.add(gid);
     }
     dogMap.set(gid, dogInfo);
+    roundCount++;
 
     if (i < entries.length - 1) {
       await randomDelay(500, 1500);
     }
 
-    // Periodic sleep to avoid rate limiting
-    if ((i + 1) % BATCH_LOG_INTERVAL === 0 && i < entries.length - 1) {
+    if (roundCount >= quota && i < entries.length - 1) {
+      const pacing = planNextSyncPacing({ cleanRounds });
+      cleanRounds = pacing.cleanRounds;
+      quota = pacing.quota;
+      roundCount = 0;
+      await sleep(1000);
+    } else if ((i + 1) % BATCH_LOG_INTERVAL === 0 && i < entries.length - 1) {
       await sleep(BATCH_SLEEP_MS);
     }
   }
 
-  log('好友',
-    `batchGetFriendDogInfo 完成: 成功获取 ${dogMap.size} 个好友的狗信息，无狗 ${noDogCount} 个，黑名单 ${blacklistCount} 个`,
-    {
-      module: 'friend',
-      event: 'batchGetFriendDogInfo',
-      step: 'done',
-      resultCount: dogMap.size,
-      failCount: noDogCount,
-      blacklistCount,
-    }
-  );
-
-  return { map: dogMap, failCount: noDogCount, blacklistCount };
+  return { map: dogMap, failCount: noDogCount, blacklistCount, deferredGids: [], deferredKind: '', retryMs: 0 };
 }
 
 // ===== Friends list =====
@@ -358,7 +363,8 @@ async function fetchFriendsDogInfo() {
     name: f.name || `GID:${toNum(f.gid)}`,
   }));
 
-  const { map: dogMap, failCount, blacklistCount } = await batchGetFriendDogInfo(dogTargets);
+  const syncResult = await runWithRequestPriority('background', () => batchGetFriendDogInfo(dogTargets));
+  const { map: dogMap, failCount, blacklistCount } = syncResult;
 
   const guardDogFriends = {};
   for (const friend of friends) {
@@ -379,25 +385,17 @@ async function fetchFriendsDogInfo() {
   friendsListCache = friends;
 
   // Persist guard dog info to disk cache
-  if (accountId && Object.keys(guardDogFriends).length > 0) {
+  if (accountId && syncResult.deferredGids.length === 0) {
     writeFriendDogInfoCache(accountId, guardDogFriends);
-    log('好友',
-      `已保存 ${Object.keys(guardDogFriends).length} 个护主犬好友信息到本地缓存`,
-      {
-        module: 'friend',
-        event: '保存护主犬好友缓存',
-        count: Object.keys(guardDogFriends).length,
-      }
-    );
   }
 
   const guardDogCount = friends.filter(f => f.dogId === 90021).length;
 
   log('好友',
-    `获取好友狗信息完成: 共 ${friends.length} 个好友，护主犬 ${guardDogCount} 个，无狗 ${failCount} 个，黑名单 ${blacklistCount} 个`,
+    `获取完成：共 ${friends.length} 个好友，护主犬 ${guardDogCount} 个，无狗 ${failCount} 个，黑名单 ${blacklistCount} 个`,
     {
       module: 'friend',
-      event: '获取好友狗信息',
+      event: '狗信息',
       result: 'ok',
       count: friends.length,
       guardDogCount,
@@ -407,11 +405,15 @@ async function fetchFriendsDogInfo() {
   );
 
   return {
-    ok: true,
+    ok: syncResult.deferredGids.length === 0,
+    complete: syncResult.deferredGids.length === 0,
     friends,
     failCount,
     blacklistCount,
     guardDogCount,
+    deferredGids: syncResult.deferredGids,
+    deferredKind: syncResult.deferredKind,
+    retryMs: syncResult.retryMs,
   };
 }
 
@@ -539,6 +541,7 @@ async function getFriendLandsDetail(gid) {
 
       // Mutant effects
       const mutantEffects = getMutantEffectsByIds(mutantConfigIds);
+      const qixiDew = getQixiDewStatus(targetPlant);
 
       detailLands.push({
         id: landId,
@@ -568,6 +571,7 @@ async function getFriendLandsDetail(gid) {
         occupiedLandIds,
         plantSize,
         mutantEffects,
+        qixiDew,
       });
     }
 

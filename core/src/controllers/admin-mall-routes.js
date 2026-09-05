@@ -1,7 +1,8 @@
-const { parseMallPriceValue, parseMallLimitInfo } = require("../services/mall");
+const { getItemById, getItemImageById } = require("../config/gameConfig");
+const { parseMallPriceInfo, parseMallLimitInfo, parseMallItemIds } = require("../services/mall");
   const { toNum } = require("../utils/utils");
 
-const MALL_GOODS_ORDER = [1002, 1003, 1006];
+const FEATURED_MALL_GOODS_ORDER = [1002, 1003, 1006];
 const MALL_GOODS_PRICE_OVERRIDES = {
   1002: 42,
   1003: 34,
@@ -34,6 +35,40 @@ const MALL_GOODS_META = {
     layout: "triangle",
   },
 };
+
+function isActivityMallGoods(discount) {
+  return discount?.is_activity === true || toNum(discount?.end_time) > 0;
+}
+
+function shouldExposeMallGoods(discount) {
+  const id = toNum(discount?.goods_id) || 0;
+  return id > 0 && (FEATURED_MALL_GOODS_ORDER.includes(id) || isActivityMallGoods(discount));
+}
+
+function compareMallGoods(left, right) {
+  if (left.isActivity !== right.isActivity) return left.isActivity ? -1 : 1;
+  if (left.isActivity) return left.sourceOrder - right.sourceOrder;
+  return FEATURED_MALL_GOODS_ORDER.indexOf(left.goodsId)
+    - FEATURED_MALL_GOODS_ORDER.indexOf(right.goodsId);
+}
+
+function getCurrencyMeta(currencyId, status) {
+  const id = toNum(currencyId) || 0;
+  const balances = {
+    1001: status?.status?.gold,
+    1002: status?.status?.coupon,
+    1004: status?.status?.diamond,
+    1005: status?.status?.goldBean,
+  };
+  const rawBalance = balances[id];
+  const balanceKnown = rawBalance !== undefined && rawBalance !== null;
+  const item = getItemById(id);
+  return {
+    currencyName: item?.name || (id > 0 ? `道具 #${id}` : ""),
+    currencyBalance: balanceKnown ? Math.max(0, toNum(rawBalance)) : 0,
+    balanceKnown,
+  };
+}
 
 function getAuthorizedAccountId({
   req,
@@ -80,58 +115,72 @@ function registerAdminMallRoutes({
       }
 
       const userTicket = status?.status?.coupon || 0;
+      const userDiamond = status?.status?.diamond || 0;
       const discounts = await provider.getMallGoods(accountId);
       const goods = [];
 
-      for (const discount of discounts) {
+      for (const [sourceOrder, discount] of discounts.entries()) {
         const id = toNum(discount.goods_id) || 0;
-        if (!MALL_GOODS_ORDER.includes(id)) continue;
+        if (!shouldExposeMallGoods(discount)) continue;
 
-        const meta = MALL_GOODS_META[id];
-        if (!meta) continue;
+        const meta = MALL_GOODS_META[id] || {};
 
         const isFree = discount.is_free === true;
-        const isLimited = discount.is_limited === true;
-        const price =
-          MALL_GOODS_PRICE_OVERRIDES[id] || parseMallPriceValue(discount.price);
+        const limitBytes = discount.limit;
+        const isLimited = !!(limitBytes && (limitBytes.length === undefined || limitBytes.length > 0));
+        const endTime = toNum(discount.end_time) || 0;
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        if (endTime > 0 && nowSeconds > endTime) continue;
+        const priceInfo = parseMallPriceInfo(discount.price);
+        const currencyId = priceInfo.currencyId || (isFree ? 0 : 1002);
+        const currencyMeta = getCurrencyMeta(currencyId, status);
+        const price = MALL_GOODS_PRICE_OVERRIDES[id] || priceInfo.price;
         let limitCount = 0;
         let boughtNum = 0;
-        if (isLimited && discount.limit) {
+        let limitType = 0;
+        if (isLimited) {
           try {
-            const limitInfo = parseMallLimitInfo(discount.limit);
+            const limitInfo = parseMallLimitInfo(limitBytes);
             if (limitInfo) {
               limitCount = limitInfo.limitCount || 0;
               boughtNum = limitInfo.boughtNum || 0;
+              limitType = limitInfo.limitType || 0;
             }
           } catch {}
         }
 
         const isSoldOut = limitCount > 0 && boughtNum >= limitCount;
+        const itemIds = (Array.isArray(discount.item_ids) ? discount.item_ids : [discount.item_ids])
+          .flatMap(parseMallItemIds);
+        const dynamicImages = itemIds.map(getItemImageById).filter(Boolean);
         goods.push({
           id,
           goodsId: id,
-          name: meta.name,
+          name: meta.name || String(discount.name || `活动商品 #${id}`),
           type: toNum(discount.type) || 0,
-          itemIds: [],
+          itemIds,
           price,
+          currencyId,
+          ...currencyMeta,
           isFree,
           isLimited,
           limitCount,
           boughtNum,
+          limitType,
           isSoldOut,
+          isActivity: discount.is_activity === true || endTime > 0,
+          sourceOrder,
+          endTime,
           discount: discount.discount || "",
-          images: meta.images,
-          layout: meta.layout,
-          canBuy: !isSoldOut && (isFree || userTicket >= price),
+          images: meta.images || dynamicImages,
+          layout: meta.layout || "single",
+          canBuy: !isSoldOut && (isFree || !currencyMeta.balanceKnown || currencyMeta.currencyBalance >= price),
         });
       }
 
-      goods.sort(
-        (left, right) =>
-          MALL_GOODS_ORDER.indexOf(left.goodsId) -
-          MALL_GOODS_ORDER.indexOf(right.goodsId),
-      );
-      res.json({ ok: true, data: goods, userTicket });
+      goods.sort(compareMallGoods);
+      for (const item of goods) delete item.sourceOrder;
+      res.json({ ok: true, data: goods, userTicket, userDiamond });
     } catch (error) {
       adminLogger.error("获取道具商城失败", {
         error: error.message,
@@ -165,4 +214,9 @@ function registerAdminMallRoutes({
   });
 }
 
-module.exports = { registerAdminMallRoutes };
+module.exports = {
+  compareMallGoods,
+  isActivityMallGoods,
+  registerAdminMallRoutes,
+  shouldExposeMallGoods,
+};

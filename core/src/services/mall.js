@@ -108,16 +108,17 @@ function bytesToBuffer(value) {
 }
 
 /**
- * 解析商城价格字段（protobuf varint + zigzag 编码）
+ * 解析商城价格字段（corepb.Item: field 1 为货币 ID，field 2 为数量）
  */
-function parseMallPriceValue(raw) {
-  if (raw == null) return 0;
-  if (typeof raw === 'number') return Math.max(0, Math.floor(raw));
+function parseMallPriceInfo(raw) {
+  const empty = { currencyId: 0, price: 0 };
+  if (raw == null) return empty;
+  if (typeof raw === 'number') return { currencyId: 0, price: Math.max(0, Math.floor(raw)) };
 
   const buf = bytesToBuffer(raw);
-  if (!buf || !buf.length) return 0;
+  if (!buf || !buf.length) return empty;
 
-  let pos = 0; let result = 0;
+  let pos = 0; let currencyId = 0; let price = 0;
   while (pos < buf.length) {
     const byte = buf[pos++];
     const fieldNum = byte >> 3;
@@ -130,22 +131,30 @@ function parseMallPriceValue(raw) {
       if ((b & 0x80) === 0) break;
       shift += 7;
     }
-    if (fieldNum === 1) result = value;
+    if (fieldNum === 1) currencyId = value;
+    else if (fieldNum === 2) price = value;
   }
-  return Math.max(0, Math.floor(result || 0));
+  return {
+    currencyId: Math.max(0, Math.floor(currencyId || 0)),
+    price: Math.max(0, Math.floor(price || 0)),
+  };
+}
+
+function parseMallPriceValue(raw) {
+  return parseMallPriceInfo(raw).price;
 }
 
 /**
  * 解析限购信息
  */
 function parseMallLimitInfo(raw) {
-  const empty = { limitCount: 0, boughtNum: 0 };
+  const empty = { limitType: 0, limitCount: 0, boughtNum: 0 };
   if (raw == null) return empty;
 
   const buf = bytesToBuffer(raw);
   if (!buf || !buf.length) return empty;
 
-  let pos = 0; let limitCount = 0; let boughtNum = 0;
+  let pos = 0; let limitType = 0; let limitCount = 0; let boughtNum = 0;
   while (pos < buf.length) {
     const byte = buf[pos++];
     const fieldNum = byte >> 3;
@@ -158,10 +167,12 @@ function parseMallLimitInfo(raw) {
       if ((b & 0x80) === 0) break;
       shift += 7;
     }
-    if (fieldNum === 1) limitCount = value;
+    if (fieldNum === 1) limitType = value;
     else if (fieldNum === 2) boughtNum = value;
+    else if (fieldNum === 3) limitCount = value;
   }
   return {
+    limitType: Math.max(0, limitType),
     limitCount: Math.max(0, limitCount),
     boughtNum: Math.max(0, boughtNum),
   };
@@ -592,6 +603,7 @@ module.exports = {
   getMallGoodsList,
   purchaseMallGoods,
   parseMallPriceValue,
+  parseMallPriceInfo,
   parseMallLimitInfo,
   parseMallItemIds,
 

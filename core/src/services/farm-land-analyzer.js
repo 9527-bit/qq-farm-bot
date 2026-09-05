@@ -427,6 +427,17 @@ function getLandTypeNameByLevel(level) {
   return typeMap[getLandTypeByLevel(level)] || '';
 }
 
+function getQixiDewStatus(plant) {
+  const status = plant && plant.field_40;
+  const rewardValue = toNum(status && status.value_1);
+  const appliedMarker = toNum(status && status.value_2);
+  return {
+    applied: rewardValue > 0 && appliedMarker > 0,
+    rewardValue,
+    appliedMarker
+  };
+}
+
 async function getLandsDetail() {
   try {
     const landsReply = await getAllLands();
@@ -551,6 +562,7 @@ async function getLandsDetail() {
 
       // 变异效果
       const mutantEffects = getMutantEffectsByIds(mutantConfigIds);
+      const qixiDew = getQixiDewStatus(plant);
 
       details.push({
         id: landId, unlocked: true, status,
@@ -562,7 +574,7 @@ async function getLandsDetail() {
         level, maxLevel, landsLevel, landSize, landType, landTypeName,
         couldUnlock, couldUpgrade,
         occupiedByMaster, masterLandId, occupiedLandIds,
-        plantSize, mutantEffects
+        plantSize, mutantEffects, qixiDew
       });
     }
 
@@ -580,5 +592,6 @@ module.exports = {
   isOccupiedSlaveLand,
   analyzeLands,
   resolveRemovableHarvestedLands,
+  getQixiDewStatus,
   getLandsDetail
 };

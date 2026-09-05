@@ -6,6 +6,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import { useWxLoginStore } from '@/stores/wx-login'
+import { parseManualLoginInput } from '@/utils/gateway-url'
 
 const props = defineProps<{
   show: boolean
@@ -132,23 +133,16 @@ const { pause: stopWxCheck, resume: startWxCheck } = useIntervalFn(async () => {
       const codeResult = await wxLoginStore.getFarmCode(result.wxid)
       if (codeResult.success && codeResult.code) {
         const name = wxAccountName.value.trim() || result.nickname || `微信账号${Date.now()}`
-        if (wxLoginStore.config.autoAddAccount) {
-          await addAccount({
-            id: props.editData?.id,
-            name: props.editData ? (props.editData.name || name) : name,
-            code: codeResult.code,
-            platform: 'wx',
-            loginType: 'wx_qr',
-            wxid: result.wxid,
-            avatar: result.avatar,
-            wxSessionId: wxLoginStore.uuid,
-          })
-        }
-        else {
-          form.code = codeResult.code
-          form.platform = 'wx'
-          activeTab.value = 'manual'
-        }
+        await addAccount({
+          id: props.editData?.id,
+          name: props.editData ? (props.editData.name || name) : name,
+          code: codeResult.code,
+          platform: 'wx',
+          loginType: 'wx_qr',
+          wxid: result.wxid,
+          avatar: result.avatar,
+          wxSessionId: wxLoginStore.uuid,
+        })
       }
     }
   }
@@ -182,9 +176,13 @@ async function loadCaptureConfig() {
   try {
     const { data } = await api.get('/api/capture/config')
     captureEnabled.value = data?.ok && data.data?.enabled === true
+    if (!captureEnabled.value && activeTab.value === 'capture')
+      activeTab.value = 'manual'
   }
   catch {
     captureEnabled.value = false
+    if (activeTab.value === 'capture')
+      activeTab.value = 'manual'
   }
 }
 
@@ -338,16 +336,25 @@ async function submitManual() {
     return
   }
 
-  let code = form.code.trim()
-  const match = code.match(CODE_QUERY_RE)
-  if (match && match[1]) {
-    code = decodeURIComponent(match[1])
-    form.code = code
+  const parsedInput = parseManualLoginInput(form.code)
+  let code = parsedInput.code
+  if (!code) {
+    errorMessage.value = '请输入有效 Code 或官方 WebSocket URL'
+    return
   }
+  if (!parsedInput.gatewayUrl) {
+    const match = code.match(CODE_QUERY_RE)
+    if (match && match[1])
+      code = decodeURIComponent(match[1])
+  }
+  form.code = code
+  if (parsedInput.platform)
+    form.platform = parsedInput.platform
 
   let payload: any = {}
   if (props.editData) {
-    const onlyNameChanged = form.name !== props.editData.name
+    const onlyNameChanged = !parsedInput.gatewayUrl
+      && form.name !== props.editData.name
       && form.code === (props.editData.code || '')
       && form.platform === (props.editData.platform || 'qq')
 
@@ -361,6 +368,7 @@ async function submitManual() {
         code,
         platform: form.platform,
         loginType: 'manual',
+        ...(parsedInput.gatewayUrl ? { gatewayUrl: parsedInput.gatewayUrl } : {}),
       }
     }
   }
@@ -370,6 +378,7 @@ async function submitManual() {
       code,
       platform: form.platform,
       loginType: 'manual',
+      ...(parsedInput.gatewayUrl ? { gatewayUrl: parsedInput.gatewayUrl } : {}),
     }
   }
 
@@ -428,6 +437,10 @@ watch(() => props.show, (newVal) => {
 })
 
 watch(activeTab, (tab) => {
+  if (tab === 'capture' && !captureEnabled.value) {
+    activeTab.value = 'manual'
+    return
+  }
   if (tab === 'wx')
     loadWxQRCode()
   if (tab !== 'capture')

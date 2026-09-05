@@ -123,6 +123,26 @@ function registerAdminFarmResourceRoutes({
       sendProviderError(res, error);
     }
   });
+
+  app.get("/api/dog/skill-gifts", async (req, res) => {
+    const accountId = requireAccessibleAccount(req, res, getAccountIdFromRequest, canAccessAccount);
+    if (!accountId) return;
+    try {
+      res.json({ ok: true, data: await provider.getDogSkillGiftStatus(accountId) });
+    } catch (error) {
+      sendProviderError(res, error);
+    }
+  });
+
+  app.post("/api/dog/skill-gifts/claim", async (req, res) => {
+    const accountId = requireAccessibleAccount(req, res, getAccountIdFromRequest, canAccessAccount);
+    if (!accountId) return;
+    try {
+      res.json({ ok: true, data: await provider.claimDogSkillGifts(accountId) });
+    } catch (error) {
+      sendProviderError(res, error);
+    }
+  });
 }
 
 module.exports = { registerAdminFarmResourceRoutes };

@@ -5,7 +5,6 @@ const { CONFIG } = require('../config/config');
 const { getLevelExpProgress } = require('../config/gameConfig');
 const {
     getAutomation,
-    getPreferredSeed,
     getConfigSnapshot,
     applyConfigSnapshot
 } = require('../models/store');
@@ -28,6 +27,7 @@ const {
 } = require('../services/farm');
 const {
     checkFriends,
+    runScheduledStealCheck,
     startFriendCheckLoop,
     stopFriendCheckLoop,
     refreshFriendCheckLoop,
@@ -79,6 +79,7 @@ const {
     statusData
 } = require('../services/status');
 const {
+    initTaskSystem,
     cleanupTaskSystem,
     checkAndClaimTasks,
     getTaskClaimDailyState,
@@ -96,10 +97,14 @@ const {
     stopNetwork,
     getWs,
     getUserState,
+    getGatewayHealth,
     networkEvents
 } = require('../utils/network');
+const { nextBusinessBackoffMs } = require('../utils/gateway-health');
+const { runWithRequestPriority } = require('../utils/request-priority');
 const { loadProto } = require('../utils/proto');
 const { setLogHook, log, toNum } = require('../utils/utils');
+const { resourcePolicy, createResourceMonitor } = require('../runtime/resource-policy');
 
 // 设置环境变量中的账号ID
 if (parentPort && workerData && workerData.accountId && !process.env.FARM_ACCOUNT_ID) {
@@ -199,6 +204,7 @@ let lastStatusHash = '';
 let lastStatusSentAt = 0;
 let onSellGain = null;
 let onFarmHarvested = null;
+let onDogSkillGiftPending = null;
 let harvestSellRunning = false;
 let onWsError = null;
 let onDisconnectHandler = null;
@@ -209,6 +215,24 @@ let friendSyncPaused = false;
 let starActivityClaimRunning = false;
 
 const workerScheduler = createScheduler('worker');
+const resourceMonitor = createResourceMonitor();
+let offlinePollDelayMs = resourcePolicy.offlinePollMinMs;
+let nextPermitId = 1;
+const pendingPermits = new Map();
+
+function acquireTaskPermit() {
+    if (resourcePolicy.globalTaskConcurrency <= 0) return Promise.resolve(null);
+    const token = String(nextPermitId++);
+    return new Promise(resolve => {
+        pendingPermits.set(token, resolve);
+        sendToMaster({ type: 'task_permit_request', token });
+    });
+}
+
+function releaseTaskPermit(token) {
+    if (!token) return;
+    sendToMaster({ type: 'task_permit_release', token });
+}
 
 /** 每日任务是否启用 */
 function isDailyRoutineEnabled() { return true; }
@@ -224,10 +248,13 @@ function getLocalDateKey() {
 
 // ==================== 每日任务 ====================
 
-async function runDailyRoutines(force = false) {
+async function runDailyRoutines(force = false, options = {}) {
     if (!loginReady || friendSyncPaused) return;
     try {
+        const automation = getAutomation() || {};
         await checkAndClaimEmails(force);
+        if (automation.task && !options.skipTask) await checkAndClaimTasks();
+        if (automation.fertilizer_gift) await openFertilizerGiftPacksSilently();
         await performDailyShare(force);
         await performDailyMonthCardGift(force);
         await buyFreeGifts(force);
@@ -248,7 +275,7 @@ function stopDailyRoutineTimer() {
 function startDailyRoutineTimer() {
     stopDailyRoutineTimer();
     lastDailyRunDate = getLocalDateKey();
-    runDailyRoutines(true).catch(() => null);
+    runDailyRoutines(true, { skipTask: true }).catch(() => null);
 
     // 每 60 秒检查一次日期是否变化
     workerScheduler.setIntervalTask('daily_routine_interval', 60000, () => {
@@ -269,27 +296,41 @@ async function runStarActivityAutoClaims() {
 
     const automation = getAutomation() || {};
     const claimPassport = automation.star_passport_claim === true;
+    const claimSolarTerms = automation.star_solar_claim === true;
     const claimRecords = automation.star_record_claim === true;
     const claimQingmeiSeedsEnabled = automation.qingmei_seed_claim === true;
     const brewQingmeiWineEnabled = automation.qingmei_wine_brew === true;
     const useQixiDewEnabled = automation.qixi_dew_use === true;
     const buildQixiBridgeEnabled = automation.qixi_bridge_build === true;
     const giftQixiSachetEnabled = automation.qixi_sachet_gift === true;
+    const buyRainPoemBottleEnabled = automation.rain_poem_bottle_buy === true;
+    const collectRainPoemWeatherEnabled = automation.rain_poem_weather_collect === true;
+    const useRainPoemSummonEnabled = automation.rain_poem_summon_use === true;
+    const useRainPoemPrankEnabled = automation.rain_poem_prank_use === true;
+    const unlockRainPoemResearchEnabled = automation.rain_poem_research_unlock === true;
+    const claimCharityShareEnabled = automation.charity_flower_share_claim === true;
+    const donateCharityLoveEnabled = automation.charity_flower_donate === true;
+    const claimCharityRewardsEnabled = automation.charity_flower_reward_claim === true;
+    const claimCharityPublicFundEnabled = automation.charity_flower_public_fund_claim === true;
     const qixiFriendPriority = Array.isArray(automation.qixi_friend_priority)
         ? automation.qixi_friend_priority.map(Number).filter(gid => gid > 0) : [];
-    if (!claimPassport && !claimRecords && !claimQingmeiSeedsEnabled && !brewQingmeiWineEnabled
-        && !useQixiDewEnabled && !buildQixiBridgeEnabled && !giftQixiSachetEnabled) return;
+    if (!claimPassport && !claimSolarTerms && !claimRecords && !claimQingmeiSeedsEnabled && !brewQingmeiWineEnabled
+        && !useQixiDewEnabled && !buildQixiBridgeEnabled && !giftQixiSachetEnabled
+        && !buyRainPoemBottleEnabled && !collectRainPoemWeatherEnabled && !useRainPoemSummonEnabled && !useRainPoemPrankEnabled
+        && !unlockRainPoemResearchEnabled && !claimCharityShareEnabled && !donateCharityLoveEnabled
+        && !claimCharityRewardsEnabled && !claimCharityPublicFundEnabled) return;
 
     starActivityClaimRunning = true;
     try {
         const {
             getStarActivity,
             claimSeasonPassportRewards,
+            claimSolarTermsReward,
             claimStarRecordRewards,
             claimQingmeiSeeds,
             brewAndSellQingmeiWine
         } = require('../services/activity');
-        const needsStarActivity = claimPassport || claimRecords || claimQingmeiSeedsEnabled || brewQingmeiWineEnabled;
+        const needsStarActivity = claimPassport || claimSolarTerms || claimRecords || claimQingmeiSeedsEnabled || brewQingmeiWineEnabled;
         const activity = needsStarActivity ? await getStarActivity() : {};
         if (claimPassport && Number(activity?.passport?.claimableLevels || 0) > 0) {
             try {
@@ -306,6 +347,31 @@ async function runStarActivityAutoClaims() {
                     event: '千星游记自动领取',
                     result: 'error'
                 });
+            }
+        }
+
+        if (claimSolarTerms && Number(activity?.solarTerms?.claimableCount || 0) > 0) {
+            const terms = Array.isArray(activity?.solarTerms?.terms)
+                ? activity.solarTerms.terms.filter(term => term && term.claimable)
+                : [];
+            for (const term of terms) {
+                try {
+                    const result = await claimSolarTermsReward(Number(term.id) || 0);
+                    log('活动', `自动领取节令小札完成：${  term.title || result?.term?.title || term.id  }`, {
+                        module: 'activity',
+                        event: '节令小札自动领取',
+                        result: 'success',
+                        termId: Number(term.id) || 0,
+                        termTitle: term.title || result?.term?.title || ''
+                    });
+                } catch (err) {
+                    log('活动', `自动领取节令小札失败: ${  err.message}`, {
+                        module: 'activity',
+                        event: '节令小札自动领取',
+                        result: 'error',
+                        termId: Number(term.id) || 0
+                    });
+                }
             }
         }
 
@@ -425,6 +491,150 @@ async function runStarActivityAutoClaims() {
                 log('活动', `自动赠送鹊羽香囊完成：${sent} 个`, { module: 'activity', event: '香囊自动赠送', result: sent ? 'success' : 'none', count: sent });
             }
         }
+
+        if (claimCharityShareEnabled || donateCharityLoveEnabled || claimCharityRewardsEnabled || claimCharityPublicFundEnabled) {
+            const {
+                getCharityFlowerActivity,
+                claimCharityFlowerShareReward,
+                donateCharityFlowerLove,
+                claimCharityFlowerReward,
+                claimCharityFlowerPublicFund
+            } = require('../services/activity');
+            let charity = await getCharityFlowerActivity();
+            if (charity?.active !== false) {
+                if (claimCharityShareEnabled && charity?.share?.claimable) {
+                    await claimCharityFlowerShareReward();
+                    charity = await getCharityFlowerActivity();
+                }
+                if (donateCharityLoveEnabled && charity?.love?.canDonate && Number(charity?.love?.count || 0) > 0) {
+                    await donateCharityFlowerLove();
+                    charity = await getCharityFlowerActivity();
+                }
+                if (claimCharityRewardsEnabled) {
+                    for (const tier of charity?.personalRewards || []) {
+                        if (!tier.reached || tier.claimed) continue;
+                        await claimCharityFlowerReward(tier.needScore);
+                    }
+                    charity = await getCharityFlowerActivity();
+                }
+                if (claimCharityPublicFundEnabled && charity?.publicFund?.claimable && charity?.publicFund?.complianceAgreed) {
+                    await claimCharityFlowerPublicFund();
+                }
+            }
+        }
+
+        if (buyRainPoemBottleEnabled || collectRainPoemWeatherEnabled || useRainPoemSummonEnabled || useRainPoemPrankEnabled || unlockRainPoemResearchEnabled) {
+            const {
+                getRainPoemActivity,
+                buyRainPoemCollectionBottle,
+                collectRainPoemWeather,
+                useRainPoemSummonBottle,
+                unlockRainPoemResearch
+            } = require('../services/activity');
+            let rainPoem = await getRainPoemActivity();
+            if (rainPoem?.active === false) return;
+            const lightningHarvestComplete = rainPoem?.lightningHarvest?.complete === true;
+
+            // 雷电变异作物每日目标未完成时，按服务端天气结束时间精准续接。
+            // 5 分钟活动轮询仍作为断线、重启或定时器丢失后的兜底。
+            workerScheduler.clear('rain_poem_weather_renew');
+            if (useRainPoemSummonEnabled && !lightningHarvestComplete && rainPoem?.weather?.rainstorm && Number(rainPoem?.weather?.endTime || 0) > 0) {
+                const renewDelayMs = Math.max(1000, (Number(rainPoem.weather.endTime) - Math.floor(Date.now() / 1000) + 2) * 1000);
+                workerScheduler.setTimeoutTask('rain_poem_weather_renew', renewDelayMs, () => {
+                    runStarActivityAutoClaims().catch(() => null);
+                });
+            }
+
+            if (buyRainPoemBottleEnabled && rainPoem?.shop?.available && !rainPoem?.shop?.purchasedToday) {
+                try {
+                    const result = await buyRainPoemCollectionBottle();
+                    rainPoem = result.activity || rainPoem;
+                    log('活动', result?.purchased ? '自动购买天气采集瓶完成：1 个' : '自动购买天气采集瓶：今日已购买', {
+                        module: 'activity',
+                        event: '雨落成诗自动买瓶',
+                        result: result?.purchased ? 'success' : 'none'
+                    });
+                } catch (err) {
+                    log('活动', `自动购买天气采集瓶失败: ${err.message}`, { module: 'activity', event: '雨落成诗自动买瓶', result: 'error' });
+                }
+            }
+
+            if (collectRainPoemWeatherEnabled && Number(rainPoem?.items?.collectionBottles || 0) > 0 && Number(rainPoem?.collection?.remainingUseCount || 0) > 0) {
+                try {
+                    const result = await collectRainPoemWeather();
+                    rainPoem = result.activity || rainPoem;
+                    log('活动', result?.collected === false
+                        ? `自动采集好友雷雨：已检查 ${Number(result?.checkedCount || 0)} 位好友，暂未发现雷雨`
+                        : `自动采集好友雷雨完成：${result?.friendName || result?.friendGid || ''}`, {
+                        module: 'activity',
+                        event: '雨落成诗自动采集',
+                        result: result?.collected === false ? 'none' : 'success',
+                        checkedCount: Number(result?.checkedCount || 0),
+                        friendGid: Number(result?.friendGid || 0)
+                    });
+                } catch (err) {
+                    log('活动', `自动采集好友雷雨失败: ${err.message}`, { module: 'activity', event: '雨落成诗自动采集', result: 'error' });
+                }
+            }
+
+            if (useRainPoemSummonEnabled
+                && !lightningHarvestComplete
+                && !rainPoem?.weather?.rainstorm
+                && Number(rainPoem?.items?.summonBottles || 0) > 0
+                && Number(rainPoem?.summon?.usedToday || 0) < Number(rainPoem?.summon?.dailyUseLimit || 50)) {
+                try {
+                    const result = await useRainPoemSummonBottle();
+                    rainPoem = result.activity || rainPoem;
+                    const noUseMessage = result?.reason === 'daily_limit'
+                        ? '自动使用雷雨召唤瓶：今日使用次数已达上限'
+                        : '自动使用雷雨召唤瓶：当前已是雷雨天气';
+                    log('活动', result?.used ? '自动使用雷雨召唤瓶完成' : noUseMessage, {
+                        module: 'activity',
+                        event: '雨落成诗自动召唤',
+                        result: result?.used ? 'success' : 'none'
+                    });
+                } catch (err) {
+                    log('活动', `自动使用雷雨召唤瓶失败: ${err.message}`, { module: 'activity', event: '雨落成诗自动召唤', result: 'error' });
+                }
+            }
+
+            if (useRainPoemPrankEnabled
+                && (Number(rainPoem?.items?.frogPrankBottles || 0) > 0
+                    || Number(rainPoem?.items?.cloudPrankBottles || 0) > 0)) {
+                try {
+                    const { runRainPoemPrankPlacement } = require('../services/rain-poem-prank-service');
+                    // 投放服务只在实际成功使用至少一个瓶子时记录完成日志。
+                    // 活动状态与背包二次读取之间若发生库存竞态，保持静默。
+                    await runRainPoemPrankPlacement();
+                } catch (err) {
+                    log('活动', `自动使用使坏瓶失败: ${err.message}`, { module: 'activity', event: '雨落成诗自动使坏', result: 'error' });
+                }
+            }
+
+            if (unlockRainPoemResearchEnabled) {
+                let unlocked = 0;
+                try {
+                    while ((rainPoem?.research?.stages || []).some(stage => stage.available)
+                        && unlocked < 20) {
+                        const stage = (rainPoem.research.stages || []).find(item => item.available);
+                        if (!stage || Number(rainPoem?.items?.badges || 0) < Number(stage?.cost?.itemCount || 0)) break;
+                        const result = await unlockRainPoemResearch();
+                        if (!result?.unlocked) break;
+                        unlocked++;
+                        rainPoem = result.activity || rainPoem;
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                    log('活动', `自动解锁气象研究完成：${unlocked} 个节点`, {
+                        module: 'activity',
+                        event: '雨落成诗自动研究',
+                        result: unlocked ? 'success' : 'none',
+                        count: unlocked
+                    });
+                } catch (err) {
+                    log('活动', `自动解锁气象研究失败: ${err.message}`, { module: 'activity', event: '雨落成诗自动研究', result: 'error', count: unlocked });
+                }
+            }
+        }
     } catch (err) {
         if (!isTransientNetworkError(err)) {
             log('活动', `活动自动领取检查失败: ${  err.message}`, {
@@ -441,6 +651,8 @@ async function runStarActivityAutoClaims() {
 function stopStarActivityClaimTimer() {
     workerScheduler.clear('star_activity_claim_initial');
     workerScheduler.clear('star_activity_claim_interval');
+    workerScheduler.clear('rain_poem_weather_renew');
+    workerScheduler.clear('rain_poem_after_harvest');
     starActivityClaimRunning = false;
 }
 
@@ -528,7 +740,9 @@ function resetUnifiedSchedule() {
         CONFIG.stealCheckIntervalMin || 25000,
         CONFIG.stealCheckIntervalMax || 30000
     );
-    const now = Date.now();
+    const accountId = String(process.env.FARM_ACCOUNT_ID || '');
+    const staggerMs = [...accountId].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) % 3000, 0);
+    const now = Date.now() + staggerMs;
     nextFarmRunAt = now + farmDelay;
     nextHelpRunAt = now + helpDelay;
     nextStealRunAt = now + stealDelay;
@@ -536,8 +750,42 @@ function resetUnifiedSchedule() {
 
 // ==================== 农场 Tick ====================
 
+const businessBackoff = {
+    farm: { delayMs: 0, reason: '' },
+    friend: { delayMs: 0, reason: '' },
+};
+
+function getBusinessDeferMs(kind) {
+    const state = businessBackoff[kind];
+    const health = getGatewayHealth();
+    if (health.healthy) {
+        if (state.delayMs > 0) {
+            log('系统', `${kind === 'farm' ? '农场' : '好友'}任务网关已恢复`, {
+                module: 'network', event: '业务网关恢复', kind,
+            });
+        }
+        state.delayMs = 0;
+        state.reason = '';
+        return 0;
+    }
+    state.delayMs = nextBusinessBackoffMs(state.delayMs);
+    if (state.reason !== health.reason) {
+        log('系统', `${kind === 'farm' ? '农场' : '好友'}任务因网关不健康退避 ${Math.round(state.delayMs / 1000)} 秒`, {
+            module: 'network', event: '业务网关退避', kind, reason: health.reason,
+            pending: health.pending,
+        });
+    }
+    state.reason = health.reason;
+    return state.delayMs;
+}
+
 async function runFarmTick(autoConfig) {
     if (farmTaskRunning || friendSyncPaused) return;
+    const deferMs = getBusinessDeferMs('farm');
+    if (deferMs > 0) {
+        nextFarmRunAt = Date.now() + deferMs;
+        return;
+    }
     farmTaskRunning = true;
 
     const nextDelay = randomIntervalMs(
@@ -546,10 +794,9 @@ async function runFarmTick(autoConfig) {
     );
 
     try {
-        if (autoConfig.farm) await checkFarm();
-        if (autoConfig.task) await checkAndClaimTasks();
-        if (autoConfig.email) await checkAndClaimEmails();
-        if (autoConfig.fertilizer_gift) await openFertilizerGiftPacksSilently();
+        await runWithRequestPriority('farm', async () => {
+            if (autoConfig.farm) await checkFarm();
+        });
     } catch { } finally {
         nextFarmRunAt = Date.now() + nextDelay;
         farmTaskRunning = false;
@@ -564,16 +811,24 @@ let nextHelpRunAt = 0;
 async function runHelpTick(autoConfig) {
     if (helpTaskRunning || friendSyncPaused) return;
     if (!autoConfig.friend_help && !autoConfig.friend_golden_bug) return;
+    const deferMs = getBusinessDeferMs('friend');
+    if (deferMs > 0) {
+        nextHelpRunAt = Date.now() + deferMs;
+        return;
+    }
     helpTaskRunning = true;
 
     const nextDelay = randomIntervalMs(
         CONFIG.helpCheckIntervalMin || 30000,
         CONFIG.helpCheckIntervalMax || 35000
     );
+    const lowFrequencyDelay = Math.max(10 * 60 * 1000, nextDelay);
 
     try {
-        if (autoConfig.friend_help) await checkFriends({ onlyHelp: true });
-        if (autoConfig.friend_golden_bug) await runGoldenBugPlacement();
+        await runWithRequestPriority('friend', async () => {
+            if (autoConfig.friend_help) await checkFriends({ onlyHelp: true });
+            if (autoConfig.friend_golden_bug) await runGoldenBugPlacement();
+        });
     } catch (err) {
         if (!isTransientNetworkError(err)) {
             log('系统', `帮助巡查执行失败: ${  err.message}`, {
@@ -583,7 +838,7 @@ async function runHelpTick(autoConfig) {
             });
         }
     } finally {
-        nextHelpRunAt = Date.now() + nextDelay;
+        nextHelpRunAt = Date.now() + lowFrequencyDelay;
         helpTaskRunning = false;
     }
 }
@@ -595,16 +850,21 @@ let nextStealRunAt = 0;
 
 async function runStealTick(autoConfig) {
     if (stealTaskRunning || friendSyncPaused) return;
-    if (!autoConfig.friend_steal) return;
+    if (!autoConfig.friend_steal) {
+        nextStealRunAt = Date.now() + (15 * 60 * 1000);
+        return;
+    }
+    const deferMs = getBusinessDeferMs('friend');
+    if (deferMs > 0) {
+        nextStealRunAt = Date.now() + deferMs;
+        return;
+    }
     stealTaskRunning = true;
 
-    const nextDelay = randomIntervalMs(
-        CONFIG.stealCheckIntervalMin || 25000,
-        CONFIG.stealCheckIntervalMax || 30000
-    );
+    let nextDelay = 15 * 60 * 1000;
 
     try {
-        await checkFriends({ onlySteal: true });
+        nextDelay = await runWithRequestPriority('friend', () => runScheduledStealCheck());
     } catch (err) {
         if (!isTransientNetworkError(err)) {
             log('系统', `偷菜巡查执行失败: ${  err.message}`, {
@@ -614,7 +874,7 @@ async function runStealTick(autoConfig) {
             });
         }
     } finally {
-        nextStealRunAt = Date.now() + nextDelay;
+        nextStealRunAt = Date.now() + Math.max(1000, Number(nextDelay) || 15 * 60 * 1000);
         stealTaskRunning = false;
     }
 }
@@ -631,10 +891,15 @@ async function runUnifiedTick() {
 
     if (!shouldFarm && !shouldHelp && !shouldSteal) return;
 
-    const autoConfig = getAutomation();
-    if (shouldFarm) await runFarmTick(autoConfig);
-    if (shouldHelp) await runHelpTick(autoConfig);
-    if (shouldSteal) await runStealTick(autoConfig);
+    const permit = await acquireTaskPermit();
+    try {
+        const autoConfig = getAutomation();
+        if (shouldFarm) await runFarmTick(autoConfig);
+        if (shouldHelp) await runHelpTick(autoConfig);
+        if (shouldSteal) await runStealTick(autoConfig);
+    } finally {
+        releaseTaskPermit(permit);
+    }
 }
 
 function scheduleUnifiedNextTick() {
@@ -642,11 +907,16 @@ function scheduleUnifiedNextTick() {
     workerScheduler.clear('unified_next_tick');
 
     if (!loginReady) {
-        workerScheduler.setTimeoutTask('unified_next_tick', 500, async () => {
+        const waitMs = offlinePollDelayMs;
+        offlinePollDelayMs = Math.min(resourcePolicy.offlinePollMaxMs,
+            Math.max(waitMs * 2, resourcePolicy.offlinePollMinMs));
+        workerScheduler.setTimeoutTask('unified_next_tick', waitMs, async () => {
             try { await runUnifiedTick(); } finally { scheduleUnifiedNextTick(); }
         });
         return;
     }
+
+    offlinePollDelayMs = resourcePolicy.offlinePollMinMs;
 
     const now = Date.now();
     const nearest = Math.min(
@@ -680,12 +950,15 @@ function stopUnifiedScheduler() {
 
 function applyRuntimeConfig(config, syncStatusAfter = false) {
     const prevAuto = getAutomation();
+    const prevCapitalMode = require('../models/store').getCapitalMode();
     const accountId = process.env.FARM_ACCOUNT_ID || '';
 
     applyConfigSnapshot(config || {}, {
         persist: false,
         accountId
     });
+    const nextCapitalMode = require('../models/store').getCapitalMode();
+    require('../services/capital-mode').reconcileConfigChange(prevCapitalMode, nextCapitalMode).catch(() => null);
 
     const revision = Number((config || {}).__revision || 0);
     if (revision > 0) appliedConfigRevision = revision;
@@ -718,6 +991,16 @@ function applyRuntimeConfig(config, syncStatusAfter = false) {
                 !prevAuto?.qixi_bridge_build && newAuto?.qixi_bridge_build
             ) || (
                 !prevAuto?.qixi_sachet_gift && newAuto?.qixi_sachet_gift
+            ) || (
+                !prevAuto?.rain_poem_bottle_buy && newAuto?.rain_poem_bottle_buy
+            ) || (
+                !prevAuto?.rain_poem_weather_collect && newAuto?.rain_poem_weather_collect
+            ) || (
+                !prevAuto?.rain_poem_summon_use && newAuto?.rain_poem_summon_use
+            ) || (
+                !prevAuto?.rain_poem_prank_use && newAuto?.rain_poem_prank_use
+            ) || (
+                !prevAuto?.rain_poem_research_unlock && newAuto?.rain_poem_research_unlock
             );
             if (starClaimBecameEnabled) {
                 workerScheduler.setTimeoutTask('star_activity_claim_after_save', 2000, () => {
@@ -807,6 +1090,14 @@ onMasterMessage(async (msg) => {
             applyRuntimeConfig(msg.config || {}, true);
         } else if (msg.type === 'watchdog_ping') {
             sendToMaster({ type: 'watchdog_pong', at: msg.at || Date.now() });
+        } else if (msg.type === 'task_permit_granted') {
+            const rawToken = String(msg.token || '');
+            const token = rawToken.includes(':') ? rawToken.slice(rawToken.lastIndexOf(':') + 1) : rawToken;
+            const resolve = pendingPermits.get(token);
+            if (resolve) {
+                pendingPermits.delete(token);
+                resolve(token);
+            }
         }
     } catch (err) {
         sendToMaster({ type: 'error', error: err.message });
@@ -892,6 +1183,11 @@ async function startBot(config) {
         // 收获后自动出售
         if (onFarmHarvested) networkEvents.off('farmHarvested', onFarmHarvested);
         onFarmHarvested = async () => {
+            if (getAutomation().rain_poem_summon_use === true) {
+                workerScheduler.setTimeoutTask('rain_poem_after_harvest', 2000, () => {
+                    runStarActivityAutoClaims().catch(() => null);
+                });
+            }
             if (harvestSellRunning) return;
             if (!getAutomation().sell) return;
             harvestSellRunning = true;
@@ -907,19 +1203,34 @@ async function startBot(config) {
         };
         networkEvents.on('farmHarvested', onFarmHarvested);
 
-        // 获取背包点券数
+        if (onDogSkillGiftPending) networkEvents.off('dogSkillGiftPending', onDogSkillGiftPending);
+        onDogSkillGiftPending = (count) => {
+            const pendingCount = Math.max(0, toNum(count));
+            if (!loginReady || pendingCount <= 0) return;
+            require('../services/dog-skill-gifts').checkAndClaimDogSkillGifts(pendingCount).catch(() => null);
+        };
+        networkEvents.on('dogSkillGiftPending', onDogSkillGiftPending);
+
+        // 单次背包请求同步点券和金豆豆，避免登录阶段重复并发查询。
         try {
             const bag = await getBag();
             const items = getBagItems(bag);
             let couponCount = 0;
+            let goldBeanCount = 0;
             for (const item of items || []) {
-                if (toNum(item && item.id) === 1002) {
-                    couponCount = toNum(item.count);
-                    break;
-                }
+                const itemId = toNum(item && item.id);
+                if (itemId === 1002) couponCount = toNum(item.count);
+                else if (itemId === 1005) goldBeanCount = toNum(item.count);
             }
             const state = getUserState();
             state.coupon = Math.max(0, couponCount);
+            state.goldBean = Math.max(0, goldBeanCount);
+        } catch { }
+
+        // 支付服务会更新网关序列状态，等启动背包请求完成后再查询。
+        try {
+            const diamond = await require('../services/pay').getDiamondBalance();
+            getUserState().diamond = Math.max(0, Number(diamond) || 0);
         } catch { }
 
         // 初始化统计数据
@@ -965,6 +1276,7 @@ async function startBot(config) {
         }
 
         // 启动每日定时器
+        initTaskSystem();
         startDailyRoutineTimer();
         startStarActivityClaimTimer();
         startMysteryShopAutoBuyTimer();
@@ -976,7 +1288,7 @@ async function startBot(config) {
     connect(code, onReady);
 
     // 定期同步状态
-    workerScheduler.setIntervalTask('status_sync', 5000, syncStatus, { preventOverlap: true });
+    workerScheduler.setIntervalTask('status_sync', resourcePolicy.statusSyncIntervalMs, syncStatus, { preventOverlap: true });
 }
 
 async function stopBot() {
@@ -1012,6 +1324,10 @@ async function stopBot() {
         networkEvents.off('farmHarvested', onFarmHarvested);
         onFarmHarvested = null;
     }
+    if (onDogSkillGiftPending) {
+        networkEvents.off('dogSkillGiftPending', onDogSkillGiftPending);
+        onDogSkillGiftPending = null;
+    }
 
     stopFarmCheckLoop();
     stopFriendCheckLoop();
@@ -1019,6 +1335,7 @@ async function stopBot() {
     stopStarActivityClaimTimer();
     cleanupTaskSystem();
     workerScheduler.clearAll();
+    resourceMonitor.dispose();
     stopNetwork('账号停止');
 
     const ws = getWs();
@@ -1068,9 +1385,19 @@ async function handleApiCall(msg) {
         switch (method) {
             case 'getLands':
                 result = await getLandsDetail();
+                try {
+                    const { getOwnWeatherStatus } = require('../services/activity');
+                    result.weather = await getOwnWeatherStatus();
+                } catch (weatherError) {
+                    result.weather = { type: 0, status: 0, rainstorm: false, error: weatherError.message };
+                }
                 break;
             case 'getFriends':
                 result = await getFriendsList(args[0] === true);
+                break;
+            case 'getDiamondBalance':
+                result = await require('../services/pay').getDiamondBalance();
+                getUserState().diamond = Math.max(0, Number(result) || 0);
                 break;
             case 'clearFriendsCache':
                 require('../services/friend').clearFriendsListCache();
@@ -1109,11 +1436,37 @@ async function handleApiCall(msg) {
             case 'getBagSeeds':
                 result = await require('../services/warehouse').getBagSeeds();
                 break;
+            case 'getDogSkillGiftStatus': {
+                const dogGifts = require('../services/dog-skill-gifts');
+                result = { pendingCount: dogGifts.getPendingGiftCount(await dogGifts.getDogInfo()) };
+                break;
+            }
+            case 'claimDogSkillGifts':
+                result = await require('../services/dog-skill-gifts').checkAndClaimDogSkillGifts();
+                break;
+            case 'getPetOverview':
+                result = await require('../services/pets').getPetOverview();
+                break;
+            case 'deployDog':
+                require('../services/capital-mode').releaseForManualCommand();
+                result = await require('../services/pets').deployDog(args[0]);
+                break;
+            case 'withdrawDog':
+                require('../services/capital-mode').releaseForManualCommand();
+                result = await require('../services/pets').withdrawDog();
+                break;
+            case 'feedDog':
+                result = await require('../services/pets').feedDog(args[0], args[1]);
+                break;
+            case 'getProtectLogs':
+                result = await require('../services/pets').getProtectLogs();
+                break;
             case 'useItem': {
                 const { useItem } = require('../services/warehouse');
                 const itemId = Number(args[0]) || 0;
                 const count = Math.max(1, Number(args[1]) || 1);
-                result = await useItem(itemId, count, []);
+                const uid = Number(args[2]) || 0;
+                result = await useItem(itemId, count, uid);
                 break;
             }
             case 'sellItems': {
@@ -1178,8 +1531,12 @@ async function handleApiCall(msg) {
                 break;
             }
             case 'buyMysteryShopGoods': {
-                const { buyMysteryShopGoods } = require('../services/mystery-shop');
-                result = await buyMysteryShopGoods(args[0]);
+                const { getActiveMysteryShop, buyMysteryShopGoods } = require('../services/mystery-shop');
+                const offer = await getActiveMysteryShop();
+                if (!offer.active || Number(offer.npcId) !== Number(args[0])) {
+                    throw new Error('神秘商人商品已失效，请刷新后重试');
+                }
+                result = await buyMysteryShopGoods(args[0], offer, 'manual');
                 break;
             }
             case 'abandonMysteryShop': {
@@ -1195,6 +1552,11 @@ async function handleApiCall(msg) {
             case 'getActivityDiscoveryList': {
                 const { getActivityDiscoveryList } = require('../services/activity');
                 result = await getActivityDiscoveryList();
+                break;
+            }
+            case 'getActivityDiscoverySnapshot': {
+                const { getActivityDiscoverySnapshot } = require('../services/activity');
+                result = await getActivityDiscoverySnapshot();
                 break;
             }
             case 'getActivityGroupSnapshot': {
@@ -1252,6 +1614,36 @@ async function handleApiCall(msg) {
                 result = await useQixiDew(args[0] || {});
                 break;
             }
+            case 'getRainPoemActivity': {
+                const { getRainPoemActivity } = require('../services/activity');
+                result = await getRainPoemActivity();
+                break;
+            }
+            case 'buyRainPoemCollectionBottle': {
+                const { buyRainPoemCollectionBottle } = require('../services/activity');
+                result = await buyRainPoemCollectionBottle();
+                break;
+            }
+            case 'collectRainPoemWeather': {
+                const { collectRainPoemWeather } = require('../services/activity');
+                result = await collectRainPoemWeather(args[0]);
+                break;
+            }
+            case 'useRainPoemSummonBottle': {
+                const { useRainPoemSummonBottle } = require('../services/activity');
+                result = await useRainPoemSummonBottle();
+                break;
+            }
+            case 'unlockRainPoemResearch': {
+                const { unlockRainPoemResearch } = require('../services/activity');
+                result = await unlockRainPoemResearch();
+                break;
+            }
+            case 'getCharityFlowerActivity': {
+                const { getCharityFlowerActivity } = require('../services/activity');
+                result = await getCharityFlowerActivity();
+                break;
+            }
             case 'exchangeHeluShopItem': {
                 const { exchangeHeluShopItem } = require('../services/activity');
                 result = await exchangeHeluShopItem(args[0], args[1]);
@@ -1301,7 +1693,7 @@ async function handleApiCall(msg) {
                 result = await getDailyGiftOverview();
                 break;
             case 'getSchedulers':
-                result = getSchedulerRegistrySnapshot();
+                result = { ...getSchedulerRegistrySnapshot(), resources: resourceMonitor.snapshot() };
                 break;
             case 'fertilizeLand': {
                 const landId = Number(args[0]) || 0;
@@ -1504,14 +1896,15 @@ function syncStatus() {
         friendRemainSec: Math.max(helpRemainSec, stealRemainSec)
     };
     stats.automation = getAutomation();
-    stats.preferredSeed = getPreferredSeed();
     stats.levelProgress = levelProgress;
     stats.configRevision = appliedConfigRevision;
 
-    const hash = JSON.stringify(stats);
+    const stableStats = { ...stats };
+    delete stableStats.nextChecks;
+    const hash = JSON.stringify(stableStats);
     const now2 = Date.now();
 
-    if (hash !== lastStatusHash || now2 - lastStatusSentAt > 30000) {
+    if (hash !== lastStatusHash || now2 - lastStatusSentAt > resourcePolicy.statusFullSyncIntervalMs) {
         lastStatusHash = hash;
         lastStatusSentAt = now2;
         sendToMaster({ type: 'status_sync', data: stats });

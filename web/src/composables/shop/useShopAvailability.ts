@@ -2,6 +2,7 @@ interface ShopAvailabilityContext {
   currentLevel: () => number
   currentGold: () => number
   currentCoupon: () => number
+  currentDiamond: () => number
   userGoldBean: () => number
 }
 
@@ -13,6 +14,7 @@ const L = {
   goldInsufficient: '\u5F53\u524D\u91D1\u5E01\u4E0D\u8DB3\u3002',
   goldBeanInsufficient: '\u5F53\u524D\u91D1\u8C46\u8C46\u4E0D\u8DB3\u3002',
   couponInsufficient: '\u5F53\u524D\u70B9\u5238\u4E0D\u8DB3\u3002',
+  diamondInsufficient: '\u5F53\u524D\u94BB\u77F3\u4E0D\u8DB3\u3002',
   canBuyHint: '\u6761\u4EF6\u6EE1\u8DB3\uFF0C\u53EF\u76F4\u63A5\u8D2D\u4E70\u3002',
   unavailable: '\u5F53\u524D\u4E0D\u5F00\u653E\u8D2D\u4E70\u3002',
   decorationHint: '\u53EF\u7ACB\u5373\u8D2D\u4E70\u5E76\u751F\u6548\u3002',
@@ -23,6 +25,7 @@ const L = {
   goldLow: '\u91D1\u5E01\u4E0D\u8DB3',
   goldBeanLow: '\u91D1\u8C46\u8C46\u4E0D\u8DB3',
   couponLow: '\u70B9\u5238\u4E0D\u8DB3',
+  diamondLow: '\u94BB\u77F3\u4E0D\u8DB3',
   canBuy: '\u53EF\u8D2D\u4E70',
   notOpen: '\u6682\u672A\u5F00\u653E',
   notBuyable: '\u6682\u4E0D\u53EF\u4E70',
@@ -47,6 +50,12 @@ export function createShopAvailability(context: ShopAvailabilityContext) {
   function canAffordMall(item: any) {
     if (item?.isFree)
       return true
+    if (item?.balanceKnown === true)
+      return Number(item.currencyBalance || 0) >= priceOf(item)
+    if (item?.balanceKnown === false)
+      return true
+    if (Number(item?.currencyId) === 1004)
+      return context.currentDiamond() >= priceOf(item)
     return context.currentCoupon() >= priceOf(item)
   }
 
@@ -84,7 +93,13 @@ export function createShopAvailability(context: ShopAvailabilityContext) {
     if (!item.canBuy)
       return L.unavailable
     if (!canAffordMall(item))
-      return L.couponInsufficient
+      return Number(item?.currencyId) === 1004 ? L.diamondInsufficient : L.couponInsufficient
+    const limitCount = Number(item.limitCount || 0)
+    const boughtNum = Number(item.boughtNum || 0)
+    if (limitCount > 0) {
+      const period = Number(item.limitType || 0) === 1 ? '每日' : '活动'
+      return `${period}限购 ${limitCount}，剩余 ${Math.max(0, limitCount - boughtNum)}。`
+    }
     return item.isFree ? L.freeHint : L.canBuyHint
   }
 
@@ -126,7 +141,7 @@ export function createShopAvailability(context: ShopAvailabilityContext) {
     if (!item.canBuy)
       return L.notBuyable
     if (!canAffordMall(item))
-      return L.couponLow
+      return Number(item?.currencyId) === 1004 ? L.diamondLow : L.couponLow
     return item.isFree ? L.canClaimFree : L.canBuy
   }
 

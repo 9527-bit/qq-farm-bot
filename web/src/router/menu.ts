@@ -31,6 +31,13 @@ export const menuRoutes: MenuItem[] = [
     component: () => import('@/views/Friends.vue'),
   },
   {
+    path: 'pet',
+    name: 'pet',
+    label: '宠物',
+    icon: 'i-fa-solid-paw',
+    component: () => import('@/views/Pet.vue'),
+  },
+  {
     path: 'activity',
     name: 'activity',
     label: '活动',
@@ -64,13 +71,5 @@ export const menuRoutes: MenuItem[] = [
     label: '设置',
     icon: 'i-carbon-settings',
     component: () => import('@/views/Settings.vue'),
-  },
-  {
-    path: 'admin',
-    name: 'admin',
-    label: '后台',
-    icon: 'i-carbon-settings-adjust',
-    component: () => import('@/views/AdminPanel.vue'),
-    adminOnly: true,
   },
 ]

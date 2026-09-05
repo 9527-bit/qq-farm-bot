@@ -15,6 +15,8 @@ const { types } = require('./proto');
 const { toLong, toNum, syncServerTime, log, logWarn } = require('./utils');
 const cryptoWasm = require('./crypto-wasm');
 const { createGatewayToken } = require('./gateway-token');
+const { evaluateGatewayHealth, getOldestPendingAgeMs } = require('./gateway-health');
+const { createRequestGate, getRequestPriority } = require('./request-priority');
 const { TsdkRuntime } = require('./tsdk-runtime');
 
 const CLIENT_VERSION_RE = /^\d+(?:\.\d+){2,4}_\d{8}$/;
@@ -39,15 +41,6 @@ function applyServerVersionInfo(versionInfo) {
     return true;
 }
 
-// 延迟加载 warehouse 模块避免循环依赖
-let warehouseModule = null;
-function getWarehouseModule() {
-    if (!warehouseModule) {
-        warehouseModule = require('../services/warehouse');
-    }
-    return warehouseModule;
-}
-
 // 延迟加载 store 模块避免循环依赖
 let storeModule = null;
 function getStoreModule() {
@@ -65,31 +58,86 @@ let ws = null;
 let clientSeq = 1;
 let serverSeq = 0;
 const pendingCallbacks = new Map();
+const pendingStartedAt = new Map();
+const requestGate = createRequestGate({ maxActive: 8, maxQueued: 100 });
 let wsErrorState = { code: 0, at: 0, message: '' };
 const networkScheduler = createScheduler('network');
 let tsdkRuntime = null;
 let aceService = null;
 let initialGamePackInfo = '';
 
+const DEFAULT_DEVICE_FINGERPRINT = Object.freeze({
+    os: 'iOS',
+    sysSoftware: 'iOS 26.2.1',
+    deviceBrand: 'Apple',
+    deviceModel: 'iPhone18,3',
+    deviceId: 'iPhone X<iPhone18,3>',
+    memory: '7672',
+});
+
+function resolveDeviceFingerprint(deviceProtocol) {
+    const custom = deviceProtocol && deviceProtocol.enabled ? deviceProtocol : null;
+    if (!custom) return { ...DEFAULT_DEVICE_FINGERPRINT, userAgent: '' };
+
+    const userAgent = String(custom.userAgent || '').trim();
+    const isAndroid = /android/i.test(userAgent);
+    const isApple = /iphone|ipad|ios/i.test(userAgent)
+        || /apple/i.test(String(custom.deviceBrand || ''));
+    if (isAndroid && isApple) {
+        throw new Error('设备协议矛盾：Android UA 不能与 Apple/iOS 设备信息混用');
+    }
+
+    const deviceBrand = String(custom.deviceBrand || '').trim();
+    const deviceModel = String(custom.deviceModel || '').trim();
+    const deviceId = String(custom.deviceId || custom.deviceMac || custom.imei || '').trim();
+    if (!deviceBrand || !deviceModel || !deviceId) {
+        throw new Error('设备协议不完整：启用自定义设备时必须设置品牌、型号和稳定设备ID');
+    }
+
+    const osName = isAndroid ? 'Android' : 'iOS';
+    return {
+        os: osName,
+        sysSoftware: osName,
+        deviceBrand,
+        deviceModel,
+        deviceId,
+        memory: DEFAULT_DEVICE_FINGERPRINT.memory,
+        userAgent,
+    };
+}
+
 function logAce(level, message) {
     if (level === 'warn' || level === 'error') logWarn('ACE', message);
     else log('ACE', message);
 }
 
+function buildTsdkDeviceInfo(deviceProtocol) {
+    const custom = deviceProtocol && deviceProtocol.enabled ? deviceProtocol : null;
+    if (!custom) {
+        // Keep the long-standing TSDK defaults. Supplying the synthetic login
+        // fingerprint here changes the ACE identity used for every encrypted
+        // request, even though the protobuf login itself succeeds.
+        return { platform: CONFIG.os };
+    }
+
+    const device = resolveDeviceFingerprint(custom);
+    return {
+        deviceModel: device.deviceModel,
+        deviceBrand: device.deviceBrand,
+        deviceId: device.deviceId,
+        deviceMac: String(custom.deviceMac || '').trim(),
+        imei: String(custom.imei || '').trim(),
+        platform: device.os,
+        system: device.sysSoftware,
+    };
+}
+
 function createTsdkRuntime(deviceProtocol) {
-    const customDevice = deviceProtocol && deviceProtocol.enabled ? deviceProtocol : null;
     return new TsdkRuntime({
         accountId: process.env.FARM_ACCOUNT_ID,
         gameId: CONFIG.tsdkGameId,
         appKey: CONFIG.tsdkAppKey,
-        deviceInfo: {
-            deviceModel: customDevice && customDevice.deviceModel,
-            deviceBrand: customDevice && customDevice.deviceBrand,
-            deviceId: customDevice && customDevice.deviceId,
-            deviceMac: customDevice && customDevice.deviceMac,
-            imei: customDevice && customDevice.imei,
-            platform: CONFIG.os,
-        },
+        deviceInfo: buildTsdkDeviceInfo(deviceProtocol),
         logger: logAce,
     });
 }
@@ -134,6 +182,7 @@ function stopSecurityRuntime(reason = '停止') {
 function rejectAllPendingRequests(reason = '请求被中断') {
     const entries = Array.from(pendingCallbacks.entries());
     pendingCallbacks.clear();
+    pendingStartedAt.clear();
     for (const [, callback] of entries) {
         try {
             callback(new Error(reason));
@@ -152,6 +201,7 @@ const userState = {
     gold: 0,
     exp: 0,
     coupon: 0, // 点券(ID:1002)
+    diamond: 0, // 钻石(ID:1004)
     goldBean: 0, // 金豆豆(ID:1005)
     openId: '',
     avatar: '',
@@ -177,27 +227,6 @@ function logLoginSummary(loginTimeMs) {
         lines.push(`时间: ${new Date(loginTimeMs).toLocaleString()}`);
     }
     log('系统', `登录摘要\n${lines.join('\n')}`);
-}
-
-// 登录后从背包获取金豆豆数量
-async function fetchGoldBeanFromBag() {
-    try {
-        const warehouse = getWarehouseModule();
-        const bagReply = await warehouse.getBag();
-        const items = warehouse.getBagItems(bagReply);
-        for (const item of (items || [])) {
-            const id = toNum(item && item.id);
-            const count = toNum(item && item.count);
-            if (id === 1005 && count > 0) {
-                userState.goldBean = count;
-                log('系统', `金豆豆数量: ${count}`);
-                break;
-            }
-        }
-    // eslint-disable-next-line unused-imports/no-unused-vars
-    } catch (e) {
-        // 忽略获取失败
-    }
 }
 
 function hasOwn(obj, key) {
@@ -237,13 +266,17 @@ async function sendMsg(serviceName, methodName, bodyBytes, callback) {
     const seq = clientSeq;
     clientSeq += 1;
     const encoded = await encodeMsg(serviceName, methodName, bodyBytes, seq);
-    if (callback) pendingCallbacks.set(seq, callback);
+    if (callback) {
+        pendingCallbacks.set(seq, callback);
+        pendingStartedAt.set(seq, Date.now());
+    }
     // ws.send(encoded);
     try {
         ws.send(encoded);
     } catch (err) {
         if (callback) {
             pendingCallbacks.delete(seq);
+            pendingStartedAt.delete(seq);
             callback(err);
         }
         return false;
@@ -252,8 +285,11 @@ async function sendMsg(serviceName, methodName, bodyBytes, callback) {
 }
 
 /** Promise 版发送 */
-function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000) {
-    return new Promise((resolve, reject) => {
+async function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000, options = {}) {
+    const priority = getRequestPriority(options.priority);
+    const release = await requestGate.acquire(priority);
+    try {
+      return await new Promise((resolve, reject) => {
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             reject(new Error(`连接未打开: ${methodName}`));
             return;
@@ -272,6 +308,7 @@ function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000) {
             if (settled) return;
             settled = true;
             pendingCallbacks.delete(seq);
+            pendingStartedAt.delete(seq);
             const pending = pendingCallbacks.size;
             reject(new Error(`请求超时: ${methodName} (seq=${seq}, pending=${pending})`));
         });
@@ -291,10 +328,14 @@ function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000) {
             if (settled) return;
             networkScheduler.clear(timeoutKey);
             pendingCallbacks.delete(seq);
+            pendingStartedAt.delete(seq);
             settled = true;
             reject(error);
         });
-    });
+      });
+    } finally {
+      release();
+    }
 }
 
 // ============ 消息处理 ============
@@ -326,6 +367,7 @@ function handleMessage(data) {
             const cb = pendingCallbacks.get(clientSeqVal);
             if (cb) {
                 pendingCallbacks.delete(clientSeqVal);
+                pendingStartedAt.delete(clientSeqVal);
                 if (errorCode !== 0) {
                     cb(new Error(`${meta.service_name}.${meta.method_name} 错误: code=${errorCode} ${meta.error_message || ''}`));
                 } else {
@@ -349,6 +391,11 @@ function handleNotify(msg) {
         const event = types.EventMessage.decode(msg.body);
         const type = event.message_type || '';
         const eventBody = event.body;
+
+        // 通知只携带交易上下文，不在网关推送处理中追加支付查询。
+        if (type.includes('RechargeInfoNotify')) {
+            return;
+        }
 
         // 被踢下线
         if (type.includes('Kickout')) {
@@ -374,8 +421,22 @@ function handleNotify(msg) {
                     // 如果是自己的农场，触发事件
                     if (hostGid === userState.gid || hostGid === 0) {
                         networkEvents.emit('landsChanged', lands);
+                    } else {
+                        networkEvents.emit('friendLandsObserved', {
+                            gid: hostGid,
+                            lands,
+                            source: 'lands_notify',
+                        });
                     }
                 }
+            } catch { }
+            return;
+        }
+
+        if (type.includes('PendingGiftCountNotify')) {
+            try {
+                const notify = types.PendingGiftCountNotify.decode(eventBody);
+                networkEvents.emit('dogSkillGiftPending', Math.max(0, toNum(notify.count)));
             } catch { }
             return;
         }
@@ -420,6 +481,13 @@ function handleNotify(msg) {
                             userState.goldBean = count;
                         } else if (delta !== 0) {
                             userState.goldBean = Math.max(0, Number(userState.goldBean || 0) + delta);
+                        }
+                    } else if (id === 1004) {
+                        // 钻石
+                        if (count > 0) {
+                            userState.diamond = count;
+                        } else if (delta !== 0) {
+                            userState.diamond = Math.max(0, Number(userState.diamond || 0) + delta);
                         }
                     } else if (id === 101351) {
                         // 同气连枝礼包 - 帮忙好友时有概率获得
@@ -534,29 +602,25 @@ function handleNotify(msg) {
 
 // ============ 登录 ============
 function buildLoginDeviceInfo(deviceProtocol) {
-    const customDevice = deviceProtocol && deviceProtocol.enabled ? deviceProtocol : null;
-    if (!customDevice) {
+    const custom = deviceProtocol && deviceProtocol.enabled ? deviceProtocol : null;
+    if (!custom) {
         return {
             client_version: CONFIG.clientVersion,
-            sys_software: 'iOS 26.2.1',
+            sys_software: DEFAULT_DEVICE_FINGERPRINT.sysSoftware,
             network: 'wifi',
-            memory: '7672',
-            device_id: 'iPhone X<iPhone18,3>',
+            memory: DEFAULT_DEVICE_FINGERPRINT.memory,
+            device_id: DEFAULT_DEVICE_FINGERPRINT.deviceId,
         };
     }
 
-    const brand = String(customDevice.deviceBrand || '').trim();
-    const model = String(customDevice.deviceModel || '').trim();
-    const deviceId = String(customDevice.deviceId || '').trim();
-    const imei = String(customDevice.imei || '').trim();
-    const mac = String(customDevice.deviceMac || '').trim();
+    const device = resolveDeviceFingerprint(custom);
     return {
         client_version: CONFIG.clientVersion,
-        sys_software: /android/i.test(customDevice.userAgent || '') ? 'Android' : CONFIG.os,
-        sys_hardware: [brand, model].filter(Boolean).join(' '),
+        sys_software: device.sysSoftware,
+        sys_hardware: `${device.deviceBrand} ${device.deviceModel}`,
         network: 'wifi',
-        memory: '7672',
-        device_id: deviceId || mac || imei || [brand, model].filter(Boolean).join(' '),
+        memory: device.memory,
+        device_id: device.deviceId,
     };
 }
 
@@ -622,9 +686,6 @@ async function sendLogin(onLoginSuccess, deviceProtocol) {
                 }
                 logLoginSummary(loginTimeMs);
 
-                // 登录后主动获取背包中的金豆豆数量
-                fetchGoldBeanFromBag();
-
             }
 
             startHeartbeat();
@@ -641,6 +702,22 @@ let lastHeartbeatResponse = Date.now();
 let heartbeatMissCount = 0;
 const HEARTBEAT_TIMEOUT = 30000;
 const MAX_HEARTBEAT_MISS = 3;
+
+function getGatewayHealth() {
+    const now = Date.now();
+    const result = evaluateGatewayHealth({
+        connected: isConnected(),
+        heartbeatAgeMs: now - lastHeartbeatResponse,
+        oldestPendingAgeMs: getOldestPendingAgeMs(pendingStartedAt.values(), now),
+        heartbeatLimitMs: HEARTBEAT_TIMEOUT,
+        pendingLimitMs: 5000,
+    });
+    return {
+        ...result,
+        pending: pendingCallbacks.size,
+        queue: requestGate.snapshot(),
+    };
+}
 
 function startHeartbeat() {
     networkScheduler.clear('heartbeat_interval');
@@ -672,7 +749,7 @@ function startHeartbeat() {
             gid: toLong(userState.gid),
             client_version: CONFIG.clientVersion,
         })).finish();
-        sendMsgAsync('gamepb.userpb.UserService', 'Heartbeat', body).then(({ body: replyBody }) => {
+        sendMsgAsync('gamepb.userpb.UserService', 'Heartbeat', body, 20000, { priority: 'critical' }).then(({ body: replyBody }) => {
             lastHeartbeatResponse = Date.now();
             heartbeatMissCount = 0;
             try {
@@ -700,9 +777,7 @@ function buildWebSocketHeaders(deviceProtocol) {
         'Origin': 'https://gate-obt.nqf.qq.com',
         'Referer': `https://appservice.qq.com/1112386029/${resourceVersion}/page-frame.html`,
     };
-    const userAgent = deviceProtocol && deviceProtocol.enabled
-        ? String(deviceProtocol.userAgent || '').trim()
-        : '';
+    const userAgent = resolveDeviceFingerprint(deviceProtocol).userAgent;
     if (userAgent) headers['User-Agent'] = userAgent;
     return headers;
 }
@@ -752,9 +827,6 @@ function connect(code, onLoginSuccess) {
     networkStopped = false;
     savedLoginCallback = onLoginSuccess;
     if (code) savedCode = code;
-    const url = `${CONFIG.serverUrl}?platform=${CONFIG.platform}&os=${CONFIG.os}&ver=${CONFIG.clientVersion}&code=${savedCode}&openID=`;
-    closeCurrentWs({ terminate: true });
-
     // 获取设备协议配置
     let deviceProtocol = null;
     try {
@@ -768,6 +840,17 @@ function connect(code, onLoginSuccess) {
             isWarn: true,
         });
     }
+
+    let deviceFingerprint;
+    try {
+        deviceFingerprint = resolveDeviceFingerprint(deviceProtocol);
+    } catch (error) {
+        logWarn('系统', `设备协议校验失败，已中止连接：${error.message}`);
+        networkEvents.emit('security_error', { message: error.message });
+        return;
+    }
+    const url = `${CONFIG.serverUrl}?platform=${CONFIG.platform}&os=${deviceFingerprint.os}&ver=${CONFIG.clientVersion}&code=${savedCode}&openID=`;
+    closeCurrentWs({ terminate: true });
 
     // 输出自定义设备信息日志
     if (deviceProtocol && deviceProtocol.enabled) {
@@ -870,10 +953,14 @@ module.exports = {
     sendMsg, sendMsgAsync,
     getUserState,
     getWsErrorState,
+    getGatewayHealth,
     getAceStatus,
     buildLoginDeviceInfo,
     buildWebSocketHeaders,
+    buildTsdkDeviceInfo,
+    resolveDeviceFingerprint,
     extractServerClientVersion,
     applyServerVersionInfo,
     networkEvents,
+    handleMessage,
 };

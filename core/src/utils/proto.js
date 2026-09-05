@@ -32,6 +32,7 @@ async function loadProto() {
         getResourcePath('proto', 'shoppb.proto'),
         getResourcePath('proto', 'friendpb.proto'),
         getResourcePath('proto', 'visitpb.proto'),
+        getResourcePath('proto', 'weatherpb.proto'),
         getResourcePath('proto', 'notifypb.proto'),
         getResourcePath('proto', 'taskpb.proto'),
         getResourcePath('proto', 'itempb.proto'),
@@ -47,6 +48,7 @@ async function loadProto() {
         getResourcePath('proto', 'mysteryshoppb.proto'),
         getResourcePath('proto', 'acepb.proto'),
         getResourcePath('proto', 'careerpb.proto'),
+        getResourcePath('proto', 'paypb.proto'),
     ], { keepCase: true });
 
     // 网关
@@ -65,6 +67,8 @@ async function loadProto() {
     types.AntiDataReply = root.lookupType('gamepb.acepb.AntiDataReply');
     types.CareerInfoGetRequest = root.lookupType('gamepb.careerpb.CareerInfoGetRequest');
     types.CareerInfoGetReply = root.lookupType('gamepb.careerpb.CareerInfoGetReply');
+    types.GetRechargeInfoRequest = root.lookupType('gamepb.paypb.GetRechargeInfoRequest');
+    types.GetRechargeInfoReply = root.lookupType('gamepb.paypb.GetRechargeInfoReply');
 
     // 农场
     types.AllLandsRequest = root.lookupType('gamepb.plantpb.AllLandsRequest');
@@ -177,6 +181,10 @@ async function loadProto() {
     types.ActivityStarRecordInfo = root.lookupType('gamepb.activitypb.StarRecordInfo');
     types.ActivityStarRecordClaimResult = root.lookupType('gamepb.activitypb.StarRecordClaimResult');
 
+    // 天气
+    types.GetWeatherStatusRequest = root.lookupType('gamepb.weatherpb.GetWeatherStatusRequest');
+    types.GetWeatherStatusReply = root.lookupType('gamepb.weatherpb.GetWeatherStatusReply');
+
     // 好友
     types.GetAllFriendsRequest = root.lookupType('gamepb.friendpb.GetAllRequest');
     types.GetAllFriendsReply = root.lookupType('gamepb.friendpb.GetAllReply');
@@ -196,6 +204,19 @@ async function loadProto() {
     types.VisitLeaveRequest = root.lookupType('gamepb.visitpb.LeaveRequest');
     types.VisitLeaveReply = root.lookupType('gamepb.visitpb.LeaveReply');
     types.BriefDogInfo = root.lookupType('gamepb.visitpb.BriefDogInfo');
+    types.GetDogInfoRequest = root.lookupType('gamepb.dogpb.GetDogInfoRequest');
+    types.GetDogInfoReply = root.lookupType('gamepb.dogpb.GetDogInfoReply');
+    types.ClaimSkillGiftsRequest = root.lookupType('gamepb.dogpb.ClaimSkillGiftsRequest');
+    types.ClaimSkillGiftsReply = root.lookupType('gamepb.dogpb.ClaimSkillGiftsReply');
+    types.PendingGiftCountNotify = root.lookupType('gamepb.dogpb.PendingGiftCountNotify');
+    types.DeployDogRequest = root.lookupType('gamepb.dogpb.DeployDogRequest');
+    types.DeployDogReply = root.lookupType('gamepb.dogpb.DeployDogReply');
+    types.WithdrawDogRequest = root.lookupType('gamepb.dogpb.WithdrawDogRequest');
+    types.WithdrawDogReply = root.lookupType('gamepb.dogpb.WithdrawDogReply');
+    types.AddFoodRequest = root.lookupType('gamepb.dogpb.AddFoodRequest');
+    types.AddFoodReply = root.lookupType('gamepb.dogpb.AddFoodReply');
+    types.GetProtectLogsRequest = root.lookupType('gamepb.dogpb.GetProtectLogsRequest');
+    types.GetProtectLogsReply = root.lookupType('gamepb.dogpb.GetProtectLogsReply');
 
 
     // 任务
@@ -225,6 +246,7 @@ async function loadProto() {
     types.InteractRecordsRequest = root.lookupType('gamepb.interactpb.InteractRecordsRequest');
     types.InteractRecordsReply = root.lookupType('gamepb.interactpb.InteractRecordsReply');
     types.ItemNotify = root.lookupType('gamepb.itempb.ItemNotify');
+    types.RechargeInfoNotify = root.lookupType('gamepb.paypb.RechargeInfoNotify');
     types.GoodsUnlockNotify = root.lookupType('gamepb.shoppb.GoodsUnlockNotify');
     types.TaskInfoNotify = root.lookupType('gamepb.taskpb.TaskInfoNotify');
 

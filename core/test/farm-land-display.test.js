@@ -6,8 +6,19 @@ const {
   buildLandMap,
   getDisplayLandContext,
   getCurrentPhase,
+  getQixiDewStatus,
   analyzeLands
 } = require('../src/services/farm-land-analyzer');
+
+test('qixi dew field_40 exposes applied state and keeps the server reward value', () => {
+  assert.deepEqual(getQixiDewStatus({ field_40: { value_1: 10, value_2: 1 } }), {
+    applied: true,
+    rewardValue: 10,
+    appliedMarker: 1
+  });
+  assert.equal(getQixiDewStatus({ field_40: { value_1: 10, value_2: 0 } }).applied, false);
+  assert.equal(getQixiDewStatus({}).applied, false);
+});
 
 test('real pea suffix resolves phase_id 20 to the fifth configured stage', () => {
   const current = getCurrentPhase([

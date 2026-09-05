@@ -11,7 +11,7 @@ import { useStatusStore } from '@/stores/status'
 const farmStore = useFarmStore()
 const accountStore = useAccountStore()
 const statusStore = useStatusStore()
-const { lands, summary, loading } = storeToRefs(farmStore)
+const { lands, summary, weather, loading, dogSkillGiftPendingCount, dogSkillGiftLoading, dogSkillGiftError } = storeToRefs(farmStore)
 const { currentAccountId, currentAccount } = storeToRefs(accountStore)
 const { status, loading: statusLoading, realtimeConnected, currentStatusReady } = storeToRefs(statusStore)
 
@@ -171,13 +171,21 @@ async function refresh() {
       }
 
       if (acc.running) {
-        await farmStore.fetchLands(currentAccountId.value)
+        await Promise.all([
+          farmStore.fetchLands(currentAccountId.value),
+          farmStore.fetchDogSkillGiftStatus(currentAccountId.value),
+        ])
       }
     }
     finally {
       farmLoaded.value = true
     }
   }
+}
+
+async function claimDogSkillGifts() {
+  if (currentAccountId.value)
+    await farmStore.claimDogSkillGifts(currentAccountId.value)
 }
 
 const showInitialLoading = computed(() =>
@@ -256,6 +264,12 @@ function getLandTextureUrl(land: any) {
   return `/game-config/land_images/${land?.needWater ? `land_dry${level}` : `land_valid${level}`}.png`
 }
 
+function shouldRotateLandTexture(land: any) {
+  const level = Number(land?.level) || 1
+  // 单格紫土地贴图需要翻转；2x2 紫土地资源本身已经是农场视角的正确朝向。
+  return level === 5 && Number(land?.plantSize) <= 1
+}
+
 function loadCanvasImage(src: string) {
   const cached = imageCache.get(src)
   if (cached)
@@ -303,7 +317,16 @@ async function drawFarmCanvas() {
     const large = Number(land?.plantSize) > 1
     const width = large ? MERGED_LAND_WIDTH : SINGLE_LAND_WIDTH
     const height = large ? MERGED_LAND_HEIGHT : SINGLE_LAND_HEIGHT
-    context.drawImage(texture, x - width / 2, y - height / 2, width, height)
+    if (shouldRotateLandTexture(land)) {
+      context.save()
+      context.translate(x, y)
+      context.rotate(Math.PI)
+      context.drawImage(texture, -width / 2, -height / 2, width, height)
+      context.restore()
+    }
+    else {
+      context.drawImage(texture, x - width / 2, y - height / 2, width, height)
+    }
   })
 }
 
@@ -417,6 +440,26 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <div
+        v-if="dogSkillGiftPendingCount > 0"
+        class="flex items-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+      >
+        <div class="i-carbon-gift text-xl" />
+        <div class="min-w-0 flex-1">
+          待拾取同气连枝礼包 ×{{ dogSkillGiftPendingCount }}
+        </div>
+        <button
+          class="rounded bg-amber-600 px-3 py-1.5 text-white hover:bg-amber-700 disabled:opacity-50"
+          :disabled="dogSkillGiftLoading"
+          @click="claimDogSkillGifts"
+        >
+          {{ dogSkillGiftLoading ? '拾取中…' : '拾取' }}
+        </button>
+      </div>
+      <div v-else-if="dogSkillGiftError" class="border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">
+        {{ dogSkillGiftError }}
+      </div>
+
       <!-- Summary -->
       <div class="grid grid-cols-4 gap-2 border-b border-gray-100 bg-gray-50 p-3 text-xs sm:flex sm:flex-wrap sm:gap-4 dark:border-gray-700 dark:bg-gray-900/50 sm:p-4 sm:text-sm">
         <div class="flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
@@ -481,6 +524,12 @@ onUnmounted(() => {
                 :height="FARM_CANVAS_HEIGHT"
                 aria-hidden="true"
               />
+              <div v-if="weather?.rainstorm" class="farm-rainstorm-effect" aria-hidden="true">
+                <img class="farm-rain-fog" src="/game-config/effect_images/rain-poem/rain-fog.png" alt="">
+                <div class="farm-rain-streaks farm-rain-streaks-a" />
+                <div class="farm-rain-streaks farm-rain-streaks-b" />
+                <div class="farm-thunder-flash" />
+              </div>
               <LandCard
                 v-for="land in displayLands"
                 :key="land.id"
@@ -549,6 +598,107 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.farm-rainstorm-effect {
+  position: absolute;
+  z-index: 1000;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgb(15 32 55 / 0.18);
+}
+
+.farm-rain-fog,
+.farm-rain-streaks,
+.farm-thunder-flash {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.farm-rain-fog {
+  object-fit: cover;
+  opacity: 0.18;
+  mix-blend-mode: screen;
+  animation: farm-rain-fog-drift 8s ease-in-out infinite alternate;
+}
+
+.farm-rain-streaks {
+  inset: -24%;
+  width: 148%;
+  height: 148%;
+  background-image: url('/game-config/effect_images/rain-poem/rain-streaks.png');
+  background-repeat: repeat;
+  background-size: 36% auto;
+  opacity: 0.52;
+  filter: drop-shadow(1px 2px 1px rgb(155 211 255 / 0.42));
+  transform: rotate(4deg);
+  animation: farm-rain-fall 0.78s linear infinite;
+}
+
+.farm-rain-streaks-b {
+  background-size: 25% auto;
+  opacity: 0.28;
+  transform: rotate(7deg) scaleX(-1);
+  animation-delay: -0.4s;
+  animation-duration: 1.08s;
+}
+
+.farm-thunder-flash {
+  background: rgb(208 235 255 / 0.72);
+  opacity: 0;
+  animation: farm-thunder-flash 7.5s steps(1, end) infinite;
+}
+
+@keyframes farm-rain-fall {
+  from {
+    background-position: 0 -45%;
+  }
+  to {
+    background-position: -5% 0;
+  }
+}
+
+@keyframes farm-rain-fog-drift {
+  from {
+    transform: translateX(-4%) scale(1.08);
+  }
+  to {
+    transform: translateX(4%) scale(1.12);
+  }
+}
+
+@keyframes farm-thunder-flash {
+  0%,
+  3%,
+  5%,
+  48%,
+  51%,
+  100% {
+    opacity: 0;
+  }
+  2%,
+  4% {
+    opacity: 0.75;
+  }
+  49% {
+    opacity: 0.42;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .farm-rain-fog,
+  .farm-rain-streaks,
+  .farm-thunder-flash {
+    animation: none;
+  }
+
+  .farm-rain-streaks-b,
+  .farm-thunder-flash {
+    display: none;
+  }
 }
 
 .iso-farm-stage :deep(.land-card) {
@@ -629,6 +779,11 @@ onUnmounted(() => {
   opacity: 1;
   transform: translate(-50%, -50%);
   filter: saturate(1.08) brightness(1.06) drop-shadow(0 10px 7px rgb(62 46 27 / 0.35));
+}
+
+.iso-farm-stage :deep(.land-card-selected .land-ground-single.land-ground-rotated),
+.iso-farm-stage :deep(.land-card-selected .land-ground-merged.land-ground-rotated) {
+  transform: translate(-50%, -50%) rotate(180deg);
 }
 
 .iso-farm-stage :deep(.land-card-selected .land-ground-layer) {

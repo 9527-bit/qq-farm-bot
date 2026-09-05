@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import BagSeedPriorityPanel from '@/components/settings/BagSeedPriorityPanel.vue'
 import StrategyTimingPanel from '@/components/settings/StrategyTimingPanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
-import BaseSwitch from '@/components/ui/BaseSwitch.vue'
 
 interface SelectOption<T = string | number> {
   label: string
@@ -11,23 +9,12 @@ interface SelectOption<T = string | number> {
   disabled?: boolean
 }
 
-interface BagSeedItem {
-  seedId: number
-  name: string
-  count: number
-  requiredLevel: number
-  plantSize: number
-}
-
 interface StrategySettings {
   plantingStrategy: string
-  preferredSeedId: number
   prioritize2x2Crops: boolean
   bagSeedPriority: number[]
   bagSeedFallbackStrategy: string
   stealDelaySeconds: number
-  plantOrderRandom: boolean
-  plantDelaySeconds: number
   intervals: {
     farmMin: number
     farmMax: number
@@ -49,31 +36,32 @@ withDefaults(defineProps<{
   loading: boolean
   saving: boolean
   plantingStrategyOptions: SelectOption[]
-  preferredSeedOptions: SelectOption<number>[]
   bagFallbackStrategyOptions: SelectOption[]
   strategyPreviewLabel: string | null
-  bagSeeds: BagSeedItem[]
-  sortedBagSeeds: BagSeedItem[]
-  bagSeedsLoading: boolean
-  bagSeedsError: string | null
   title?: string
   saveLabel?: string
+  showActions?: boolean
+  timingSection?: 'all' | 'planting' | 'friends' | 'steal'
 }>(), {
   title: '策略设置',
   saveLabel: '保存策略设置',
+  showActions: true,
+  timingSection: 'all',
 })
 
 const emit = defineEmits<{
-  resetBagSeedPriority: []
-  moveBagSeed: [seedId: number, direction: -1 | 1]
-  removeBagSeed: [seedId: number]
-  startBagSeedDrag: [seedId: number, event: DragEvent]
-  dragOverBagSeed: [seedId: number, event: DragEvent]
-  dropBagSeed: [seedId: number, event: DragEvent]
   save: []
 }>()
 
 const settings = defineModel<StrategySettings>('settings', { required: true })
+
+function selectBagFallbackStrategy(value: string | number) {
+  settings.value.bagSeedFallbackStrategy = String(value)
+}
+
+function isBagFallbackStrategySelected(value: string | number) {
+  return settings.value.bagSeedFallbackStrategy === value
+}
 </script>
 
 <template>
@@ -105,64 +93,52 @@ const settings = defineModel<StrategySettings>('settings', { required: true })
           label="种植策略"
           :options="plantingStrategyOptions"
         />
-        <BaseSelect
-          v-if="settings.plantingStrategy === 'preferred'"
-          v-model="settings.preferredSeedId"
-          label="优先种植种子"
-          :options="preferredSeedOptions"
-        />
-        <BaseSelect
-          v-else-if="settings.plantingStrategy === 'bag_priority' && settings.bagSeedFallbackStrategy === 'preferred'"
-          v-model="settings.preferredSeedId"
-          label="优先种植种子"
-          :options="preferredSeedOptions"
-        />
-        <div v-else class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5">
           <label class="text-sm text-gray-700 font-medium dark:text-gray-300">
             {{ settings.plantingStrategy === 'bag_priority' ? '第二优先策略预览' : '策略选种预览' }}
           </label>
           <div
-            class="w-full flex items-center justify-between border border-gray-200 rounded-lg bg-gray-50 px-3 py-2 text-gray-500 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-400"
+            class="w-full flex items-center justify-between border border-dashed border-gray-200 rounded-lg bg-gray-50 px-3 py-2 text-gray-500 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-400"
+            title="根据当前策略自动匹配，仅供预览"
           >
             <span class="truncate">{{ strategyPreviewLabel ?? '加载中...' }}</span>
-            <div class="i-carbon-chevron-down shrink-0 text-lg text-gray-400" />
+            <div class="i-carbon-information shrink-0 text-base text-gray-400" />
           </div>
         </div>
       </div>
 
-      <div class="border border-emerald-200 rounded-lg bg-emerald-50/70 p-3 dark:border-emerald-800/50 dark:bg-emerald-900/20">
-        <BaseSwitch
-          v-model="settings.prioritize2x2Crops"
-          label="优先种植 2×2 作物"
-        />
-        <p class="mt-2 text-xs text-emerald-700/90 leading-5 dark:text-emerald-300/90">
-          开启后会根据背包中的四格种子预留完整 2×2 区域；预留区收获后暂不补种普通作物，四块全部空闲时自动种植。四格种子不会从商城购买。
-        </p>
+      <div v-if="settings.plantingStrategy === 'bag_priority'" class="flex flex-col gap-2">
+        <label class="text-sm text-gray-700 font-medium dark:text-gray-300">
+          第二优先策略
+        </label>
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <button
+            v-for="option in bagFallbackStrategyOptions"
+            :key="option.value"
+            type="button"
+            class="min-h-11 flex items-center justify-between gap-3 border rounded-lg px-3 py-2 text-left text-sm transition"
+            :class="isBagFallbackStrategySelected(option.value)
+              ? 'border-[var(--theme-primary)] bg-[color-mix(in_srgb,var(--theme-primary)_10%,transparent)] text-gray-900 shadow-sm dark:text-gray-100'
+              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/60'"
+            :aria-pressed="isBagFallbackStrategySelected(option.value)"
+            @click="selectBagFallbackStrategy(option.value)"
+          >
+            <span class="min-w-0 break-words font-medium leading-5">{{ option.label }}</span>
+            <span
+              class="grid h-5 w-5 shrink-0 place-items-center rounded-full border text-xs transition"
+              :class="isBagFallbackStrategySelected(option.value)
+                ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white'
+                : 'border-gray-300 text-transparent dark:border-gray-600'"
+            >
+              <span class="i-carbon-checkmark text-sm" />
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div v-if="settings.plantingStrategy === 'bag_priority'" class="space-y-3">
-        <BaseSelect
-          v-model="settings.bagSeedFallbackStrategy"
-          label="第二优先策略"
-          :options="bagFallbackStrategyOptions"
-        />
-        <BagSeedPriorityPanel
-          :seeds="bagSeeds"
-          :sorted-seeds="sortedBagSeeds"
-          :loading="bagSeedsLoading"
-          :error="bagSeedsError"
-          @reset="emit('resetBagSeedPriority')"
-          @move="(seedId, direction) => emit('moveBagSeed', seedId, direction)"
-          @remove="seedId => emit('removeBagSeed', seedId)"
-          @drag-start="(seedId, event) => emit('startBagSeedDrag', seedId, event)"
-          @drag-over="(seedId, event) => emit('dragOverBagSeed', seedId, event)"
-          @drop="(seedId, event) => emit('dropBagSeed', seedId, event)"
-        />
-      </div>
+      <StrategyTimingPanel v-model:settings="settings" :section="timingSection" />
 
-      <StrategyTimingPanel v-model:settings="settings" />
-
-      <div class="flex justify-end gap-2 border-t pt-3 dark:border-gray-700">
+      <div v-if="showActions" class="flex justify-end gap-2 border-t pt-3 dark:border-gray-700">
         <BaseButton
           variant="primary"
           size="sm"

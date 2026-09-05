@@ -23,8 +23,32 @@ const plantPhaseImageMap = new Map();// assetName → { phase: imageUrl }
 let plantPhaseManifestPath = '';
 let plantPhaseManifestMtimeMs = -1;
 const skinDetailImageMap = new Map();// itemId → skinDetailImageUrl
+const staticItemInfoMap = new Map([
+    [1040, { id: 1040, name: '爱心值' }],
+    [2158, { id: 2158, name: '小红花做好事头像框' }],
+    [101604, { id: 101604, name: '公益小红花结算礼包' }],
+    [1027, { id: 1027, name: '雷电徽章' }],
+    [4002, { id: 4002, name: '闪电感应' }],
+    [4003, { id: 4003, name: '闪电感应' }],
+    [5001, { id: 5001, name: '天气采集瓶' }],
+    [5002, { id: 5002, name: '雷雨召唤瓶' }],
+    [5005, { id: 5005, name: '青蛙使坏瓶' }],
+    [5006, { id: 5006, name: '乌云使坏瓶' }],
+    [2159, { id: 2159, name: '雨落成诗头像框' }],
+    [100003, { id: 100003, name: '化肥礼包' }],
+]);
 const staticItemImageMap = new Map([
     [1023, '/activity/star-festival/star-token.png'],
+    [1024, '/activity/qixi/qixi-feather.png'],
+    [301103, '/activity/qixi/qixi-dew.png'],
+    [5001, '/activity/rain-poem/weather-collection-bottle.png'],
+    [5002, '/activity/rain-poem/rainstorm-summon-bottle.png'],
+    [5005, '/activity/rain-poem/frog-prank-bottle.png'],
+    [5006, '/activity/rain-poem/cloud-prank-bottle.png'],
+    [1027, '/activity/rain-poem/lightning-badge.svg'],
+    [4002, '/activity/rain-poem/lightning-sense.png?v=2'],
+    [4003, '/activity/rain-poem/lightning-sense.png?v=2'],
+    [2159, '/activity/rain-poem/avatar-frame.png?v=2'],
 ]);
 
 // 变异效果配置
@@ -74,22 +98,23 @@ function loadConfigs() {
             const eventPlants = JSON.parse(fs.readFileSync(eventPlantPath, 'utf8'));
             for (const entry of eventPlants) {
                 if (isInvalidPlant(entry)) continue;
-                const existing = plantMap.get(Number(entry.id));
+                const plantId = Number(entry.id);
+                const seedId = Number(entry.seed_id);
+                if (plantMap.has(plantId) || seedToPlant.has(seedId)) continue;
                 const plant = {
-                    ...(existing || {}),
-                    id: Number(entry.id),
+                    id: plantId,
                     name: entry.name,
                     asset_name: entry.asset_name,
-                    seed_id: Number(entry.seed_id),
+                    seed_id: seedId,
                     fruit: {
-                        ...(existing && existing.fruit || {}),
                         id: Number(entry.fruit_id),
-                        count: Number(entry.fruit_count) || Number(existing && existing.fruit && existing.fruit.count) || 0,
+                        count: Number(entry.fruit_count) || 0,
                     },
-                    size: Math.max(1, Number(entry.size) || Number(existing && existing.size) || 1),
-                    seasons: Number(entry.seasons) || Number(existing && existing.seasons) || 1,
-                    grow_phases: entry.grow_phases || existing && existing.grow_phases || '',
-                    exp: Number(entry.exp) || Number(existing && existing.exp) || 0,
+                    size: Math.max(1, Number(entry.size) || 1),
+                    seasons: Number(entry.seasons) || 1,
+                    grow_phases: entry.grow_phases || '',
+                    exp: Number(entry.exp) || 0,
+                    planting_priority: Math.max(0, Number(entry.planting_priority) || 0),
                 };
                 plantMap.set(plant.id, plant);
                 seedToPlant.set(plant.seed_id, plant);
@@ -127,34 +152,45 @@ function loadConfigs() {
             for (const entry of eventPlants) {
                 if (isInvalidPlant(entry)) continue;
                 const seedId = Number(entry.seed_id);
-                const fruitId = Number(entry.fruit_id);
+                const plant = seedToPlant.get(seedId);
+                const fruitId = Number(plant && plant.fruit && plant.fruit.id) || Number(entry.fruit_id);
+                const name = plant && plant.name || entry.name;
+                const assetName = plant && plant.asset_name || entry.asset_name;
                 const baseItem = {
-                    asset_name: entry.asset_name,
-                    level: Number(entry.level) || 1,
-                    rarity: Number(entry.rarity) || 3,
+                    asset_name: assetName,
+                    level: Number(entry.level) || Number(plant && plant.land_level_need) || 1,
+                    rarity: Math.max(3, Number(entry.rarity) || 0),
                     rarity_color: entry.rarity_color || 'EEC55A',
                 };
-                if (!itemInfoMap.has(seedId)) {
+                const existingSeedItem = itemInfoMap.get(seedId);
+                if (!existingSeedItem || plant) {
                     const seedItem = {
                         ...baseItem,
+                        ...(existingSeedItem || {}),
                         id: seedId,
                         type: 5,
-                        name: `${entry.name}种子`,
+                        name: `${name}种子`,
+                        asset_name: assetName,
+                        rarity: Math.max(1, Number(existingSeedItem && existingSeedItem.rarity) || 3),
                         interaction_type: 'plant',
                         max_count: 9999,
                         max_own: 9999,
-                        desc: `种植后，可以收获一定数量的${entry.name}。`,
-                        effectDesc: entry.name,
+                        desc: `种植后，可以收获一定数量的${name}。`,
+                        effectDesc: name,
                     };
                     itemInfoMap.set(seedId, seedItem);
                     seedItemMap.set(seedId, seedItem);
                 }
-                if (!itemInfoMap.has(fruitId)) {
+                const existingFruitItem = itemInfoMap.get(fruitId);
+                if (!existingFruitItem || plant) {
                     itemInfoMap.set(fruitId, {
                         ...baseItem,
+                        ...(existingFruitItem || {}),
                         id: fruitId,
                         type: 4,
-                        name: entry.name,
+                        name,
+                        asset_name: assetName,
+                        rarity: Math.max(1, Number(existingFruitItem && existingFruitItem.rarity) || 3),
                         max_count: 99999,
                         max_own: 999990,
                         layer: Number(entry.layer) || 0,
@@ -412,7 +448,7 @@ function getAllSeeds() {
     return Array.from(seedToPlant.values()).map(plant => ({
         seedId: plant.seed_id,
         name: plant.name,
-        requiredLevel: Number(plant.land_level_need) || 0,
+        requiredLevel: getSeedLevel(plant.seed_id) || Number(plant.land_level_need) || 0,
         price: getSeedPrice(plant.seed_id),
         image: getSeedImageBySeedId(plant.seed_id)
     }));
@@ -574,7 +610,14 @@ function getItemImageById(itemId) {
 
 /** 根据物品ID获取物品信息 */
 function getItemById(itemId) {
-    return itemInfoMap.get(Number(itemId) || 0);
+    const numericId = Number(itemId) || 0;
+    const staticInfo = staticItemInfoMap.get(numericId);
+    const itemInfo = itemInfoMap.get(numericId);
+    if (!staticInfo) return itemInfo;
+    return {
+        ...(itemInfo || {}),
+        ...staticInfo,
+    };
 }
 
 /** 判断是否是种子物品 */

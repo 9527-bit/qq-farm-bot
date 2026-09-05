@@ -34,7 +34,7 @@ function itemImage(item: any) {
         #{{ item.goodsId }}
       </span>
       <span class="absolute right-0 top-0 rounded-bl-lg bg-blue-50 px-2 py-0.5 text-[10px] text-blue-700 font-semibold dark:bg-blue-900/20 dark:text-blue-300">
-        {{ item.isFree ? L.free : L.coupon }}
+        {{ item.isFree ? L.free : (item.currencyName || L.coupon) }}
       </span>
       <img v-if="itemImage(item)" :src="itemImage(item)" :alt="item.name" class="max-h-14 max-w-14 object-contain">
       <div v-else class="grid h-14 w-14 place-items-center rounded-lg bg-white text-sm text-gray-500 font-semibold dark:bg-gray-800">
@@ -47,7 +47,7 @@ function itemImage(item: any) {
         {{ item.name }}
       </div>
       <div class="mt-1 text-center text-xs text-amber-600 font-semibold dark:text-amber-400">
-        {{ item.isFree ? L.free : `${formatCouponAmount(item.price)} ${L.coupon}` }}
+        {{ item.isFree ? L.free : `${formatCouponAmount(item.price)} ${item.currencyName || L.coupon}` }}
       </div>
       <p v-if="item.discount" class="line-clamp-2 mt-2 text-[11px] text-blue-500 leading-5 dark:text-blue-400">
         {{ item.discount }}

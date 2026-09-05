@@ -4,11 +4,10 @@
  * 功能：
  * - 获取背包/背包详情
  * - 批量/单个出售作物果实
- * - 使用物品（含 protobuf raw 回退）
+ * - 使用物品
  * - 自动使用化肥礼包
  * - 化肥容器时间计算
  */
-const protobuf = require('protobufjs');
 const {
   getFruitName,
   getPlantByFruitId,
@@ -23,6 +22,7 @@ const { isAutomationOn } = require('../models/store');
 const { sendMsgAsync, networkEvents, getUserState } = require('../utils/network');
 const { types } = require('../utils/proto');
 const { toLong, toNum, log, logWarn, sleep } = require('../utils/utils');
+const { compareBagSeedGameOrder } = require('../utils/bag-seed-order');
 const { updateStatusGold } = require('./status');
 
 // ---- 常量 ----
@@ -101,37 +101,29 @@ async function sellItems(items) {
 }
 
 /**
- * 使用物品（含 raw protobuf 回退）
+ * 使用背包物品。官方请求要求携带物品 UID；未显式传入时从背包查找。
  */
-async function useItem(itemId, count = 1, landIds = []) {
+async function useItem(itemId, count = 1, uid = 0) {
+  let itemUid = toNum(uid);
+  if (itemUid <= 0) {
+    const bag = await getBag();
+    const bagItem = getBagItems(bag).find((item) =>
+      toNum(item && item.id) === toNum(itemId) && toNum(item && item.count) > 0
+    );
+    itemUid = toNum(bagItem && bagItem.uid);
+  }
+
   const request = types.UseRequest.encode(
     types.UseRequest.create({
-      item_id: toLong(itemId),
-      count: toLong(count),
-      land_ids: (landIds || []).map((id) => toLong(id)),
+      item: {
+        id: toLong(itemId),
+        count: toLong(count),
+        uid: toLong(itemUid),
+      },
     })
   ).finish();
-
-  try {
-    const { body } = await sendMsgAsync('gamepb.itempb.ItemService', 'Use', request);
-    return types.UseReply.decode(body);
-  } catch (err) {
-    const msg = String(err && err.message || '');
-    const isBadParam = msg.includes('code=1000020') || msg.includes('请求参数错误');
-
-    if (!isBadParam) throw err;
-
-    // 回退：手工构建 raw protobuf
-    const writer = protobuf.Writer.create();
-    writer.uint32(10).fork();         // field 1, wire 2
-    writer.uint32(8).int64(toLong(itemId));  // field 1, varint
-    writer.uint32(16).int64(toLong(count));  // field 2, varint
-    writer.ldelim();
-
-    const raw = writer.finish();
-    const { body } = await sendMsgAsync('gamepb.itempb.ItemService', 'Use', raw);
-    return types.UseReply.decode(body);
-  }
+  const { body } = await sendMsgAsync('gamepb.itempb.ItemService', 'Use', request);
+  return types.UseReply.decode(body);
 }
 
 async function batchUseItems(entries) {
@@ -429,9 +421,12 @@ async function getBagDetail() {
 
     const interactionType = info && info.interaction_type ? String(info.interaction_type) : '';
     const priceId = info ? Number(info.price_id) || 0 : 0;
+    const directSell = String(info && info.sells || '').match(/^(\d+):(\d+)$/);
+    const effectivePriceId = directSell ? Number(directSell[1]) : priceId;
+    const effectivePrice = directSell ? Number(directSell[2]) : (info ? Number(info.price) || 0 : 0);
     const priceUnit =
-      priceId === 1005 ? '金豆豆' :
-      priceId === 200 ? '点券' : '金';
+      effectivePriceId === 1005 ? '金豆豆' :
+      effectivePriceId === 200 ? '点券' : '金';
 
     if (!merged.has(id)) {
       merged.set(id, {
@@ -441,10 +436,18 @@ async function getBagDetail() {
         image: getItemImageById(id),
         category,
         itemType: info ? Number(info.type) || 0 : 0,
-        priceId,
-        price: info ? Number(info.price) || 0 : 0,
+        priceId: effectivePriceId,
+        price: effectivePrice,
         priceUnit,
+        sellable: Boolean(directSell || getPlantByFruitId(id)),
+        usable: Number(info && info.can_use) === 1 || interactionType === 'use',
         level: info ? Number(info.level) || 0 : 0,
+        rarity: seedPlant ? Math.max(
+          seedPlant.special_fruit ? 3 : 0,
+          Number(info && info.rarity) || 0
+        ) : 0,
+        plantExp: seedPlant ? Math.max(0, Number(seedPlant.exp) || 0) : 0,
+        plantingPriority: seedPlant ? Math.max(0, Number(seedPlant.planting_priority) || 0) : 0,
         plantSize: seedPlant ? Math.max(1, Number(seedPlant.size || 1)) : 1,
         interactionType,
         hoursText: '',
@@ -465,6 +468,9 @@ async function getBagDetail() {
   // 排序：按物品类型排序，同类型按数量降序
   const typeOrder = new Map([[1, 1], [2, 2], [4, 3]]);
   resultItems.sort((a, b) => {
+    if (a.category === 'seed' && b.category === 'seed')
+      return compareBagSeedGameOrder(a, b);
+
     const typeA = Number(a.itemType || 0);
     const typeB = Number(b.itemType || 0);
     const orderA = typeOrder.has(typeA) ? typeOrder.get(typeA) : (typeA > 0 ? 1000 + typeA : Number.MAX_SAFE_INTEGER);
@@ -660,9 +666,9 @@ async function getBagSeeds() {
 
     const rawName = plant && plant.name ? String(plant.name) : String(info && info.name || `??#${id}`);
     const name = rawName.endsWith('??') ? rawName.slice(0, -2) : rawName;
-    const requiredLevel = plant
-      ? Math.max(0, Number(plant.land_level_need || 0))
-      : Math.max(0, Number(info && info.level || getSeedLevel(id) || 0));
+    const requiredLevel = Math.max(0, Number(
+      getSeedLevel(id) || (info && info.level) || (plant && plant.land_level_need) || 0
+    ));
     const plantSize = plant ? Math.max(1, Number(plant.size || 1)) : 1;
 
     const existing = seedMap.get(id) || {
@@ -670,6 +676,12 @@ async function getBagSeeds() {
       name,
       count: 0,
       requiredLevel,
+      rarity: Math.max(
+        plant && plant.special_fruit ? 3 : 0,
+        Number(info && info.rarity) || 0
+      ),
+      plantExp: Math.max(0, Number(plant && plant.exp) || 0),
+      plantingPriority: Math.max(0, Number(plant && plant.planting_priority) || 0),
       image: getSeedImageBySeedId(id) || getItemImageById(id),
       plantSize,
     };

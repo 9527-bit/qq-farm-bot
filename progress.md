@@ -8,14 +8,16 @@
 
 # 当前状态
 
-- TSDK/ACE 安全链路已升级到 QQ Mac 客户端 2026-07-29 包内的官方
-  `v3.8.6.1785240280` WASM（SHA-256
-  `8a94a43c9f96a24ca99c46912244ad8d39535944acfa223426c4c51d282e769a`）。
-  最新 `game.js` 和 WASM 反汇编确认 22 个 imports、导出映射、59 字节运行时表、
+- TSDK/ACE 安全链路已升级到 QQ Mac 客户端 2026-08-20 10:32 包内的官方
+  `v3.9.0.1787057219` WASM（161114 字节，SHA-256
+  `98cc5301cff10f5b87a014d0a4af92630e4a6e91292cc7de5eb86422275f0070`）。
+  同包 `game.js` 和 WASM 静态检查确认 22 个 imports、导出映射、
   `SdkInitEx(3167, 0)`、17 个 mergewasm 数据段及解密密钥均与现有 Node 宿主兼容；
-  默认运行文件已切换为 `tsdk-v3.8.6.wasm`，完整后端测试 30/30 通过。调用映射和
-  内存所有权见 `core/docs/tsdk-ace-runtime.md`；受控在线 5/30 分钟好友操作仍需
-  测试账号实测。
+  默认运行文件已切换为 `tsdk-v3.9.0.wasm`，保留 `tsdk-v3.8.6.wasm` 用于回退。
+  语法检查、定向 ESLint 和 6/6 TSDK/网关测试通过；完整后端套件中 TSDK 项通过，
+  总计 152/153 通过，既有 `capture-core` 代理启动用例在当前环境失败，未改动该模块。
+  调用映射和内存所有权见 `core/docs/tsdk-ace-runtime.md`；受控在线 5/30 分钟好友
+  操作仍需测试账号实测。
 - WASM 后续更新已标准化：新增 `core/scripts/inspect-tsdk-update.js` 和
   `npm run inspect:tsdk`，可静态输出 SHA-256、imports、exports、active data
   segments、解密高频常量、`game.js` 版本/关键标记及基线兼容性；完整发现、快照、
@@ -44,6 +46,7 @@
 - 布局账号入口已调整：新增 `TopAccountMenu.vue`，将账号切换、添加账号、管理账号和备注编辑入口从左侧栏搬到顶部栏右侧；`Sidebar.vue` 删除原账号选择块，左侧更专注于用户信息、导航和底部状态。
 - 左侧导航菜单已简化为短标签：概览、个人、好友、活动、商城、图鉴、分析、设置、后台；后台仍保留管理员可见限制。
 - 活动页荷露抽奖点完后疑似掉线的问题已做保守防护：`core/src/services/activity.js` 对活动 Operate 增加连接状态检查，免费多抽改为串行节流请求并延迟刷新活动状态；`web/src/views/Activity.vue` 防止抽奖请求重复提交。服务已重启，`/api/health` 返回 200。
+- “雨落成诗”已接入活动页与后端接口：支持天气状态、天气采集瓶购买、好友雷雨采集、雷雨召唤瓶使用、气象研究解锁、气象任务展示和闪电变异类型 12 识别；活动有效期为 2026-08-26 10:00:00 至 2026-09-08 23:59:59（Asia/Shanghai）。已补齐 4002/4003 闪电感应、2159 雨落成诗头像框等活动物品名称/图标映射，避免气象研究后段奖励显示“未知物品”。账号设置 → 日常与活动已新增雨落成诗二级卡片，可配置自动买瓶、自动采集、自动召唤和自动研究；活动过期后后端会压关，前端二级卡片和活动入口会随时间窗隐藏。活动页雨落成诗面板已改为只读展示，手动操作入口不再显示。
 - 蹲守与飞升/秒偷功能已完全去除：前端设置 tab、独立蹲守页、相关组件、setting store 字段、后端 `/api/instant-steal`/`/api/stakeout` 路由、worker RPC/自动启动、runtime provider/config snapshot、store 配置模型和对应 service 文件均已删除；源码残留扫描无匹配。
 - `core/src/controllers/admin-bag-routes.js` 已从 `_v###`/逗号表达式风格清理为命名 helper + 清晰路由处理；接口路径、主要返回结构和旧版缺账号行为保持对齐。
 - `core/src/controllers/admin-farm-resource-routes.js` 已清理为命名 helper + 清晰路由处理；`/api/status` 缺账号 200 返回、其它资源接口缺账号 400 的旧行为保持对齐。

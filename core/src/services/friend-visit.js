@@ -1,7 +1,7 @@
 const { PlantPhase } = require('../config/config');
 const { getPlantBlacklist, isAutomationOn } = require('../models/store');
 const { getUserState } = require('../utils/network');
-const { toNum, log, logWarn, randomDelay, sleep } = require('../utils/utils');
+const { toNum, log, logWarn, randomDelay } = require('../utils/utils');
 const { recordOperation } = require('./stats');
 const { sellAllFruits } = require('./warehouse');
 const {
@@ -35,24 +35,32 @@ const {
  * Run an operation on multiple land IDs. Falls back to single-ID calls if batch fails.
  * Returns the number of successful operations.
  */
-async function runBatchWithFallback(landIds, batchFn, singleFn) {
+function isExplicitBatchShapeError(error) {
+  if (!error) return false;
+  if (error.code === 'BATCH_UNSUPPORTED') return true;
+  const message = String(error.message || error);
+  return /batch (?:is )?not supported|unsupported batch|不支持批量|批量参数(?:无效|错误)/i.test(message);
+}
+
+async function runBatchWithFallback(landIds, batchFn, singleFn, options = {}) {
   const ids = Array.isArray(landIds) ? landIds.filter(Boolean) : [];
   if (ids.length === 0) return 0;
 
   try {
     await batchFn(ids);
     return ids.length;
-  } catch (_) {
-    // Fallback: one by one
+  } catch (error) {
+    if (!isExplicitBatchShapeError(error)) throw error;
+    const maxFallbacks = Math.max(1, Math.min(Number(options.maxFallbacks) || 4, 8));
     let ok = 0;
-    for (const id of ids) {
+    for (const id of ids.slice(0, maxFallbacks)) {
       try {
         await singleFn([id]);
         ok++;
-      } catch (_) {
+      } catch {
         // Skip individual failures
       }
-      await sleep(100);
+      await randomDelay(800, 1600);
     }
     return ok;
   }
@@ -214,11 +222,11 @@ async function doFriendOperation(gid, opType) {
       let failedMsgs = [];
 
       // Put insects
-      if (analysis.canPutBug.length && getBadRemainingTimes() > 0) {
+      if (analysis.canPutBug.length && getBadRemainingTimes(PUT_BUG_OPERATION_ID) > 0) {
         const canPutBug = await checkCanOperateRemote(numericGid, PUT_BUG_OPERATION_ID);
         const remainingBug = Math.min(
           getRemainingTimes(PUT_BUG_OPERATION_ID, BAD_DAILY_LIMIT),
-          getBadRemainingTimes()
+          getBadRemainingTimes(PUT_BUG_OPERATION_ID)
         );
         const targets = canPutBug.canOperate ? analysis.canPutBug.slice(0, remainingBug) : [];
         const result = targets.length > 0
@@ -232,11 +240,11 @@ async function doFriendOperation(gid, opType) {
       }
 
       // Put weeds
-      if (analysis.canPutWeed.length && getBadRemainingTimes() > 0) {
+      if (analysis.canPutWeed.length && getBadRemainingTimes(PUT_WEED_OPERATION_ID) > 0) {
         const canPutWeed = await checkCanOperateRemote(numericGid, PUT_WEED_OPERATION_ID);
         const remainingWeed = Math.min(
           getRemainingTimes(PUT_WEED_OPERATION_ID, BAD_DAILY_LIMIT),
-          getBadRemainingTimes()
+          getBadRemainingTimes(PUT_WEED_OPERATION_ID)
         );
         const targets = canPutWeed.canOperate ? analysis.canPutWeed.slice(0, remainingWeed) : [];
         const result = targets.length > 0
@@ -279,7 +287,7 @@ async function doFriendOperation(gid, opType) {
   } finally {
     try {
       await leaveFriendFarm(numericGid);
-    } catch (_) {
+    } catch {
       // Ignore leave errors
     }
   }
@@ -405,19 +413,17 @@ async function visitFriend(friend, tally, myGid, accountId) {
           const info = analysis.stealableInfo.find(s => s.landId === landId);
           if (info) stolenNames.push(info.name);
         });
-      } catch (_) {
-        // Fallback: steal one by one
-        for (const landId of targetLands) {
-          try {
-            await stealHarvest(gid, [landId]);
-            stolen++;
-            const info = analysis.stealableInfo.find(s => s.landId === landId);
-            if (info) stolenNames.push(info.name);
-          } catch (_) {
-            // Skip individual failures
-          }
-          await randomDelay(500, 1000);
+      } catch (error) {
+        if (!isExplicitBatchShapeError(error)) {
+          await leaveFriendFarm(gid);
+          throw error;
         }
+        stolen = await runBatchWithFallback(
+          targetLands,
+          async () => { throw error; },
+          ids => stealHarvest(gid, ids),
+          { maxFallbacks: 4 }
+        );
       }
 
       if (stolen > 0) {
@@ -442,10 +448,10 @@ async function visitFriend(friend, tally, myGid, accountId) {
     const canPutWeed = await checkCanOperateRemote(gid, PUT_WEED_OPERATION_ID);
 
     // Put insects
-    if (analysis.canPutBug.length > 0 && canPutBug.canOperate && getBadRemainingTimes() > 0) {
+    if (analysis.canPutBug.length > 0 && canPutBug.canOperate && getBadRemainingTimes(PUT_BUG_OPERATION_ID) > 0) {
       const remainingBug = Math.min(
         getRemainingTimes(PUT_BUG_OPERATION_ID, BAD_DAILY_LIMIT),
-        getBadRemainingTimes()
+        getBadRemainingTimes(PUT_BUG_OPERATION_ID)
       );
       const targets = analysis.canPutBug.slice(0, remainingBug);
       const result = await putInsectsDetailed(gid, targets);
@@ -461,10 +467,10 @@ async function visitFriend(friend, tally, myGid, accountId) {
     }
 
     // Put weeds
-    if (analysis.canPutWeed.length > 0 && canPutWeed.canOperate && getBadRemainingTimes() > 0) {
+    if (analysis.canPutWeed.length > 0 && canPutWeed.canOperate && getBadRemainingTimes(PUT_WEED_OPERATION_ID) > 0) {
       const remainingWeed = Math.min(
         getRemainingTimes(PUT_WEED_OPERATION_ID, BAD_DAILY_LIMIT),
-        getBadRemainingTimes()
+        getBadRemainingTimes(PUT_WEED_OPERATION_ID)
       );
       const targets = analysis.canPutWeed.slice(0, remainingWeed);
       const result = await putWeedsDetailed(gid, targets);
@@ -580,18 +586,17 @@ async function visitFriendForSteal(friend, tally, myGid, accountId) {
           const info = analysis.stealableInfo.find(s => s.landId === landId);
           if (info) stolenNames.push(info.name);
         });
-      } catch (_) {
-        for (const landId of targetLands) {
-          try {
-            await stealHarvest(gid, [landId]);
-            stolen++;
-            const info = analysis.stealableInfo.find(s => s.landId === landId);
-            if (info) stolenNames.push(info.name);
-          } catch (_) {
-            // Skip individual failures
-          }
-          await randomDelay(200, 600);
+      } catch (error) {
+        if (!isExplicitBatchShapeError(error)) {
+          await leaveFriendFarm(gid);
+          throw error;
         }
+        stolen = await runBatchWithFallback(
+          targetLands,
+          async () => { throw error; },
+          ids => stealHarvest(gid, ids),
+          { maxFallbacks: 4 }
+        );
       }
 
       if (stolen > 0) {
@@ -747,6 +752,7 @@ async function visitFriendForHelp(friend, tally, myGid, accountId, ignoreExpLimi
 // ===== Exports =====
 module.exports = {
   runBatchWithFallback,
+  isExplicitBatchShapeError,
   doFriendOperation,
   visitFriend,
   visitFriendForSteal,

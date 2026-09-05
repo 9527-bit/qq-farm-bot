@@ -34,6 +34,10 @@ type CategoryValue = typeof CATEGORY_OPTIONS[number]['value']
 const selectedCategory = ref<CategoryValue>('fruit')
 
 function getItemCategory(item: any): CategoryValue {
+  if (item?.category === 'seed')
+    return 'seed'
+  if (item?.category === 'fruit')
+    return 'fruit'
   const itemType = Number(item?.itemType || 0)
   if (itemType === 17 || itemType === 6)
     return 'fruit'
@@ -89,7 +93,7 @@ function getPriceClass(item: any) {
 
 function canSell(item: any) {
   const itemType = Number(item?.itemType || 0)
-  return itemType === 17 || itemType === 6
+  return Boolean(item?.sellable) || itemType === 17 || itemType === 6
 }
 
 function canBatchSell(item: any) {
@@ -97,8 +101,7 @@ function canBatchSell(item: any) {
 }
 
 function canUse(item: any) {
-  const itemType = Number(item?.itemType || 0)
-  return itemType === 11
+  return Boolean(item?.usable) || Number(item?.itemType || 0) === 11
 }
 
 function handleSellClick(item: any) {
@@ -211,7 +214,13 @@ async function handleConfirm() {
       }
     }
     else if (action === 'use' && item) {
-      const res = await bagStore.useItem(currentAccountId.value, Number(item.id), Number(item.count || 1))
+      const sourceItem = originalItems.value.find((it: any) => Number(it.id) === Number(item.id))
+      const res = await bagStore.useItem(
+        currentAccountId.value,
+        Number(item.id),
+        Number(item.count || 1),
+        Number(sourceItem?.uid || 0),
+      )
       if (res.ok) {
         toastStore.success(`已使用 ${item.name || `物品${item.id}`}`)
         await loadBag()
@@ -519,7 +528,8 @@ useIntervalFn(loadBag, 60000)
             <span v-if="item.uid">UID: {{ item.uid }}</span>
             <span>
               类型: {{ item.itemType || 0 }}
-              <span v-if="item.level > 0"> · Lv{{ item.level }}</span>
+              <span v-if="getItemCategory(item) === 'seed' && Number(item.rarity) >= 2"> · 稀有</span>
+              <span v-else-if="item.level > 0"> · Lv{{ item.level }}</span>
               <span v-if="item.price > 0" :class="getPriceClass(item)"> · {{ item.price }}{{ item.priceUnit || '金' }}</span>
             </span>
           </div>

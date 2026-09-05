@@ -8,8 +8,10 @@ export interface AutomationConfig {
   farm_push?: boolean
   land_upgrade?: boolean
   friend?: boolean
+  friend_auto_accept?: boolean
   task?: boolean
   star_passport_claim?: boolean
+  star_solar_claim?: boolean
   star_record_claim?: boolean
   qingmei_seed_claim?: boolean
   qingmei_wine_brew?: boolean
@@ -17,6 +19,15 @@ export interface AutomationConfig {
   qixi_bridge_build?: boolean
   qixi_sachet_gift?: boolean
   qixi_friend_priority?: number[]
+  rain_poem_bottle_buy?: boolean
+  rain_poem_weather_collect?: boolean
+  rain_poem_summon_use?: boolean
+  rain_poem_prank_use?: boolean
+  rain_poem_research_unlock?: boolean
+  charity_flower_share_claim?: boolean
+  charity_flower_donate?: boolean
+  charity_flower_reward_claim?: boolean
+  charity_flower_public_fund_claim?: boolean
   sell?: boolean
   fertilizer_gift?: boolean
   fertilizer_buy_organic?: boolean
@@ -90,7 +101,6 @@ export interface AutoCodeRefreshConfig {
 
 export interface SettingsState {
   plantingStrategy: string
-  preferredSeedId: number
   prioritize2x2Crops: boolean
   bagSeedPriority: number[]
   bagSeedKnownIds: number[]
@@ -103,8 +113,6 @@ export interface SettingsState {
   ui: UIConfig
   offlineReminder: OfflineConfig
   stealDelaySeconds: number
-  plantOrderRandom: boolean
-  plantDelaySeconds: number
   fertilizerBuyOrganicCount: number
   fertilizerBuyOrganicThresholdHours: number
   fertilizerBuyNormalCount: number
@@ -150,7 +158,6 @@ function normalizeOfflineReminder(input: Partial<OfflineConfig> | null | undefin
 export const useSettingStore = defineStore('setting', () => {
   const settings = ref<SettingsState>({
     plantingStrategy: 'max_exp',
-    preferredSeedId: 0,
     prioritize2x2Crops: false,
     bagSeedPriority: [],
     bagSeedKnownIds: [],
@@ -163,8 +170,6 @@ export const useSettingStore = defineStore('setting', () => {
     ui: {},
     offlineReminder: createDefaultOfflineReminder(),
     stealDelaySeconds: 0,
-    plantOrderRandom: false,
-    plantDelaySeconds: 0,
     fertilizerBuyOrganicCount: 10,
     fertilizerBuyOrganicThresholdHours: 10,
     fertilizerBuyNormalCount: 10,
@@ -185,7 +190,6 @@ export const useSettingStore = defineStore('setting', () => {
   function clearSettingsState() {
     settings.value = {
       plantingStrategy: 'max_exp',
-      preferredSeedId: 0,
       prioritize2x2Crops: false,
       bagSeedPriority: [],
       bagSeedKnownIds: [],
@@ -198,8 +202,6 @@ export const useSettingStore = defineStore('setting', () => {
       ui: {},
       offlineReminder: createDefaultOfflineReminder(),
       stealDelaySeconds: 0,
-      plantOrderRandom: false,
-      plantDelaySeconds: 0,
       fertilizerBuyOrganicCount: 10,
       fertilizerBuyOrganicThresholdHours: 10,
       fertilizerBuyNormalCount: 10,
@@ -226,7 +228,6 @@ export const useSettingStore = defineStore('setting', () => {
       if (data && data.ok && data.data) {
         const d = data.data
         settings.value.plantingStrategy = d.plantingStrategy || d.strategy || 'max_exp'
-        settings.value.preferredSeedId = d.preferredSeedId || d.preferredSeed || 0
         settings.value.prioritize2x2Crops = d.prioritize2x2Crops === true
         settings.value.intervals = d.intervals || {}
         settings.value.friendQuietHours = d.friendQuietHours || { enabled: false, start: '23:00', end: '07:00' }
@@ -239,8 +240,6 @@ export const useSettingStore = defineStore('setting', () => {
         settings.value.autoAcceptFriendMinLevel = d.autoAcceptFriendMinLevel ?? 0
         settings.value.offlineReminder = normalizeOfflineReminder(d.offlineReminder)
         settings.value.stealDelaySeconds = d.stealDelaySeconds ?? 0
-        settings.value.plantOrderRandom = d.plantOrderRandom ?? false
-        settings.value.plantDelaySeconds = d.plantDelaySeconds ?? 0
         settings.value.fertilizerBuyOrganicCount = d.fertilizerBuyOrganicCount ?? 10
         settings.value.fertilizerBuyOrganicThresholdHours = d.fertilizerBuyOrganicThresholdHours ?? 10
         settings.value.fertilizerBuyNormalCount = d.fertilizerBuyNormalCount ?? 10
@@ -266,7 +265,6 @@ export const useSettingStore = defineStore('setting', () => {
     try {
       const settingsPayload = {
         plantingStrategy: newSettings.plantingStrategy,
-        preferredSeedId: newSettings.preferredSeedId,
         prioritize2x2Crops: newSettings.prioritize2x2Crops === true,
         bagSeedPriority: newSettings.bagSeedPriority ?? [],
         bagSeedKnownIds: newSettings.bagSeedKnownIds ?? [],
@@ -276,8 +274,6 @@ export const useSettingStore = defineStore('setting', () => {
         intervals: newSettings.intervals,
         friendQuietHours: newSettings.friendQuietHours,
         stealDelaySeconds: newSettings.stealDelaySeconds ?? 0,
-        plantOrderRandom: newSettings.plantOrderRandom ?? false,
-        plantDelaySeconds: newSettings.plantDelaySeconds ?? 0,
         fertilizerBuyOrganicCount: newSettings.fertilizerBuyOrganicCount ?? 10,
         fertilizerBuyOrganicThresholdHours: newSettings.fertilizerBuyOrganicThresholdHours ?? 10,
         fertilizerBuyNormalCount: newSettings.fertilizerBuyNormalCount ?? 10,

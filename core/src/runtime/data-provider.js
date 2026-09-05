@@ -24,6 +24,7 @@ function createDataProvider(deps) {
         startWorker,
         stopWorker,
         restartWorker,
+        getResourceStatus,
         scheduleAutoCodeRefresh,
         refreshAccountCode
     } = deps;
@@ -51,6 +52,34 @@ function createDataProvider(deps) {
     const FRIEND_TIMEOUT = { _timeoutMs: 180000 };       // 3分钟
     const SYNC_TIMEOUT = { _timeoutMs: 180000 };          // 3分钟
     const DOG_INFO_TIMEOUT = { _timeoutMs: 600000 };     // 10分钟
+
+    // 浏览器整页刷新后，旧 HTTP 请求仍会在服务端继续执行。按账号合并并发的
+    // 背包只读请求，避免刷新风暴把同一个 Bag RPC 重复塞进游戏连接队列。
+    const pendingReadRequests = new Map();
+
+    function callWorkerReadOnce(key, accountId, method, ...args) {
+        const pending = pendingReadRequests.get(key);
+        if (pending) return pending;
+
+        const request = Promise.resolve()
+            .then(() => callWorkerApi(accountId, method, ...args))
+            .finally(() => {
+                if (pendingReadRequests.get(key) === request) pendingReadRequests.delete(key);
+            });
+        pendingReadRequests.set(key, request);
+        return request;
+    }
+
+    function getBag(ref) {
+        const accountId = resolveAccountId(ref);
+        return callWorkerReadOnce(`bag:${String(accountId || '')}`, accountId, 'getBag');
+    }
+
+    function getIllustratedList(ref, type, level) {
+        const accountId = resolveAccountId(ref);
+        const key = `illustrated:${String(accountId || '')}:${String(type)}:${String(level)}`;
+        return callWorkerReadOnce(key, accountId, 'getIllustratedList', type, level);
+    }
 
     return {
         /** 获取账号运行状态 */
@@ -138,9 +167,17 @@ function createDataProvider(deps) {
 
         // ========== Farm API ==========
         getLands: (ref) => callWorkerApi(resolveAccountId(ref), 'getLands'),
+        getDiamondBalance: (ref) => callWorkerApi(resolveAccountId(ref), 'getDiamondBalance'),
         getSeeds: (ref) => callWorkerApi(resolveAccountId(ref), 'getSeeds'),
-        getBag: (ref) => callWorkerApi(resolveAccountId(ref), 'getBag'),
+        getBag,
         getBagSeeds: (ref) => callWorkerApi(resolveAccountId(ref), 'getBagSeeds'),
+        getDogSkillGiftStatus: (ref) => callWorkerApi(resolveAccountId(ref), 'getDogSkillGiftStatus'),
+        claimDogSkillGifts: (ref) => callWorkerApi(resolveAccountId(ref), 'claimDogSkillGifts'),
+        getPetOverview: (ref) => callWorkerApi(resolveAccountId(ref), 'getPetOverview'),
+        deployDog: (ref, dogId) => callWorkerApi(resolveAccountId(ref), 'deployDog', dogId),
+        withdrawDog: (ref) => callWorkerApi(resolveAccountId(ref), 'withdrawDog'),
+        feedDog: (ref, foodId, count) => callWorkerApi(resolveAccountId(ref), 'feedDog', foodId, count),
+        getProtectLogs: (ref) => callWorkerApi(resolveAccountId(ref), 'getProtectLogs'),
         doFarmOp: (ref, op) => callWorkerApi(resolveAccountId(ref), 'doFarmOp', op),
         buyFertilizer: (ref, type, count) => callWorkerApi(resolveAccountId(ref), 'buyFertilizer', type, count),
         checkAndBuyFertilizer: (ref, opts) => callWorkerApi(resolveAccountId(ref), 'checkAndBuyFertilizer', opts),
@@ -165,7 +202,7 @@ function createDataProvider(deps) {
         delFriend: (ref, gid) => callWorkerApi(resolveAccountId(ref), 'delFriend', gid),
 
         // ========== 仓库 ==========
-        useItem: (ref, itemId, count) => callWorkerApi(resolveAccountId(ref), 'useItem', itemId, count),
+        useItem: (ref, itemId, count, uid) => callWorkerApi(resolveAccountId(ref), 'useItem', itemId, count, uid),
         sellItems: (ref, items) => callWorkerApi(resolveAccountId(ref), 'sellItems', items),
 
         // ========== 每日礼包 ==========
@@ -181,6 +218,7 @@ function createDataProvider(deps) {
         // ========== Activity ==========
         getActivityShop: (ref) => callWorkerApi(resolveAccountId(ref), 'getActivityShop'),
         getActivityDiscoveryList: (ref) => callWorkerApi(resolveAccountId(ref), 'getActivityDiscoveryList'),
+        getActivityDiscoverySnapshot: (ref) => callWorkerApi(resolveAccountId(ref), 'getActivityDiscoverySnapshot'),
         getActivityGroupSnapshot: (ref, activityId, uid = '') => callWorkerApi(resolveAccountId(ref), 'getActivityGroupSnapshot', activityId, uid),
         buyActivityShopItem: (ref, itemId, count) => callWorkerApi(resolveAccountId(ref), 'buyActivityShopItem', itemId, count),
         refreshActivityShop: (ref) => callWorkerApi(resolveAccountId(ref), 'refreshActivityShop'),
@@ -192,6 +230,12 @@ function createDataProvider(deps) {
         buildQixiBridge: (ref) => callWorkerApi(resolveAccountId(ref), 'buildQixiBridge'),
         sendQixiSachet: (ref, friendGid, count) => callWorkerApi(resolveAccountId(ref), 'sendQixiSachet', friendGid, count),
         useQixiDew: (ref, options) => callWorkerApi(resolveAccountId(ref), 'useQixiDew', options),
+        getRainPoemActivity: (ref) => callWorkerApi(resolveAccountId(ref), 'getRainPoemActivity'),
+        buyRainPoemCollectionBottle: (ref) => callWorkerApi(resolveAccountId(ref), 'buyRainPoemCollectionBottle'),
+        collectRainPoemWeather: (ref) => callWorkerApi(resolveAccountId(ref), 'collectRainPoemWeather'),
+        useRainPoemSummonBottle: (ref) => callWorkerApi(resolveAccountId(ref), 'useRainPoemSummonBottle'),
+        unlockRainPoemResearch: (ref) => callWorkerApi(resolveAccountId(ref), 'unlockRainPoemResearch'),
+        getCharityFlowerActivity: (ref) => callWorkerApi(resolveAccountId(ref), 'getCharityFlowerActivity'),
         exchangeHeluShopItem: (ref, slotId, count) => callWorkerApi(resolveAccountId(ref), 'exchangeHeluShopItem', slotId, count),
         drawHeluGiftLotus: (ref, options) => callWorkerApi(resolveAccountId(ref), 'drawHeluGiftLotus', options || {}),
         claimSeasonPassportRewards: (ref) => callWorkerApi(resolveAccountId(ref), 'claimSeasonPassportRewards'),
@@ -200,7 +244,7 @@ function createDataProvider(deps) {
         brewAndSellQingmeiWine: (ref, options) => callWorkerApi(resolveAccountId(ref), 'brewAndSellQingmeiWine', options || {}),
 
         // ========== Illustrated ==========
-        getIllustratedList: (ref, type, level) => callWorkerApi(resolveAccountId(ref), 'getIllustratedList', type, level),
+        getIllustratedList,
         claimIllustratedRewards: (ref, type) => callWorkerApi(resolveAccountId(ref), 'claimIllustratedRewards', type),
 
         // ========== Career ==========
@@ -222,14 +266,11 @@ function createDataProvider(deps) {
             const s = settings && typeof settings === 'object' ? settings : {};
             const patch = {
                 plantingStrategy: s.plantingStrategy !== undefined ? s.plantingStrategy : s.strategy,
-                preferredSeedId: s.preferredSeedId !== undefined ? s.preferredSeedId : s.seedId,
                 prioritize2x2Crops: s.prioritize2x2Crops,
                 intervals: s.intervals,
                 friendQuietHours: s.friendQuietHours,
                 autoCodeRefresh: s.autoCodeRefresh,
                 stealDelaySeconds: s.stealDelaySeconds,
-                plantOrderRandom: s.plantOrderRandom,
-                plantDelaySeconds: s.plantDelaySeconds,
                 fertilizerBuyOrganicCount: s.fertilizerBuyOrganicCount,
                 fertilizerBuyOrganicThresholdHours: s.fertilizerBuyOrganicThresholdHours,
                 fertilizerBuyNormalCount: s.fertilizerBuyNormalCount,
@@ -238,8 +279,6 @@ function createDataProvider(deps) {
                 goldenBugKeepCount: s.goldenBugKeepCount,
                 goldenBugRoundLimit: s.goldenBugRoundLimit,
                 autoAcceptFriendMinLevel: s.autoAcceptFriendMinLevel,
-                bagSeedPriority: s.bagSeedPriority,
-                bagSeedKnownIds: s.bagSeedKnownIds,
                 bagSeedFallbackStrategy: s.bagSeedFallbackStrategy,
             };
             store.applyConfigSnapshot(patch, { accountId: id });
@@ -250,14 +289,11 @@ function createDataProvider(deps) {
             }
             return {
                 strategy: store.getPlantingStrategy(id),
-                preferredSeed: store.getPreferredSeed(id),
                 prioritize2x2Crops: store.getPrioritize2x2Crops(id),
                 intervals: store.getIntervals(id),
                 friendQuietHours: store.getFriendQuietHours(id),
                 autoCodeRefresh: store.getAutoCodeRefresh(id),
                 stealDelaySeconds: store.getStealDelaySeconds(id),
-                plantOrderRandom: store.getPlantOrderRandom(id),
-                plantDelaySeconds: store.getPlantDelaySeconds(id),
                 fertilizerBuyOrganicCount: store.getFertilizerBuyOrganicCount(id),
                 fertilizerBuyOrganicThresholdHours: store.getFertilizerBuyOrganicThresholdHours(id),
                 fertilizerBuyNormalCount: store.getFertilizerBuyNormalCount(id),
@@ -270,6 +306,14 @@ function createDataProvider(deps) {
                 bagSeedFallbackStrategy: store.getBagSeedFallbackStrategy(id),
                 configRevision: rev
             };
+        },
+
+        syncAccountConfig: (ref) => {
+            const id = resolveAccountId(ref);
+            if (!id) return false;
+            nextConfigRevision();
+            broadcastConfigToWorkers(id);
+            return true;
         },
 
         saveAutoCodeRefresh: async (ref, config) => {
@@ -367,11 +411,11 @@ function createDataProvider(deps) {
             let workerError = '';
 
             if (!id) {
-                return { accountId: '', runtime: runtimeSchedulers, worker: workerSchedulers, workerError: '' };
+                return { accountId: '', runtime: runtimeSchedulers, resources: getResourceStatus?.() || null, worker: workerSchedulers, workerError: '' };
             }
 
             if (!workers[id]) {
-                return { accountId: id, runtime: runtimeSchedulers, worker: workerSchedulers, workerError: '账号未运行' };
+                return { accountId: id, runtime: runtimeSchedulers, resources: getResourceStatus?.() || null, worker: workerSchedulers, workerError: '账号未运行' };
             }
 
             try {
@@ -380,7 +424,7 @@ function createDataProvider(deps) {
                 workerError = err && err.message ? err.message : String(err || 'unknown');
             }
 
-            return { accountId: id, runtime: runtimeSchedulers, worker: workerSchedulers, workerError };
+            return { accountId: id, runtime: runtimeSchedulers, resources: getResourceStatus?.() || null, worker: workerSchedulers, workerError };
         }
     };
 }

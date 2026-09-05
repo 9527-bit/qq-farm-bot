@@ -1,4 +1,5 @@
 const { createScheduler } = require('../services/scheduler');
+const { resourcePolicy, createResourceMonitor } = require('./resource-policy');
 
 /**
  * 创建 Worker 管理器
@@ -31,8 +32,11 @@ function createWorkerManager(deps) {
     } = deps;
 
     const scheduler = createScheduler('worker_manager');
+    const resourceMonitor = createResourceMonitor();
     const restartHistory = new Map();
     const credentialRefreshes = new Map();
+    const permitQueue = [];
+    const activePermits = new Map();
     const WATCHDOG_PING_MS = 30000;
     const WATCHDOG_TIMEOUT_MS = 90000;
     const WATCHDOG_MAX_RESTARTS = 3;
@@ -40,8 +44,50 @@ function createWorkerManager(deps) {
     /** 是否支持 Thread 模式（非 pkg 打包 + Worker 可用） */
     const threadMode = runtimeMode === 'thread' && !processRef.pkg && typeof WorkerThread === 'function';
 
+    function drainPermitQueue() {
+        const limit = resourcePolicy.globalTaskConcurrency;
+        while (permitQueue.length > 0) {
+            if (limit > 0 && activePermits.size >= limit) break;
+            const request = permitQueue.shift();
+            const wrk = workers[request.accountId];
+            if (!wrk || wrk.process !== request.proc || wrk.stopping) continue;
+            activePermits.set(request.token, request);
+            try { request.proc.send({ type: 'task_permit_granted', token: request.token }); } catch {
+                activePermits.delete(request.token);
+            }
+        }
+    }
+
+    function releaseAccountPermits(accountId) {
+        for (let i = permitQueue.length - 1; i >= 0; i -= 1) {
+            if (String(permitQueue[i].accountId) === String(accountId)) permitQueue.splice(i, 1);
+        }
+        for (const [token, request] of activePermits.entries()) {
+            if (String(request.accountId) === String(accountId)) activePermits.delete(token);
+        }
+        drainPermitQueue();
+    }
+
     function cleanText(value) {
         return String(value || '').trim();
+    }
+
+    function notifyAbnormalOffline(accountId, wrk, reason, action, message) {
+        if (!wrk || wrk.offlineReminderTriggered) return false;
+        wrk.offlineReminderTriggered = true;
+        const normalizedReason = cleanText(reason) || 'unknown';
+
+        triggerOfflineReminder({
+            accountId,
+            accountName: wrk.name,
+            username: wrk.username,
+            reason: normalizedReason,
+            offlineMs: wrk.disconnectedSince ? Date.now() - wrk.disconnectedSince : 0
+        });
+        if (action && message) {
+            addAccountLog(action, message, accountId, wrk.name, { reason: normalizedReason });
+        }
+        return true;
     }
 
     function buildQqAvatarUrl(qq) {
@@ -155,6 +201,21 @@ function createWorkerManager(deps) {
         if (!account || !account.id) return false;
         if (workers[account.id]) return false;
 
+        const runningCount = Object.keys(workers).length;
+        if (resourcePolicy.maxRunningAccounts > 0 && runningCount >= resourcePolicy.maxRunningAccounts) {
+            log('系统', `低配资源策略已阻止启动账号 ${account.name}：运行账号数达到 ${resourcePolicy.maxRunningAccounts}`, {
+                accountId: String(account.id), accountName: account.name
+            });
+            return false;
+        }
+        const rssMb = processRef.memoryUsage ? processRef.memoryUsage().rss / 1024 / 1024 : 0;
+        if (resourcePolicy.maxRssMb > 0 && rssMb >= resourcePolicy.maxRssMb) {
+            log('系统', `资源策略已阻止启动账号 ${account.name}：RSS ${Math.round(rssMb)}MB`, {
+                accountId: String(account.id), accountName: account.name
+            });
+            return false;
+        }
+
         log('系统', `正在启动账号: ${  account.name}`, {
             accountId: String(account.id),
             accountName: account.name
@@ -235,8 +296,15 @@ function createWorkerManager(deps) {
                 runtimeMode: threadMode ? 'thread' : 'fork'
             });
 
+            if (wrk && !wrk.stopping) {
+                const reason = `worker_exit:code=${code == null ? 'unknown' : code},signal=${signal || 'none'}`;
+                notifyAbnormalOffline(account.id, wrk, reason, 'worker_unexpected_exit',
+                    `账号 ${displayName} 异常掉线（Worker 进程意外退出）`);
+            }
+
             scheduler.clear(`force_kill_${  account.id}`);
             scheduler.clear(`restart_fallback_${  account.id}`);
+            releaseAccountPermits(account.id);
 
             // 清理所有未完成的 API 请求
             if (wrk && wrk.requests && wrk.requests.size > 0) {
@@ -337,7 +405,14 @@ function createWorkerManager(deps) {
         const wrk = workers[accountId];
         if (!wrk) return;
 
-        if (msg.type === 'status_sync') {
+        if (msg.type === 'task_permit_request') {
+            const token = `${accountId}:${String(msg.token || '')}`;
+            permitQueue.push({ accountId, token, proc: wrk.process, requestedAt: Date.now() });
+            drainPermitQueue();
+        } else if (msg.type === 'task_permit_release') {
+            activePermits.delete(`${accountId}:${String(msg.token || '')}`);
+            drainPermitQueue();
+        } else if (msg.type === 'status_sync') {
             // 状态同步
             wrk.status = normalizeStatusForPanel(msg.data, accountId, wrk.name);
             if (typeof onStatusSync === 'function') {
@@ -376,20 +451,12 @@ function createWorkerManager(deps) {
 
                 const offlineDuration = now - wrk.disconnectedSince;
                 if (!wrk.offlineReminderTriggered && offlineDuration >= 60000) {
-                    wrk.offlineReminderTriggered = true;
                     const offlineMinutes = Math.floor(offlineDuration / 60000);
                     log('系统', `账号 ${  wrk.name  } 已离线 ${  offlineMinutes  } 分钟，发送下线提醒`);
 
-                    triggerOfflineReminder({
-                        accountId,
-                        accountName: wrk.name,
-                        username: wrk.username,
-                        reason: 'offline',
-                        offlineMs: offlineDuration
-                    });
-                    addAccountLog('offline_reminder',
+                    notifyAbnormalOffline(accountId, wrk, 'offline', 'offline_reminder',
                         `账号 ${  wrk.name  } 已离线 ${  offlineMinutes  } 分钟，已发送下线提醒`,
-                        accountId, wrk.name, { reason: 'offline', offlineMs: offlineDuration });
+                    );
                 }
 
                 const autoDeleteMs = typeof getOfflineAutoDeleteMs === 'function'
@@ -422,11 +489,15 @@ function createWorkerManager(deps) {
             }
         } else if (msg.type === 'log') {
             // 日志消息
+            const timestamp = Date.now();
             const entry = {
                 ...msg.data,
+                logId: `worker-${accountId}-${timestamp}-${globalLogs.length}`,
                 accountId,
                 accountName: wrk.name,
-                ts: Date.now(),
+                ts: timestamp,
+                level: msg.data && msg.data.isWarn ? 'warn' : 'info',
+                source: 'business',
                 meta: msg.data && msg.data.meta ? msg.data.meta : {}
             };
             entry._searchText = (`${entry.msg || ''  } ${  entry.tag || '' 
@@ -454,6 +525,8 @@ function createWorkerManager(deps) {
 
             // Code 400 = 登录失效
             if (code === 400) {
+                notifyAbnormalOffline(accountId, wrk, `ws_400:${message || '登录失效'}`,
+                    'offline_reminder', `账号 ${wrk.name} 登录失效，已发送下线提醒`);
                 addAccountLog('ws_400', `账号 ${  wrk.name  } 登录失效，请更新 Code`,
                     accountId, wrk.name);
                 if (typeof refreshAccountCode === 'function' && !credentialRefreshes.has(accountId)) {
@@ -477,12 +550,7 @@ function createWorkerManager(deps) {
                 accountName: wrk.name
             });
 
-            triggerOfflineReminder({
-                accountId,
-                accountName: wrk.name,
-                reason: `kickout:${  reason}`,
-                offlineMs: 0
-            });
+            notifyAbnormalOffline(accountId, wrk, `kickout:${reason}`);
             addAccountLog('kickout_stop',
                 `账号 ${  wrk.name  } 被踢下线，已自动停止`,
                 accountId, wrk.name, { reason });
@@ -498,12 +566,7 @@ function createWorkerManager(deps) {
                 accountName: wrk.name
             });
 
-            triggerOfflineReminder({
-                accountId,
-                accountName: wrk.name,
-                reason: `ws_reconnect_failed:${  reason}`,
-                offlineMs: 0
-            });
+            notifyAbnormalOffline(accountId, wrk, `ws_reconnect_failed:${reason}`);
             addAccountLog('ws_reconnect_failed',
                 `账号 ${  wrk.name  } 连接多次重试失败，已自动停止`,
                 accountId, wrk.name, { reason });
@@ -538,6 +601,19 @@ function createWorkerManager(deps) {
                         config: buildConfigSnapshotForAccount(accountId)
                     });
                 }
+            }
+        } else if (msg.type === 'bag_seed_priority_sync') {
+            const store = require('../models/store');
+            store.applyConfigSnapshot({
+                bagSeedPriority: msg.priority,
+                bagSeedKnownIds: msg.knownIds
+            }, { accountId });
+            const currentWrk = workers[accountId];
+            if (currentWrk && currentWrk.process) {
+                currentWrk.process.send({
+                    type: 'config_sync',
+                    config: buildConfigSnapshotForAccount(accountId)
+                });
             }
         } else if (msg.type === 'api_response') {
             // API 响应
@@ -590,6 +666,8 @@ function createWorkerManager(deps) {
                     .filter(at => now - at < 60 * 60 * 1000);
                 if (history.length >= WATCHDOG_MAX_RESTARTS) {
                     wrk.stopping = true;
+                    notifyAbnormalOffline(accountId, wrk, 'worker_watchdog_stopped',
+                        'offline_reminder', `账号 ${wrk.name} Worker 连续无响应，已发送下线提醒`);
                     stopWorker(accountId);
                     log('错误', `账号 ${wrk.name} Worker 连续无响应，已停止自动重启`, {
                         accountId, accountName: wrk.name
@@ -653,7 +731,16 @@ function createWorkerManager(deps) {
         startWorker,
         stopWorker,
         restartWorker,
-        callWorkerApi
+        callWorkerApi,
+        getResourceStatus: () => ({
+            policy: resourcePolicy,
+            runtime: resourceMonitor.snapshot(),
+            governor: { active: activePermits.size, queued: permitQueue.length }
+        }),
+        dispose: () => {
+            scheduler.dispose();
+            resourceMonitor.dispose();
+        }
     };
 }
 

@@ -81,6 +81,14 @@ message PlantInfo {
     repeated int64 mutant_config_ids = 20;     // 变异配置ID
     bool is_nudged = 21;                       // 是否被催熟
     repeated SocialItem social_items = 35;      // 好友放置的背包型社交道具
+    // 抓包确认：301103 鹊羽灵露使用后为 {奖励值, 1}。
+    PlantExtendedStatus field_40 = 40;
+}
+
+// PlantInfo.field 40：字段 1 保留服务端奖励值，字段 2 为已生效标记。
+message PlantExtendedStatus {
+    int64 value_1 = 1;
+    int64 value_2 = 2;
 }
 
 // 背包型社交道具。字段含义依据 2026-07-12 黄金虫抓包。
@@ -240,10 +248,18 @@ message FertilizeRequest {
     int64 fertilizer_id = 2;
 }
 
+// 单次施肥实际消耗。field 1 的语义尚未完全确认；field 3 已通过
+// FertilizeReply 与紧随其后的 ItemNotify 交叉验证为本次消耗的肥料秒数。
+message FertilizerUse {
+    int64 field_1 = 1;
+    corepb.Item consumed = 3;
+}
+
 message FertilizeReply {
     repeated LandInfo land = 1;
     repeated OperationLimit operation_limits = 2;
-    int64 fertilizer = 3;  // 剩余肥料时间
+    corepb.Item fertilizer = 3;       // 肥料 ID 与剩余肥料时间
+    FertilizerUse fertilizer_use = 4; // 本次实际消耗
 }
 
 // --- 放虫 ---

@@ -28,12 +28,15 @@ message MallGoods {
   int32 goods_id = 1;        // 商品ID
   string name = 2;           // 商品名称
   int32 type = 3;            // 商品类型
-  bytes item_ids = 4;        // 物品ID列表（序列化数据）
+  repeated bytes item_ids = 4; // 商品内的物品列表（每个是序列化的 corepb.Item）
   bytes price = 5;           // 价格（序列化数据）
   bool is_free = 6;          // 是否免费
   bytes limit = 7;           // 限购信息（序列化数据）
   bool is_limited = 8;       // 是否限购
-  string discount = 10;      // 折扣信息
+  string discount = 9;       // 折扣信息
+  bool is_activity = 10;     // 是否为活动商品
+  int64 end_time = 11;       // 活动结束时间（Unix 秒）
+  bool enabled = 12;         // 商品是否启用
 }
 
 // 购买请求

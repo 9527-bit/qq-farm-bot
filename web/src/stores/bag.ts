@@ -7,6 +7,7 @@ export const useBagStore = defineStore('bag', () => {
   const allItems = ref<any[]>([])
   const originalItems = ref<any[]>([])
   const loading = ref(false)
+  const pendingFetches = new Map<string, Promise<void>>()
 
   function clearBag() {
     allItems.value = []
@@ -26,8 +27,23 @@ export const useBagStore = defineStore('bag', () => {
   async function fetchBag(accountId: string) {
     if (!accountId)
       return
-    const requestedId = accountId
+
+    const pending = pendingFetches.get(accountId)
+    if (pending)
+      return pending
+
+    const request = fetchBagOnce(accountId).finally(() => {
+      if (pendingFetches.get(accountId) === request)
+        pendingFetches.delete(accountId)
+      loading.value = pendingFetches.size > 0
+    })
+    pendingFetches.set(accountId, request)
     loading.value = true
+    return request
+  }
+
+  async function fetchBagOnce(accountId: string) {
+    const requestedId = accountId
     try {
       const res = await api.get('/api/bag', {
         headers: { 'x-account-id': accountId },
@@ -54,13 +70,10 @@ export const useBagStore = defineStore('bag', () => {
       }
       console.error(e)
     }
-    finally {
-      loading.value = false
-    }
   }
 
-  async function useItem(accountId: string, itemId: number, count = 1) {
-    const res = await api.post('/api/bag/use', { itemId, count }, {
+  async function useItem(accountId: string, itemId: number, count = 1, uid = 0) {
+    const res = await api.post('/api/bag/use', { itemId, count, uid }, {
       headers: { 'x-account-id': accountId },
     })
     return res.data
