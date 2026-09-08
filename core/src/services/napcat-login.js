@@ -87,14 +87,20 @@ function ownedTask(id, owner) {
   return task;
 }
 
+function hasQqSession(state) {
+  return state?.isLogin === true || state?.isOffline === true;
+}
+
 async function logout() {
   const cfg = config();
+  // Prevent the persisted QQ session from being restored when NapCat restarts.
+  await webUi('/QQLogin/SetQuickLoginQQ', { uin: '' }).catch(() => {});
   const payload = await requestJson(`${cfg.plugin}/logout`, { token: cfg.pluginToken });
   if (payload.ok !== true || payload.loggedOut !== true) throw new Error(payload.error || 'NapCat 注销失败');
   await new Promise(resolve => setTimeout(resolve, 250));
   try {
     const state = await webUi('/QQLogin/CheckLoginStatus');
-    if (state.isLogin === false) return;
+    if (!hasQqSession(state)) return;
   } catch {}
   await resetNapcat();
 }
@@ -105,10 +111,20 @@ async function resetNapcat() {
     await new Promise(resolve => setTimeout(resolve, i ? 250 : 1000));
     try {
       const state = await webUi('/QQLogin/CheckLoginStatus');
-      if (state.isLogin === false) return;
+      if (!hasQqSession(state)) return;
     } catch {}
   }
   throw new Error('NapCat 重启后仍未确认退出登录');
+}
+
+async function clearStaleSession() {
+  try {
+    const state = await webUi('/QQLogin/CheckLoginStatus');
+    if (hasQqSession(state)) await logout();
+  } catch (error) {
+    if (!/QQ Is Logined/i.test(error.message)) return;
+    await logout();
+  }
 }
 
 async function release(task, cleanup = '') {
@@ -130,6 +146,7 @@ async function create(owner, { refresh = false } = {}) {
   } else if (current) {
     await release(current, current.status === 'confirmed' ? 'logout' : '').catch(() => {});
   }
+  await clearStaleSession();
   if (refresh) {
     await webUi('/QQLogin/RefreshQRcode');
     await new Promise(resolve => setTimeout(resolve, 300));
@@ -138,7 +155,9 @@ async function create(owner, { refresh = false } = {}) {
   try {
     result = await webUi('/QQLogin/GetQQLoginQrcode');
   } catch (error) {
-    if (refresh) throw error;
+    if (/QQ Is Logined/i.test(error.message)) {
+      await logout();
+    } else if (refresh) throw error;
     await webUi('/QQLogin/RefreshQRcode');
     await new Promise(resolve => setTimeout(resolve, 300));
     result = await webUi('/QQLogin/GetQQLoginQrcode');

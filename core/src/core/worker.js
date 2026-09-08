@@ -39,6 +39,7 @@ const {
     getFriendDogInfo,
     batchGetFriendDogInfo,
     syncFriendsFromGids,
+    bootstrapQqFriendGids,
     fetchFriendsDogInfo,
     delFriend
 } = require('../services/friend');
@@ -1110,7 +1111,7 @@ async function startBot(config) {
     if (isRunning) return;
     isRunning = true;
 
-    const { code, platform } = config;
+    const { code, platform, loginType } = config;
     CONFIG.platform = platform || 'qq';
 
     await loadProto();
@@ -1243,6 +1244,21 @@ async function startBot(config) {
             Number(userState.coupon || 0)
         );
         resetSessionGains();
+
+        // NapCat only supplies Code/UIN. Bootstrap farm-side GIDs after the
+        // authenticated game connection is ready, without requiring openid.
+        if (loginType === 'qq_napcat') {
+            workerScheduler.setTimeoutTask('napcat_friend_gid_bootstrap', 2000, async () => {
+                if (!loginReady) return;
+                try {
+                    await bootstrapQqFriendGids();
+                } catch (err) {
+                    log('好友', `NapCat 扫码后的好友GID补充失败: ${err.message}`, {
+                        module: 'friend', event: 'QQ好友GID引导同步', result: 'error'
+                    });
+                }
+            });
+        }
 
         // 处理邀请码
         await processInviteCodes();
