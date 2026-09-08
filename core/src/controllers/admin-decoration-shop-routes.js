@@ -1,6 +1,8 @@
 const { getItemById, getSeedImageBySeedId } = require("../config/gameConfig");
+const { toNum } = require("../utils/utils");
 
 const DECORATION_ITEM_IDS = [2130, 2131];
+const DECORATION_SHOP_ID = 4;
 
 function getAuthorizedAccountId({
   req,
@@ -29,23 +31,39 @@ function getOwnedDecorationIds(bag) {
     .map((item) => Number(item?.id) || 0));
 }
 
-function buildDecorationItem(itemId, userGoldBean, ownedDecorationIds = new Set()) {
+function getDecorationGoods(shopReply) {
+  const goodsByItemId = new Map();
+  for (const goods of shopReply?.goods_list || []) {
+    const itemId = toNum(goods?.item_id) || 0;
+    if (DECORATION_ITEM_IDS.includes(itemId)) goodsByItemId.set(itemId, goods);
+  }
+  return goodsByItemId;
+}
+
+function buildDecorationItem(itemId, userGoldBean, ownedDecorationIds = new Set(), goods) {
   const itemConfig = getItemById(itemId);
   if (!itemConfig) return null;
 
-  const price = Number(itemConfig.price) || 0;
-  const owned = ownedDecorationIds.has(itemId);
+  const price = toNum(goods?.price) || Number(itemConfig.price) || 0;
+  const limitCount = toNum(goods?.limit_count) || 0;
+  const boughtNum = toNum(goods?.bought_num) || 0;
+  const soldOut = limitCount > 0 && boughtNum >= limitCount;
+  // Used avatar-frame items disappear from the bag, so the shop purchase
+  // record is the authoritative ownership source.
+  const owned = soldOut || ownedDecorationIds.has(itemId);
   return {
-    id: itemId,
+    id: toNum(goods?.id) || itemId,
     itemId,
-    itemCount: 1,
+    itemCount: toNum(goods?.item_count) || 1,
     price,
+    limitCount,
+    boughtNum,
     name: itemConfig.name || `装扮${  itemId}`,
     image: getSeedImageBySeedId(itemId),
     desc: itemConfig.desc || "",
     effectDesc: itemConfig.effectDesc || "",
     owned,
-    canBuy: !owned && userGoldBean >= price,
+    canBuy: !owned && goods?.unlocked !== false && userGoldBean >= price,
   };
 }
 
@@ -76,10 +94,14 @@ function registerAdminDecorationShopRoutes({
       }
 
       const userGoldBean = status?.status?.goldBean || 0;
-      const bag = await provider.getBag(accountId);
+      const [bag, shopReply] = await Promise.all([
+        provider.getBag(accountId),
+        provider.getShopInfo(accountId, DECORATION_SHOP_ID),
+      ]);
       const ownedDecorationIds = getOwnedDecorationIds(bag);
+      const decorationGoods = getDecorationGoods(shopReply);
       const decorations = DECORATION_ITEM_IDS.map((itemId) =>
-        buildDecorationItem(itemId, userGoldBean, ownedDecorationIds),
+        buildDecorationItem(itemId, userGoldBean, ownedDecorationIds, decorationGoods.get(itemId)),
       ).filter(Boolean);
 
       res.json({ ok: true, data: decorations, userGoldBean });
@@ -95,6 +117,7 @@ function registerAdminDecorationShopRoutes({
 
 module.exports = {
   buildDecorationItem,
+  getDecorationGoods,
   getOwnedDecorationIds,
   registerAdminDecorationShopRoutes,
 };

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 
 const {
   buildDecorationItem,
+  getDecorationGoods,
   getOwnedDecorationIds,
 } = require('../src/controllers/admin-decoration-shop-routes');
 
@@ -30,4 +31,22 @@ test('unowned avatar frame remains buyable when balance is sufficient', () => {
 
   assert.equal(item.owned, false);
   assert.equal(item.canBuy, true);
+});
+
+test('decoration shop purchase limit marks a used avatar frame as owned', () => {
+  const goods = getDecorationGoods({
+    goods_list: [
+      { id: 2130, item_id: 2130, item_count: 1, price: 980, limit_count: 1, bought_num: 1, unlocked: true },
+      { id: 2131, item_id: 2131, item_count: 1, price: 980, limit_count: 1, bought_num: 0, unlocked: true },
+    ],
+  });
+
+  const owned = buildDecorationItem(2130, 10_000, new Set(), goods.get(2130));
+  const available = buildDecorationItem(2131, 10_000, new Set(), goods.get(2131));
+
+  assert.equal(owned.owned, true);
+  assert.equal(owned.canBuy, false);
+  assert.equal(owned.boughtNum, 1);
+  assert.equal(available.owned, false);
+  assert.equal(available.canBuy, true);
 });
