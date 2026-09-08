@@ -20,11 +20,21 @@ function getAuthorizedAccountId({
   return accountId;
 }
 
-function buildDecorationItem(itemId, userGoldBean) {
+function getOwnedDecorationIds(bag) {
+  const items = Array.isArray(bag?.originalItems)
+    ? bag.originalItems
+    : Array.isArray(bag?.items) ? bag.items : [];
+  return new Set(items
+    .filter((item) => Number(item?.count) > 0)
+    .map((item) => Number(item?.id) || 0));
+}
+
+function buildDecorationItem(itemId, userGoldBean, ownedDecorationIds = new Set()) {
   const itemConfig = getItemById(itemId);
   if (!itemConfig) return null;
 
   const price = Number(itemConfig.price) || 0;
+  const owned = ownedDecorationIds.has(itemId);
   return {
     id: itemId,
     itemId,
@@ -34,7 +44,8 @@ function buildDecorationItem(itemId, userGoldBean) {
     image: getSeedImageBySeedId(itemId),
     desc: itemConfig.desc || "",
     effectDesc: itemConfig.effectDesc || "",
-    canBuy: userGoldBean >= price,
+    owned,
+    canBuy: !owned && userGoldBean >= price,
   };
 }
 
@@ -65,8 +76,10 @@ function registerAdminDecorationShopRoutes({
       }
 
       const userGoldBean = status?.status?.goldBean || 0;
+      const bag = await provider.getBag(accountId);
+      const ownedDecorationIds = getOwnedDecorationIds(bag);
       const decorations = DECORATION_ITEM_IDS.map((itemId) =>
-        buildDecorationItem(itemId, userGoldBean),
+        buildDecorationItem(itemId, userGoldBean, ownedDecorationIds),
       ).filter(Boolean);
 
       res.json({ ok: true, data: decorations, userGoldBean });
@@ -80,4 +93,8 @@ function registerAdminDecorationShopRoutes({
   });
 }
 
-module.exports = { registerAdminDecorationShopRoutes };
+module.exports = {
+  buildDecorationItem,
+  getOwnedDecorationIds,
+  registerAdminDecorationShopRoutes,
+};
