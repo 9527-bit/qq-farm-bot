@@ -37,6 +37,8 @@ api.interceptors.response.use((response) => {
   if (axios.isCancel(error) || error?.code === 'ERR_CANCELED') {
     return Promise.reject(error)
   }
+  if (error?.config?.skipErrorToast === true)
+    return Promise.reject(error)
 
   const toast = useToastStore()
 

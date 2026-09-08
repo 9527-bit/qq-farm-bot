@@ -61,16 +61,6 @@ pnpm dev:core
 
 看到服务启动后，打开 <http://localhost:3007>，你的农场控制室就准备好了。
 
-首次登录使用以下默认凭据：
-
-```text
-用户名：admin
-密码：admin
-```
-
-> [!IMPORTANT]
-> 第一次进门记得马上换掉默认密码，也不要把管理面板直接暴露到公网。
-
 想继续装修控制室？可以另外启动前端开发服务器：
 
 ```bash
@@ -118,7 +108,41 @@ CAPTURE_ADVERTISE_IPS=192.168.1.100,100.64.0.2
 
 ## 🔑 登录方式
 
-项目支持微信扫码、手动填码和手机抓包三种账号添加方式。
+项目支持微信扫码、QQ/NapCat 扫码、手动填码和手机抓包等账号添加方式。
+
+### QQ/NapCat 扫码（Docker，可选）
+
+NapCat 默认不启动，低配置机器继续使用原来的启动命令即可：
+
+```bash
+docker compose up -d --build
+```
+
+需要 QQ 扫码登录时，复制示例配置：
+
+```bash
+cp .env.compose.example .env
+```
+
+在 `.env` 中设置：
+
+```dotenv
+COMPOSE_PROFILES=napcat
+NAPCAT_LOGIN_ENABLED=true
+```
+
+随后执行 `./compose.sh up -d --build`。脚本会读取当前 macOS 或 Linux 宿主机名并将其设置为
+QQ 登录记录中的设备名称，然后由 Compose 启动农场和 NapCat 两个服务。构建 NapCat
+派生镜像时自动安装 OpenAuth 插件，容器首次启动会生成内部随机 Token，并通过只读文件提供给农场
+后端，不需要在环境变量中保存密钥。更新农场或插件代码后仍使用同一条命令，不需要手动运行安装
+脚本。NapCat 的配置、内部 Token 和 QQ 登录数据保存在 `../data/napcat/`。
+如需覆盖自动检测结果，可在 `.env` 中设置 `NAPCAT_DEVICE_NAME`；建议只使用英文字母、数字和
+连字符，并在首次登录后保持不变。修改已有部署的名称后，需要重新创建 NapCat 容器才会生效。
+
+默认基础镜像为 `mlikiowa/napcat-docker:v4.18.19`。官方镜像支持 `linux/amd64` 和
+`linux/arm64`，覆盖常见的 x64 Linux、ARM Linux、Intel Mac 和 Apple Silicon Mac；macOS
+通过 Docker Desktop 运行相应 Linux 架构镜像。官方没有 32 位 `linux/386` 镜像。可在 `.env`
+中通过 `NAPCAT_IMAGE` 选择示例文件列出的其他多架构版本。
 
 ### 微信扫码
 

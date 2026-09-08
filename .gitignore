@@ -23,5 +23,6 @@ temp/
 
 .env
 .env.*
+!.env.compose.example
 *.log
 /.pnpm-store/
