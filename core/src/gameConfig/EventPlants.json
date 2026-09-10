@@ -1,4 +1,6 @@
 [
+  { "id": 1020522, "seed_id": 20522, "fruit_id": 40522, "asset_name": "Crop_522", "name": "金币果", "size": 1, "seasons": 1, "grow_phases": "种子:8640;发芽:8640;小叶子:8640;大叶子:8640;初熟:8640;成熟:0;", "exp": 336, "fruit_count": 48 },
+  { "id": 1020523, "seed_id": 20523, "fruit_id": 40523, "asset_name": "Crop_523", "name": "经验蘑菇", "size": 1, "seasons": 1, "grow_phases": "种子:8640;发菌:8640;出菇:8640;幼菇:8640;初熟:8640;成熟:0;", "exp": 3024, "fruit_count": 48 },
   {"id": 1020516, "seed_id": 20516, "fruit_id": 40516, "asset_name": "Crop_516", "name": "狗尾草", "size": 1, "seasons": 1, "grow_phases": "种子:8640;发芽:8640;小叶子:8640;大叶子:8640;初熟:8640;成熟:0;", "exp": 1440, "fruit_count": 48},
   {"id": 1025995, "seed_id": 25995, "fruit_id": 45995, "asset_name": "Crop_5995", "name": "芦苇", "size": 1, "seasons": 1, "grow_phases": "种子:8640;发芽:8640;小叶子:8640;大叶子:8640;初熟:8640;成熟:0;", "exp": 1680, "fruit_count": 48},
   { "id": 1029004, "seed_id": 29004, "fruit_id": 49004, "asset_name": "Crop_9004", "name": "泡泡棉花糖", "size": 2, "seasons": 1, "grow_phases": "种子:8640;发芽:8640;小叶子:8640;大叶子:8640;初熟:8640;成熟:0;", "exp": 7680, "fruit_count": 192, "all_state_spine": "spine/v2/xiyouzhongzi/paopaoyunduo/1029004" },

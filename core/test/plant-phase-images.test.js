@@ -49,9 +49,9 @@ test('变异植物使用专属阶段图并在缺失时回退原作物', () => {
     );
 });
 
-test('pet diary crops resolve local seed icons and every growth phase', () => {
+test('supplemental crops resolve local seed icons and every growth phase', () => {
     const { getPlantBySeedId, getSeedImageBySeedId } = require('../src/config/gameConfig');
-    for (const [seedId, asset, size] of [[20516, 'Crop_516', 1], [25995, 'Crop_5995', 1], [29004, 'Crop_9004', 2]]) {
+    for (const [seedId, asset, size] of [[20516, 'Crop_516', 1], [25995, 'Crop_5995', 1], [29004, 'Crop_9004', 2], [20522, 'Crop_522', 1], [20523, 'Crop_523', 1]]) {
         const plant = getPlantBySeedId(seedId);
         assert.equal(plant?.size, size);
         const seedImage = getSeedImageBySeedId(seedId);

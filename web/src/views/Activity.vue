@@ -213,7 +213,14 @@ const activityCards = computed(() => {
         : ACTIVITY_CLIENT_PREVIEWS.some(item => item.title === group.title || item.ids.some(id => group.activityIds.includes(id)))
           ? '已读取客户端静态预览，动态规则待服务端开放'
           : '暂未适配详情',
-      image: group.imageUrl || (adaptedKey === 'rain-poem' ? '/activity/rain-poem/day-rain-bg.jpg' : ''),
+      icon: {
+        '': 'i-carbon-calendar',
+        'pet-diary': 'i-fa-solid-paw',
+        'charity-flower': 'i-carbon-favorite',
+        'rain-poem': 'i-carbon-rain-heavy',
+      }[adaptedKey || ''] || 'i-carbon-calendar',
+      image: adaptedKey === 'pet-diary' ? '/activity/pet-diary/scene-home-adult.png' : group.imageUrl || (adaptedKey === 'rain-poem' ? '/activity/rain-poem/day-rain-bg.jpg' : ''),
+      imagePosition: adaptedKey === 'pet-diary' ? 'center 64%' : 'center',
       window,
       updatedMs: window.startMs,
       status: activityWindowStatus(window),
@@ -558,7 +565,7 @@ onUnmounted(() => {
           :disabled="card.status === 'ended'"
           @click="selectedActivity = card.key"
         >
-          <img v-if="card.image" :src="card.image" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-500" :class="card.status === 'active' && 'group-hover:scale-105'">
+          <img v-if="card.image" :src="card.image" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-500" :style="{ objectPosition: card.imagePosition }" :class="card.status === 'active' && 'group-hover:scale-105'">
           <div v-else class="absolute inset-0" :style="card.backgroundStyle">
             <div class="absolute h-40 w-40 border border-white/15 rounded-full -right-8 -top-10" />
             <div class="absolute top-12 h-24 w-24 border border-white/10 rounded-full -right-2" />
@@ -569,7 +576,7 @@ onUnmounted(() => {
           <div class="relative min-h-52 flex flex-col justify-between p-5">
             <div class="flex items-start justify-between gap-3">
               <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-sm" :class="card.status === 'active' ? 'bg-cyan-100/90 text-cyan-950' : 'bg-gray-100/85 text-gray-700'">
-                <span :class="card.status === 'active' ? 'i-carbon-events' : card.status === 'upcoming' ? 'i-carbon-time' : 'i-carbon-checkmark'" />
+                <span :class="card.status === 'active' ? card.icon : card.status === 'upcoming' ? 'i-carbon-time' : 'i-carbon-checkmark'" />
                 {{ card.status === 'active' ? '进行中' : card.status === 'upcoming' ? '未开始' : '已结束' }}
               </span>
               <span v-if="card.pending" class="rounded-full bg-amber-100/90 px-2.5 py-1 text-xs text-amber-900 font-medium">待适配</span>
@@ -583,8 +590,7 @@ onUnmounted(() => {
                 {{ formatActivityDateTime(card.window.startMs) }} — {{ formatActivityDateTime(card.window.endMs) }}
               </p>
               <div class="mt-4 flex items-center gap-2 text-xs text-white/65">
-                <span v-if="card.adaptedKey" class="i-carbon-rain-heavy text-base text-cyan-200" />
-                <span v-else class="i-carbon-calendar text-base text-cyan-200" />
+                <span :class="card.icon" class="shrink-0 text-base text-cyan-200" />
                 {{ card.description }}
               </div>
             </div>

@@ -1606,5 +1606,19 @@
     "5": "/game-config/plant_images/Crop_9004/5.png",
     "6": "/game-config/plant_images/Crop_9004/6.png",
     "7": "/game-config/plant_images/Crop_9004/7.png"
+  },
+  "Crop_522": {
+    "2": "/game-config/plant_images/Crop_522/2.png",
+    "3": "/game-config/plant_images/Crop_522/3.png",
+    "4": "/game-config/plant_images/Crop_522/4.png",
+    "5": "/game-config/plant_images/Crop_522/5.png",
+    "6": "/game-config/plant_images/Crop_522/6.png"
+  },
+  "Crop_523": {
+    "2": "/game-config/plant_images/Crop_523/2.png",
+    "3": "/game-config/plant_images/Crop_523/3.png",
+    "4": "/game-config/plant_images/Crop_523/4.png",
+    "5": "/game-config/plant_images/Crop_523/5.png",
+    "6": "/game-config/plant_images/Crop_523/6.png"
   }
 }
