@@ -19,6 +19,7 @@ const PET_DIARY_KEYS = [
     'pet_diary_solar_claim',
     'pet_diary_treasure_open',
     'pet_diary_compensation_claim',
+    'pet_diary_battle',
     'pet_diary_charm_equip',
 ];
 
@@ -28,7 +29,7 @@ const WINDOW_END = 1791820799;
 
 // ---- 设置项契约 ----
 
-test('九个萌宠自动化开关都有默认值且默认关闭', () => {
+test('萌宠自动化开关都有默认值且默认关闭', () => {
     const def = store.getDefaultAccountConfig();
     for (const key of PET_DIARY_KEYS) {
         assert.strictEqual(
@@ -146,4 +147,14 @@ test('活动窗口内为 UTC+8 的整点起 / 当日 23:59:59 止', () => {
     const endLocal = new Date((WINDOW_END + 8 * 3600) * 1000).toISOString();
     assert.ok(startLocal.endsWith('T10:00:00.000Z'), `起始时间 UTC+8 应为整点，实际 ${startLocal}`);
     assert.ok(endLocal.endsWith('T23:59:59.000Z'), `结束时间 UTC+8 应为当日末秒，实际 ${endLocal}`);
+});
+
+
+test('夺宝开关在活动开始前和结束后强制关闭，边界有效', () => {
+    for (const [now, expected] of [[WINDOW_START - 1, false], [WINDOW_START, true],
+        [WINDOW_END, true], [WINDOW_END + 1, false]]) {
+        const automation = { pet_diary_battle: true };
+        store._test.disableHiddenActivityAutomation(automation, now);
+        assert.strictEqual(automation.pet_diary_battle, expected);
+    }
 });

@@ -48,6 +48,7 @@ const defaultAutomation = {
   pet_diary_treasure_open: false,
   pet_diary_compensation_claim: false,
   pet_diary_charm_equip: false,
+  pet_diary_battle: false,
   golden_bug_clear: true,
   fertilizer_gift: false,
   fertilizer_buy_organic: false,

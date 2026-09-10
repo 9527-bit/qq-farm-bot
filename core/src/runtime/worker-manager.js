@@ -666,6 +666,22 @@ function createWorkerManager(deps) {
         return (data.accounts || []).find(account => String(account.id) === String(accountId));
     }
 
+    const persistInactiveActivities = () => {
+        try {
+            const changed = require('../models/store').persistInactiveActivityAutomation();
+            for (const accountId of changed) {
+                const wrk = workers[accountId];
+                if (wrk?.process && !wrk.stopping) wrk.process.send({
+                    type: 'config_sync', config: buildConfigSnapshotForAccount(accountId),
+                });
+            }
+        } catch (error) {
+            log('系统', `活动过期开关保存失败：${error.message}`);
+        }
+    };
+    persistInactiveActivities();
+    scheduler.setIntervalTask('inactive_activity_config', WATCHDOG_PING_MS, persistInactiveActivities);
+
     scheduler.setIntervalTask('watchdog_tick', WATCHDOG_PING_MS, () => {
         const now = Date.now();
         for (const [accountId, wrk] of Object.entries(workers)) {

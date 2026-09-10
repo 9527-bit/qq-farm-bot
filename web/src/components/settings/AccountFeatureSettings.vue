@@ -61,7 +61,7 @@ const activityKeys = computed(() => [
     ? ['charity_flower_share_claim', 'charity_flower_donate', 'charity_flower_reward_claim', 'charity_flower_public_fund_claim']
     : []),
   ...(showPetDiaryActivity.value
-    ? ['pet_diary_adopt', 'pet_diary_feed', 'pet_diary_draw', 'pet_diary_story_claim', 'pet_diary_seed_claim', 'pet_diary_solar_claim', 'pet_diary_treasure_open', 'pet_diary_compensation_claim', 'pet_diary_charm_equip']
+    ? ['pet_diary_adopt', 'pet_diary_feed', 'pet_diary_draw', 'pet_diary_story_claim', 'pet_diary_seed_claim', 'pet_diary_solar_claim', 'pet_diary_treasure_open', 'pet_diary_compensation_claim', 'pet_diary_charm_equip', 'pet_diary_battle']
     : []),
 ])
 const activityEnabledCount = computed(() => activityKeys.value.filter(key => automation.value.automation[key]).length)
@@ -71,7 +71,7 @@ const qixiActivityEnabled = computed(() => ['qixi_dew_use', 'qixi_bridge_build',
 // 也会被标成「雨落成诗」，标签会失真。
 const rainPoemActivityEnabled = computed(() => ['rain_poem_bottle_buy', 'rain_poem_weather_collect', 'rain_poem_summon_use', 'rain_poem_prank_use', 'rain_poem_research_unlock'].some(key => automation.value.automation[key]))
 const charityFlowerActivityEnabled = computed(() => ['charity_flower_share_claim', 'charity_flower_donate', 'charity_flower_reward_claim', 'charity_flower_public_fund_claim'].some(key => automation.value.automation[key]))
-const petDiaryActivityEnabled = computed(() => ['pet_diary_adopt', 'pet_diary_feed', 'pet_diary_draw', 'pet_diary_story_claim', 'pet_diary_seed_claim', 'pet_diary_solar_claim', 'pet_diary_treasure_open', 'pet_diary_compensation_claim', 'pet_diary_charm_equip'].some(key => automation.value.automation[key]))
+const petDiaryActivityEnabled = computed(() => ['pet_diary_adopt', 'pet_diary_feed', 'pet_diary_draw', 'pet_diary_story_claim', 'pet_diary_seed_claim', 'pet_diary_solar_claim', 'pet_diary_treasure_open', 'pet_diary_compensation_claim', 'pet_diary_charm_equip', 'pet_diary_battle'].some(key => automation.value.automation[key]))
 
 function intervalTag(min: number, max: number) {
   return `${min}-${max} 秒`
@@ -642,13 +642,14 @@ watch(() => props.currentAccountId, loadQixiFriends)
                   <BaseSwitch v-model="automation.automation.pet_diary_solar_claim" label="领取节令赠礼" />
                   <BaseSwitch v-model="automation.automation.pet_diary_treasure_open" label="护送完成后开启宝藏" />
                   <BaseSwitch v-model="automation.automation.pet_diary_compensation_claim" label="领取夺宝补偿" />
+                  <BaseSwitch v-model="automation.automation.pet_diary_battle" label="自动好友夺宝" />
                   <BaseSwitch v-model="automation.automation.pet_diary_charm_equip" label="自动选择锦囊（含免费刷新）" />
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   投喂与寻宝消耗萌宠元气糕，元气糕来自收获活动作物，元气糕不足时自动跳过。锦囊只使用每日免费刷新额度，不消耗点券或钻石。
                 </p>
                 <p class="text-xs text-amber-600 dark:text-amber-400">
-                  夺宝（掠夺好友宝藏）与拾物小铺兑换需要你指定好友和商品，未做成自动开关，请在活动页手动操作。
+                  自动夺宝轮转检查好友并跳过好友黑名单，按初级、中级、高级顺序使用宝藏允许的已有挑战书，不自动购买。拾物小铺兑换仍需手动选择商品。
                 </p>
               </section>
             </div>

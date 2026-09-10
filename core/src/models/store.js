@@ -271,7 +271,7 @@ const DEFAULT_AUTOMATION = {
     charity_flower_donate: false,
     charity_flower_reward_claim: false,
     charity_flower_public_fund_claim: false,
-    // 萌宠成长日记（S3）。刻意不提供的开关：夺宝（battle，需好友名单且会掠夺好友）、
+    // 萌宠成长日记（S3）。刻意不提供的开关：
     // 拾物小铺兑换（exchange，需用户指定商品）、锦囊付费刷新（花点券）、
     // markStories（纯 UI 状态无奖励）、skipBattle（是设置项不是任务）。
     pet_diary_adopt: false,
@@ -283,6 +283,7 @@ const DEFAULT_AUTOMATION = {
     pet_diary_treasure_open: false,
     pet_diary_compensation_claim: false,
     pet_diary_charm_equip: false,
+    pet_diary_battle: false,
     fertilizer_gift: false,
     fertilizer_buy_organic: false,
     fertilizer_buy_normal: false,
@@ -334,6 +335,7 @@ const PET_DIARY_AUTOMATION_KEYS = [
     'pet_diary_solar_claim',
     'pet_diary_treasure_open',
     'pet_diary_compensation_claim',
+    'pet_diary_battle',
     'pet_diary_charm_equip'
 ];
 
@@ -378,6 +380,24 @@ function disableHiddenActivityAutomation(automation, nowSeconds = Math.floor(Dat
     if (!automation || typeof automation !== 'object') return automation;
     for (const key of getInactiveActivityAutomationKeys(nowSeconds)) automation[key] = false;
     return automation;
+}
+
+// Only the main runtime calls this persistence hook; workers keep read-time guards.
+let inactiveActivityConfigNeedsSave = false;
+function persistInactiveActivityAutomation(nowSeconds = Math.floor(Date.now() / 1000)) {
+    const inactive = [...getInactiveActivityAutomationKeys(nowSeconds)];
+    const changedAccounts = [];
+    for (const [id, cfg] of Object.entries(globalConfig.accountConfigs || {})) {
+        if (!inactive.some(key => cfg.automation?.[key] === true)) continue;
+        disableHiddenActivityAutomation(cfg.automation, nowSeconds);
+        changedAccounts.push(id);
+        inactiveActivityConfigNeedsSave = true;
+    }
+    if (inactiveActivityConfigNeedsSave) {
+        saveGlobalConfig({ throwOnError: true });
+        inactiveActivityConfigNeedsSave = false;
+    }
+    return changedAccounts;
 }
 
 /** 默认间隔配置（秒） */
@@ -948,6 +968,9 @@ function loadGlobalConfig() {
         for (const [key, val] of Object.entries(rawConfigs)) {
             const id = String(key || '').trim();
             if (!id) continue;
+            if ([...getInactiveActivityAutomationKeys()].some(key => val?.automation?.[key] === true)) {
+                inactiveActivityConfigNeedsSave = true;
+            }
             globalConfig.accountConfigs[id] = normalizeAccountConfig(val, DEFAULT_ACCOUNT_CONFIG);
         }
         for (const [key, val] of Object.entries(globalConfig.accountConfigs)) {
@@ -2046,7 +2069,8 @@ module.exports = {
     removeFriendFromCache,
     getAntiResaleConfig,
     setAntiResaleConfig,
-    DEFAULT_ANTI_RESALE_CONFIG
+    DEFAULT_ANTI_RESALE_CONFIG,
+    persistInactiveActivityAutomation
 };
 
 module.exports._test = {

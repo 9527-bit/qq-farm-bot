@@ -37,6 +37,7 @@ export interface AutomationConfig {
   pet_diary_treasure_open?: boolean
   pet_diary_compensation_claim?: boolean
   pet_diary_charm_equip?: boolean
+  pet_diary_battle?: boolean
   sell?: boolean
   fertilizer_gift?: boolean
   fertilizer_buy_organic?: boolean

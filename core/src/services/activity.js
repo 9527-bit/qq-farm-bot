@@ -1164,7 +1164,7 @@ function getPetDiaryService() {
 }
 
 const getPetDiary = () => getPetDiaryService().getPetDiary();
-const operatePetDiary = (action, params) => getPetDiaryService().operatePetDiary(action, params);
+const operatePetDiary = (action, params, options) => getPetDiaryService().operatePetDiary(action, params, options);
 const getPetDiaryRecords = (kind) => getPetDiaryService().getPetDiaryRecords(kind);
 const getPetDiaryFriend = (gid) => getPetDiaryService().getPetDiaryFriend(gid);
 

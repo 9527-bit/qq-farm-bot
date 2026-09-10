@@ -355,3 +355,37 @@ test('背包读取失败时余额标记为未知且消耗类动作关闭', () =>
     assert.strictEqual(snapshot.nurture.canFeed, false, '背包未知时不得可投喂');
     assert.strictEqual(snapshot.hunt.canDraw, false, '背包未知时不得可寻宝');
 });
+
+function battleService({ canStart = true, count = 0, books = '2', shouldContinue } = {}) {
+    let writes = 0;
+    const group = { group: { head: { id: GROUP_ID }, children: [{
+        head: { id: PET_ID, start_time: 1757000000, end_time: 1760000000 },
+        pet_treasure_hunt: { nurture: { stage: 2 }, hunt: { can_play_plunder: true }, battle: { battle_count: count } },
+    }] } };
+    const { service } = buildService({ bag: new Map([['80103', books]]), reply: async (svc, method, body) => {
+        if (method === 'GetGroup') return { body: types.PetDiaryGetGroupReply.encode(types.PetDiaryGetGroupReply.fromObject(group)).finish() };
+        const req = types.PetDiaryOperateRequest.decode(body);
+        let payload;
+        if (Number(req.operate_type) === 47) payload = { pet_treasure_hunt_get_friend_activity_info: { gid: '123', info: {
+            treasures: [{ id: 'treasure', status: 2, end_at: 1760000000,
+                battle_previews: [{ challenge_item_id: '80103', can_start: canStart }] }],
+        } } };
+        else {
+            assert.equal(Number(req.operate_type), 43);
+            assert.equal(String(req.pet_treasure_hunt_start_battle.challenge_item_id), '80103');
+            writes++; payload = { pet_treasure_hunt_start_battle: { won: true } };
+        }
+        return { body: types.PetDiaryOperateReply.encode(types.PetDiaryOperateReply.fromObject({ activity_id: PET_ID, operate_type: req.operate_type, ...payload })).finish() };
+    } });
+    return { run: () => service.operatePetDiary('battle', { gid: '123', treasureId: 'treasure', challengeId: '80103' },
+        shouldContinue ? { shouldContinue } : {}), writes: () => writes };
+}
+
+test('shared battle action revalidates preview, daily limit, inventory and cancellation', async () => {
+    for (const options of [{ canStart: false }, { count: 20 }, { books: '0' }, { shouldContinue: () => false }]) {
+        const f = battleService(options);
+        await assert.rejects(f.run()); assert.equal(f.writes(), 0);
+    }
+    const f = battleService();
+    const result = await f.run(); assert.equal(f.writes(), 1); assert.ok(result.snapshot);
+});

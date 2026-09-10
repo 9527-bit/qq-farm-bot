@@ -5,6 +5,7 @@ const { CONFIG } = require('../config/config');
 const { getLevelExpProgress } = require('../config/gameConfig');
 const {
     getAutomation,
+    getFriendBlacklist,
     getConfigSnapshot,
     applyConfigSnapshot
 } = require('../models/store');
@@ -292,6 +293,26 @@ function startDailyRoutineTimer() {
 
 // ==================== 活动自动控制 ====================
 
+const petDiaryBattleEnabled = () => loginReady && !friendSyncPaused
+    && getAutomation().pet_diary_battle === true;
+const petDiaryBattleExcluded = gid => String(getUserState().gid) === gid
+    || getFriendBlacklist(process.env.FARM_ACCOUNT_ID || '').some(value => String(value) === gid);
+const runPetDiaryBattles = require('../services/pet-diary-battle-automation').createPetDiaryBattleAutomation({
+    getPet: () => require('../services/activity').getPetDiary(),
+    getFriends: () => getFriendsList(),
+    getFriend: gid => require('../services/activity').getPetDiaryFriend(gid),
+    operate: (action, params) => require('../services/activity').operatePetDiary(action, params, {
+        shouldContinue: () => petDiaryBattleEnabled() && !petDiaryBattleExcluded(params.gid),
+    }),
+    enabled: petDiaryBattleEnabled,
+    excluded: petDiaryBattleExcluded,
+    now: () => require('../utils/utils').getServerTimeSec() * 1000,
+    pause: () => new Promise(resolve => setTimeout(resolve, 400)),
+    report: (message, detail) => log('活动', `${message}（检查 ${detail.scanned} 人，夺宝 ${detail.battles} 次）`, {
+        module: 'activity', event: '自动好友夺宝', result: detail.error ? 'error' : 'ok', ...detail,
+    }),
+});
+
 /**
  * 萌宠成长日记（S3）自动化。
  *
@@ -415,6 +436,8 @@ async function runPetDiaryAutomation(flags) {
     await step(flags.compensation, '领取夺宝补偿',
         () => BigInt(String(pet.compensationCount || '0')) > 0n, 'compensation');
 
+    if (flags.battle) await runPetDiaryBattles();
+
     // 护送完成是时间驱动的，5 分钟轮询会白等。按最近一个 endTime 精准唤醒，
     // 与 rain_poem_weather_renew 同一套写法：先清后设，+2s 安全垫，回调重入顶层函数。
     workerScheduler.clear('pet_diary_treasure_ready');
@@ -463,9 +486,10 @@ async function runStarActivityAutoClaims() {
     const petDiaryTreasureEnabled = automation.pet_diary_treasure_open === true;
     const petDiaryCompensationEnabled = automation.pet_diary_compensation_claim === true;
     const petDiaryCharmEnabled = automation.pet_diary_charm_equip === true;
+    const petDiaryBattleFlag = automation.pet_diary_battle === true;
     const petDiaryAnyEnabled = petDiaryAdoptEnabled || petDiaryFeedEnabled || petDiaryDrawEnabled
         || petDiaryStoryEnabled || petDiarySeedEnabled || petDiarySolarEnabled
-        || petDiaryTreasureEnabled || petDiaryCompensationEnabled || petDiaryCharmEnabled;
+        || petDiaryTreasureEnabled || petDiaryCompensationEnabled || petDiaryCharmEnabled || petDiaryBattleFlag;
     const qixiFriendPriority = Array.isArray(automation.qixi_friend_priority)
         ? automation.qixi_friend_priority.map(Number).filter(gid => gid > 0) : [];
     if (!claimPassport && !claimSolarTerms && !claimRecords && !claimQingmeiSeedsEnabled && !brewQingmeiWineEnabled
@@ -803,6 +827,7 @@ async function runStarActivityAutoClaims() {
                 solar: petDiarySolarEnabled,
                 treasure: petDiaryTreasureEnabled,
                 compensation: petDiaryCompensationEnabled,
+                battle: petDiaryBattleFlag,
                 charm: petDiaryCharmEnabled
             });
         }
@@ -1180,6 +1205,7 @@ function applyRuntimeConfig(config, syncStatusAfter = false) {
                 'pet_diary_solar_claim',
                 'pet_diary_treasure_open',
                 'pet_diary_compensation_claim',
+                'pet_diary_battle',
                 'pet_diary_charm_equip'
             ].some(key => !prevAuto?.[key] && newAuto?.[key]);
             if (starClaimBecameEnabled) {

@@ -383,7 +383,7 @@ function createPetDiaryService(deps) {
         };
     }
 
-    async function operatePetDiary(actionInput, input = {}) {
+    async function operatePetDiary(actionInput, input = {}, options = {}) {
         if (actionInput === 'solar') return claimPetDiarySolarTerm(input?.termId);
         if (typeof actionInput !== 'string' || !Object.hasOwn(OPERATIONS, actionInput)) fail('未知萌宠操作');
         const action = actionInput;
@@ -504,6 +504,8 @@ function createPetDiaryService(deps) {
                 params = { orders };
             }
 
+            if (options.shouldContinue && !options.shouldContinue()) fail('自动操作已停止');
+            if (!isActive(group.pet.head)) fail('萌宠成长日记当前不在活动时间内');
             const [command, selector] = OPERATIONS[action];
             const reply = await operate(id, command, selector, params);
             const result = reply[selector];
