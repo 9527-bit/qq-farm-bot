@@ -65,6 +65,16 @@ test('star bell flower is configured as a 2x2 crop', () => {
   assert.equal(getPlantBySeedId(29003)?.size, 2);
 });
 
+test('bubble cotton candy resolves its official 2x2 plant configuration', () => {
+  const plant = getPlantBySeedId(29004);
+  assert.equal(plant?.id, 1029004);
+  assert.equal(plant?.size, 2);
+  assert.equal(plant?.fruit?.id, 49004);
+  assert.equal(plant?.fruit?.count, 192);
+  assert.equal(plant?.exp, 7680);
+  assert.ok(getPlantGrowPhases(plant.id).length > 0);
+});
+
 test('charity red flower uses the official single-grid plant configuration', () => {
   const plant = getPlantBySeedId(20883);
   assert.equal(plant?.id, 1020883);
