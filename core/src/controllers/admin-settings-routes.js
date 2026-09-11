@@ -85,6 +85,7 @@ function buildSettingsPayload(store, accountId, currentUser) {
   return {
     intervals: accountId ? store.getIntervals(accountId) : {},
     plantingStrategy: accountId ? store.getPlantingStrategy(accountId) : null,
+    prioritizeGrowthTasks: accountId ? store.getPrioritizeGrowthTasks(accountId) : false,
     prioritize2x2Crops:
       accountId && typeof store.getPrioritize2x2Crops === "function"
         ? store.getPrioritize2x2Crops(accountId)

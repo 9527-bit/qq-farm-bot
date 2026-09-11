@@ -85,8 +85,12 @@ function moduleStateLabel(key: ModuleKey) {
 
 function summaryTags(key: ModuleKey) {
   if (key === 'planting') {
+    const primaryStrategy = strategy.value.plantingStrategy
+    const hasFallback = primaryStrategy === 'bag_priority' || primaryStrategy === 'task_priority'
+    const primaryLabel = props.plantingStrategyOptions.find(option => option.value === primaryStrategy)?.label
     return [
-      props.strategyPreviewLabel || '等待选种',
+      ...(hasFallback ? [primaryLabel || '未设置策略'] : []),
+      hasFallback ? `第二策略：${props.strategyPreviewLabel || '等待选种'}` : props.strategyPreviewLabel || '等待选种',
       automation.value.automation.sell ? '卖果实' : '不卖果实',
       strategy.value.prioritize2x2Crops ? '优先 2x2' : '常规占地',
       `巡田 ${intervalTag(strategy.value.intervals.farmMin, strategy.value.intervals.farmMax)}`,

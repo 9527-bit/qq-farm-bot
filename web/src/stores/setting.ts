@@ -110,6 +110,7 @@ export interface AutoCodeRefreshConfig {
 export interface SettingsState {
   plantingStrategy: string
   prioritize2x2Crops: boolean
+  prioritizeGrowthTasks: boolean
   bagSeedPriority: number[]
   bagSeedKnownIds: number[]
   bagSeedFallbackStrategy: string
@@ -166,6 +167,7 @@ export const useSettingStore = defineStore('setting', () => {
   const settings = ref<SettingsState>({
     plantingStrategy: 'max_exp',
     prioritize2x2Crops: false,
+    prioritizeGrowthTasks: false,
     bagSeedPriority: [],
     bagSeedKnownIds: [],
     bagSeedFallbackStrategy: 'level',
@@ -197,6 +199,7 @@ export const useSettingStore = defineStore('setting', () => {
     settings.value = {
       plantingStrategy: 'max_exp',
       prioritize2x2Crops: false,
+      prioritizeGrowthTasks: false,
       bagSeedPriority: [],
       bagSeedKnownIds: [],
       bagSeedFallbackStrategy: 'level',
@@ -234,6 +237,7 @@ export const useSettingStore = defineStore('setting', () => {
         const d = data.data
         settings.value.plantingStrategy = d.plantingStrategy || d.strategy || 'max_exp'
         settings.value.prioritize2x2Crops = d.prioritize2x2Crops === true
+        settings.value.prioritizeGrowthTasks = d.prioritizeGrowthTasks === true
         settings.value.intervals = d.intervals || {}
         settings.value.friendQuietHours = d.friendQuietHours || { enabled: false, start: '23:00', end: '07:00' }
         settings.value.automation = d.automation || {}
@@ -270,6 +274,7 @@ export const useSettingStore = defineStore('setting', () => {
       const settingsPayload = {
         plantingStrategy: newSettings.plantingStrategy,
         prioritize2x2Crops: newSettings.prioritize2x2Crops === true,
+        prioritizeGrowthTasks: newSettings.prioritizeGrowthTasks === true,
         bagSeedPriority: newSettings.bagSeedPriority ?? [],
         bagSeedKnownIds: newSettings.bagSeedKnownIds ?? [],
         bagSeedFallbackStrategy: newSettings.bagSeedFallbackStrategy ?? 'level',

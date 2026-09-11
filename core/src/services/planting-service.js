@@ -8,6 +8,7 @@ const {
   syncBagSeedPriority,
   getBagSeedFallbackStrategy,
   getPrioritize2x2Crops,
+  getPrioritizeGrowthTasks,
 } = require('../models/store');
 const { getPlantRankings } = require('./analytics');
 const { getBagSeeds } = require('./warehouse');
@@ -34,7 +35,8 @@ const PLANTING_STRATEGY_LABELS = {
   max_fert_exp: '最大普通肥经验/时',
   max_profit: '最大净利润/时',
   max_fert_profit: '最大普通肥净利润/时',
-  bag_priority: '背包种子优先'
+  bag_priority: '背包种子优先',
+  task_priority: '任务作物优先'
 };
 
 function getPlantingStrategyLabel(strategy) {
@@ -876,6 +878,57 @@ async function autoPlantEmptyLands(deadLandIds, emptyLandIds, lands = []) {
 
   allEmptyLands = expandRemoved2x2Lands(allEmptyLands, deadLandIds, lands);
   const strategy = String(getPlantingStrategy(accountId) || '').trim();
+  const growthTaskPriorityEnabled = strategy === 'task_priority' || getPrioritizeGrowthTasks(accountId);
+  if (allEmptyLands.length && growthTaskPriorityEnabled) {
+    try {
+      const { getTaskInfo, buildGrowthTasks } = require('./task');
+      const { plantGrowthTasks } = require('./growth-planting');
+      const taskResult = await plantGrowthTasks(allEmptyLands, {
+        getTasks: async () => {
+          const reply = await getTaskInfo();
+          if (!reply.task_info) throw new Error('任务响应缺少任务信息');
+          return buildGrowthTasks(reply.task_info);
+        },
+        getBagSeeds,
+        getPlant: getPlantBySeedId,
+        isLocked: plant => isSeedLockedByLevel({ requiredLevel: plant.land_level_need }, userState.level),
+        plantSeeds,
+        warn: message => logWarn('成长种植', message),
+        buySeed: async (seedId, count, previousOwned) => {
+          const shopId = await getSeedShopId();
+          const shop = await getShopInfo(shopId);
+          const goods = (shop.goods_list || []).find(item => toNum(item.item_id) === seedId && item.unlocked);
+          if (!goods || (goods.conds || []).some(cond => toNum(cond.type) !== 1 || toNum(cond.param) > userState.level)) return 0;
+          if (toNum(goods.item_count) !== 1) return 0;
+          const price = toNum(goods.price);
+          if (price <= 0) return 0;
+          const limit = toNum(goods.limit_count);
+          const available = limit > 0 ? Math.max(0, limit - toNum(goods.bought_num)) : count;
+          const buyCount = Math.min(count, available, Math.max(0, Math.floor(userState.gold / price)));
+          if (!buyCount) return 0;
+          // The seed shop uses gold; no activity shop or premium-resource purchasing is used.
+          await buyGoods(toNum(goods.id), buyCount, price);
+          userState.gold = Math.max(0, userState.gold - buyCount * price);
+          // Verify the delivered inventory instead of assuming purchase success means all seeds arrived.
+          const bag = await getBagSeeds();
+          const owned = Number(bag.find(seed => Number(seed.seedId) === seedId)?.count) || 0;
+          return Math.min(buyCount, Math.max(0, owned - previousOwned));
+        },
+      });
+      allEmptyLands = taskResult.remainingLandIds;
+      result.plantedLands.push(...taskResult.plantedLandIds);
+      result.plantedCount += taskResult.plantedLandIds.length;
+      result.occupiedCount += taskResult.plantedLandIds.length;
+      if (taskResult.plantedLandIds.length) {
+        log('成长种植', `已优先种植 ${taskResult.plantedLandIds.length} 块任务作物`);
+        await runFertilizerByConfig(taskResult.plantedLandIds);
+      }
+      if (!allEmptyLands.length) return result;
+    } catch (error) {
+      logWarn('成长种植', `任务种植中断，下轮重试: ${error.message}`);
+      return result;
+    }
+  }
   const size2Result = await plantPrioritized2x2Crops(allEmptyLands, lands, accountId);
   const reservedLandSet = new Set(size2Result.reservedLandIds || []);
   const normalEmptyLands = allEmptyLands.filter(id => !reservedLandSet.has(Number(id)));
@@ -931,7 +984,8 @@ async function autoPlantEmptyLands(deadLandIds, emptyLandIds, lands = []) {
   }
 
   // 商店购买种植
-  const shopResult = await plantFromShop(normalEmptyLands, userState, undefined, accountId);
+  const fallbackStrategy = strategy === 'task_priority' ? getBagSeedFallbackStrategy(accountId) : undefined;
+  const shopResult = await plantFromShop(normalEmptyLands, userState, fallbackStrategy, accountId);
   result.plantedLands.push(...(shopResult.plantedLands || []));
   result.plantedCount += Number(shopResult.plantedCount || 0);
   result.occupiedCount += Number(shopResult.occupiedCount || 0);

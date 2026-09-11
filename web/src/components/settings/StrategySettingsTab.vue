@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BagSeedPriority from '@/components/settings/BagSeedPriority.vue'
 import StrategyTimingPanel from '@/components/settings/StrategyTimingPanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
@@ -12,6 +13,7 @@ interface SelectOption<T = string | number> {
 interface StrategySettings {
   plantingStrategy: string
   prioritize2x2Crops: boolean
+  prioritizeGrowthTasks: boolean
   bagSeedPriority: number[]
   bagSeedFallbackStrategy: string
   intervals: {
@@ -52,6 +54,14 @@ const emit = defineEmits<{
 
 const settings = defineModel<StrategySettings>('settings', { required: true })
 
+function selectPlantingStrategy(value: string | number | undefined) {
+  if (value === undefined)
+    return
+  const strategy = String(value)
+  settings.value.plantingStrategy = strategy
+  settings.value.prioritizeGrowthTasks = strategy === 'task_priority'
+}
+
 function selectBagFallbackStrategy(value: string | number) {
   settings.value.bagSeedFallbackStrategy = String(value)
 }
@@ -89,10 +99,11 @@ function isBagFallbackStrategySelected(value: string | number) {
           v-model="settings.plantingStrategy"
           label="种植策略"
           :options="plantingStrategyOptions"
+          @update:model-value="selectPlantingStrategy"
         />
         <div class="flex flex-col gap-1.5">
           <label class="text-sm text-gray-700 font-medium dark:text-gray-300">
-            {{ settings.plantingStrategy === 'bag_priority' ? '第二优先策略预览' : '策略选种预览' }}
+            {{ ['bag_priority', 'task_priority'].includes(settings.plantingStrategy) ? '第二优先策略预览' : '策略选种预览' }}
           </label>
           <div
             class="w-full flex items-center justify-between border border-gray-200 rounded-lg border-dashed bg-gray-50 px-3 py-2 text-gray-500 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-400"
@@ -104,7 +115,9 @@ function isBagFallbackStrategySelected(value: string | number) {
         </div>
       </div>
 
-      <div v-if="settings.plantingStrategy === 'bag_priority'" class="flex flex-col gap-2">
+      <BagSeedPriority v-if="settings.plantingStrategy === 'bag_priority'" :key="currentAccountId" v-model="settings.bagSeedPriority" :account-id="currentAccountId" />
+
+      <div v-if="['bag_priority', 'task_priority'].includes(settings.plantingStrategy)" class="flex flex-col gap-2">
         <label class="text-sm text-gray-700 font-medium dark:text-gray-300">
           第二优先策略
         </label>

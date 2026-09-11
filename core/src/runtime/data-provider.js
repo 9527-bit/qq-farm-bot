@@ -272,6 +272,7 @@ function createDataProvider(deps) {
             const patch = {
                 plantingStrategy: s.plantingStrategy !== undefined ? s.plantingStrategy : s.strategy,
                 prioritize2x2Crops: s.prioritize2x2Crops,
+                prioritizeGrowthTasks: s.prioritizeGrowthTasks,
                 intervals: s.intervals,
                 friendQuietHours: s.friendQuietHours,
                 autoCodeRefresh: s.autoCodeRefresh,
@@ -283,6 +284,8 @@ function createDataProvider(deps) {
                 goldenBugKeepCount: s.goldenBugKeepCount,
                 goldenBugRoundLimit: s.goldenBugRoundLimit,
                 autoAcceptFriendMinLevel: s.autoAcceptFriendMinLevel,
+                bagSeedPriority: s.bagSeedPriority,
+                bagSeedKnownIds: s.bagSeedKnownIds,
                 bagSeedFallbackStrategy: s.bagSeedFallbackStrategy,
             };
             store.applyConfigSnapshot(patch, { accountId: id });
@@ -294,6 +297,7 @@ function createDataProvider(deps) {
             return {
                 strategy: store.getPlantingStrategy(id),
                 prioritize2x2Crops: store.getPrioritize2x2Crops(id),
+                prioritizeGrowthTasks: store.getPrioritizeGrowthTasks(id),
                 intervals: store.getIntervals(id),
                 friendQuietHours: store.getFriendQuietHours(id),
                 autoCodeRefresh: store.getAutoCodeRefresh(id),
