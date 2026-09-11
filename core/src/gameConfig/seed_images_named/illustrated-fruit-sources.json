@@ -10,12 +10,28 @@
       "sha256": "84a531a8384fac0737f0c5d51e9e0c80c93223e9929e486c0df0f040d49830a6"
     },
     {
+      "id": 1041072,
+      "name": "黄金·寒兰",
+      "file": "1041072.png",
+      "url": "https://cdn-resource.nqf.qq.com/release/remote/plant/native/15/15ab6624-68ea-47df-a778-adec28b777bd.7dd85.png",
+      "assetPath": "model/v4/gold/Crop_1072_Seed/spriteFrame",
+      "sha256": "cae38c8c380fc1095a37a9281952cad156e5f98826496de08ec435cd29768b96"
+    },
+    {
       "id": 1041625,
       "name": "黄金·枸杞",
       "file": "1041625.png",
       "url": "https://cdn-resource.nqf.qq.com/release/remote/plant/native/e1/e18de53d-4afd-4e5e-ac99-6894f2d344b7.d85a4.png",
       "assetPath": "model/v4/gold/Crop_1625_Seed/spriteFrame",
       "sha256": "58eb7c288e2f8b57237cb2c586c053e1cb7e62392773c0bc9fd89179803d71be"
+    },
+    {
+      "id": 1045995,
+      "name": "黄金·芦苇",
+      "file": "1045995.png",
+      "url": "https://cdn-resource.nqf.qq.com/release/remote/plant/native/18/1844862c-ec08-42a5-8789-3f64a5e4e67c.74815.png",
+      "assetPath": "model/v4/gold/Crop_5995_Seed/spriteFrame",
+      "sha256": "180c64aa50a44e01816135ed1c0c62e6f6cbc4010a41d18018cbae9bb4482089"
     },
     {
       "id": 204008,
