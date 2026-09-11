@@ -103,7 +103,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section class="pet-page min-h-0 flex flex-1 flex-col gap-3 lg:h-full lg:overflow-hidden">
+  <section class="pet-page flex flex-col gap-3 lg:min-h-0 lg:h-full lg:flex-1 lg:overflow-hidden">
     <header class="flex shrink-0 flex-wrap items-center justify-between gap-3">
       <div class="min-w-0 flex items-center gap-3">
         <div class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--theme-primary)_12%,transparent)] text-[var(--theme-primary)]">
@@ -156,8 +156,8 @@ onMounted(load)
     </div>
 
     <template v-else-if="tab === 'pets'">
-      <div class="pet-workspace min-h-0 flex flex-1 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">
-        <section class="ui-card min-h-0 flex flex-col overflow-hidden rounded-lg">
+      <div class="pet-workspace flex flex-col gap-3 lg:min-h-0 lg:flex-1 lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">
+        <section class="ui-card flex flex-col rounded-lg lg:min-h-0 lg:overflow-hidden">
           <div class="guardian-strip flex shrink-0 flex-wrap items-center gap-3 border-b border-gray-200 p-3 sm:flex-nowrap dark:border-gray-700 sm:p-4">
             <div class="grid h-16 w-16 shrink-0 place-items-center rounded-lg bg-gray-50 dark:bg-gray-700/60">
               <img v-if="deployed?.image" :src="deployed.image" :alt="deployed.name" class="h-14 w-14 object-contain">
@@ -197,7 +197,7 @@ onMounted(load)
           <div v-if="!overview.dogs.length" class="flex flex-1 items-center justify-center p-8 text-sm text-gray-500 dark:text-gray-400">
             暂无宠物数据，请刷新重试
           </div>
-          <div v-else class="dog-grid min-h-0 flex-1 overflow-y-auto p-3 pt-2 sm:p-4 sm:pt-2">
+          <div v-else class="dog-grid p-3 pt-2 sm:p-4 sm:pt-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             <article
               v-for="dog in sortedDogs"
               :key="dog.id"
@@ -220,7 +220,7 @@ onMounted(load)
                     </h3>
                     <span v-if="dog.owned" class="shrink-0 text-[11px] text-gray-400">Lv.{{ dog.level || 1 }}</span>
                   </div>
-                  <p class="line-clamp-2 mt-1 text-[11px] text-gray-500 leading-4 dark:text-gray-400" :title="dog.desc || undefined">
+              <p class="dog-description line-clamp-2 mt-1 text-[11px] text-gray-500 leading-4 dark:text-gray-400" :title="dog.desc || undefined">
                     {{ dog.desc || (dog.owned ? '农场守护伙伴' : '尚未获得该宠物') }}
                   </p>
                 </div>
@@ -243,7 +243,7 @@ onMounted(load)
           </div>
         </section>
 
-        <section class="ui-card min-h-0 flex flex-col overflow-hidden rounded-lg">
+        <section class="ui-card flex flex-col rounded-lg lg:min-h-0 lg:overflow-hidden">
           <div class="shrink-0 border-b border-gray-200 p-3 dark:border-gray-700 sm:p-4">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
@@ -274,8 +274,8 @@ onMounted(load)
           <div v-if="!overview.foods.length" class="flex flex-1 items-center justify-center p-8 text-sm text-gray-500 dark:text-gray-400">
             暂无狗粮数据
           </div>
-          <div v-else class="min-h-0 flex-1 overflow-y-auto p-3 pt-2 space-y-2 sm:p-4 sm:pt-2">
-            <article v-for="food in overview.foods" :key="food.id" class="border border-gray-200 rounded-lg p-2.5 dark:border-gray-700">
+          <div v-else class="food-list p-3 pt-2 space-y-2 sm:p-4 sm:pt-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+            <article v-for="food in overview.foods" :key="food.id" class="food-card border border-gray-200 rounded-lg p-2.5 dark:border-gray-700">
               <div class="min-w-0 flex items-center gap-2.5">
                 <div class="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-gray-50 dark:bg-gray-700/60">
                   <img v-if="food.image" :src="food.image" :alt="food.name" loading="lazy" class="h-10 w-10 object-contain">
@@ -288,7 +288,7 @@ onMounted(load)
                     </h3>
                     <span class="shrink-0 text-xs text-gray-500 dark:text-gray-400">库存 <b class="text-gray-900 dark:text-gray-100">{{ food.count }}</b></span>
                   </div>
-                  <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                  <p class="food-duration mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
                     每份延长 {{ food.days }} 天
                   </p>
                 </div>
@@ -323,7 +323,7 @@ onMounted(load)
       </div>
     </template>
 
-    <section v-else-if="tab === 'logs'" class="ui-card min-h-0 flex flex-1 flex-col overflow-hidden rounded-lg">
+    <section v-else-if="tab === 'logs'" class="ui-card flex flex-col rounded-lg lg:min-h-0 lg:flex-1 lg:overflow-hidden">
       <div class="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
         <div>
           <h2 class="flex items-center gap-2 text-base text-gray-900 font-semibold dark:text-gray-100">
@@ -343,7 +343,7 @@ onMounted(load)
           宠物完成守护后会显示在这里
         </p>
       </div>
-      <div v-else class="min-h-0 flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+      <div v-else class="divide-y divide-gray-100 dark:divide-gray-700 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         <article v-for="item in logs" :key="item.id" class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30">
           <div class="grid h-9 w-9 place-items-center rounded-lg bg-green-50 text-green-600 dark:bg-green-900/25 dark:text-green-400">
             <span class="i-carbon-security" />
@@ -364,8 +364,8 @@ onMounted(load)
       </div>
     </section>
 
-    <section v-else class="ui-card min-h-0 flex flex-1 flex-col overflow-hidden rounded-lg">
-      <div class="grid min-h-0 flex-1 lg:grid-cols-[minmax(260px,0.75fr)_minmax(0,1.25fr)]">
+    <section v-else class="ui-card flex flex-col rounded-lg lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+      <div class="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,0.75fr)_minmax(0,1.25fr)]">
         <div class="flex flex-col justify-between border-b border-gray-200 p-5 lg:border-b-0 lg:border-r dark:border-gray-700 sm:p-6">
           <div>
             <div class="grid h-12 w-12 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--theme-primary)_12%,transparent)] text-[var(--theme-primary)]">
@@ -383,7 +383,7 @@ onMounted(load)
           </div>
         </div>
 
-        <div class="min-h-0 overflow-y-auto p-5 sm:p-6">
+        <div class="p-5 sm:p-6 lg:min-h-0 lg:overflow-y-auto">
           <label class="flex items-center justify-between gap-4 border border-gray-200 rounded-lg px-4 py-3 dark:border-gray-700">
             <span class="min-w-0">
               <strong class="block text-sm text-gray-900 font-medium dark:text-gray-100">启用资本模式</strong>
@@ -467,12 +467,124 @@ select:focus-visible {
 }
 
 @media (max-width: 639px) {
+  .pet-page {
+    gap: 0.5rem;
+  }
+
   .dog-grid {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.375rem;
+  }
+
+  .dog-card {
+    min-height: 0;
+    padding: 0.5rem;
+  }
+
+  .dog-card > :first-child {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    text-align: center;
+  }
+
+  .dog-card > :first-child > :first-child {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .dog-card > :first-child > :first-child img {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .dog-card > :first-child > :last-child {
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .dog-card > :first-child > :last-child > div {
+    display: block;
+  }
+
+  .dog-card > :first-child > :last-child > div > span {
+    display: none;
+  }
+
+  .dog-card .dog-description {
+    display: none;
+  }
+
+  .dog-card > button {
+    height: 1.75rem;
+    margin-top: 0.375rem;
+  }
+
+  .food-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .food-card > :first-child {
+    gap: 0.375rem;
+  }
+
+  .food-card > :first-child > :first-child {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .food-card > :first-child > :first-child img {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .food-card > :last-child {
+    width: 8.75rem;
+    margin-top: 0;
+    gap: 0.375rem;
+  }
+
+  .food-card > :last-child > :first-child {
+    height: 1.75rem;
+  }
+
+  .food-card .food-duration {
+    display: none;
+  }
+
+  .food-card > :first-child > :last-child > div {
+    display: block;
+  }
+
+  .food-card > :first-child > :last-child > div > span {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.625rem;
+  }
+
+  .food-card h3 {
+    font-size: 0.75rem;
   }
 
   .guardian-strip {
-    align-items: flex-start;
+    min-height: 0;
+    align-items: center;
+    padding: 0.625rem 0.75rem;
+  }
+
+  .guardian-strip > :first-child {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .guardian-strip > :first-child img {
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }
 
