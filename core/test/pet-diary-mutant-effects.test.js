@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { getMutantEffectById, getMutantEffectByIcon, getMutantEffectsByIds } = require('../src/config/gameConfig');
+const { getPlantMutantConfigIds } = require('../src/services/farm-land-analyzer');
 const { images } = require('../src/gameConfig/seed_images_named/mutant/pet-diary-sources.json');
 
 test('pet diary mutations resolve numeric and protocol string IDs with local icons', () => {
@@ -24,4 +25,22 @@ test('pet diary mutations resolve numeric and protocol string IDs with local ico
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), source.sha256);
   }
   assert.equal(getMutantEffectById(16).fruit_name, '比熊棉花糖');
+});
+
+test('own land resolves bichon mutation from plant and current phase records', () => {
+  assert.deepEqual(getPlantMutantConfigIds({
+    mutant_config_ids: ['14', 15],
+  }, {
+    mutants: [
+      { mutant_config_id: '15' },
+      { mutant_config_id: 16 },
+      { mutant_config_id: 0 },
+    ],
+  }), [14, 15, 16]);
+
+  const bichon = getMutantEffectsByIds(getPlantMutantConfigIds({}, {
+    mutants: [{ mutant_config_id: 15 }],
+  }))[0];
+  assert.equal(bichon.name, '比熊');
+  assert.equal(bichon.description, '比熊·售价*4倍·比熊犬处于看护状态时概率触发');
 });
