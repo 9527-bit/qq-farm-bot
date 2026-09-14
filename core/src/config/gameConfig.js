@@ -100,13 +100,14 @@ function loadConfigs() {
             for (const entry of eventPlants) {
                 if (isInvalidPlant(entry)) continue;
                 const plantId = Number(entry.id);
-                const seedId = Number(entry.seed_id);
-                if (plantMap.has(plantId) || seedToPlant.has(seedId)) continue;
+                const seedId = Number(entry.seed_id) || 0;
+                if (plantMap.has(plantId) || (seedId > 0 && seedToPlant.has(seedId))) continue;
                 const plant = {
+                    ...entry,
                     id: plantId,
                     name: entry.name,
                     asset_name: entry.asset_name,
-                    seed_id: seedId,
+                    seed_id: seedId || null,
                     fruit: {
                         id: Number(entry.fruit_id),
                         count: Number(entry.fruit_count) || 0,
@@ -118,8 +119,8 @@ function loadConfigs() {
                     planting_priority: Math.max(0, Number(entry.planting_priority) || 0),
                 };
                 plantMap.set(plant.id, plant);
-                seedToPlant.set(plant.seed_id, plant);
-                fruitToPlant.set(plant.fruit.id, plant);
+                if (plant.seed_id) seedToPlant.set(plant.seed_id, plant);
+                if (plant.fruit.id) fruitToPlant.set(plant.fruit.id, plant);
             }
             plantConfig = [...plantMap.values()];
             console.warn(`[配置] 已合并活动植物配置 (${  eventPlants.length  } 种)`);
@@ -164,7 +165,7 @@ function loadConfigs() {
                     rarity_color: entry.rarity_color || 'EEC55A',
                 };
                 const existingSeedItem = itemInfoMap.get(seedId);
-                if (!existingSeedItem || plant) {
+                if (seedId > 0 && (!existingSeedItem || plant)) {
                     const seedItem = {
                         ...baseItem,
                         ...(existingSeedItem || {}),
