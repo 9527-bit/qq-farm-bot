@@ -59,6 +59,7 @@ const {
 const { registerAdminProxyRoutes } = require("./admin-proxy-routes");
 const { registerAdminPublicInfoRoutes } = require("./admin-public-info-routes");
 const { registerAdminQrLoginRoutes } = require("./admin-qr-login-routes");
+const { registerAdminNapcatLoginRoutes } = require("./admin-napcat-login-routes");
 const { createAdminRouteHelpers } = require("./admin-route-helpers");
 const { registerAdminSettingsRoutes } = require("./admin-settings-routes");
 const { registerAdminShopRoutes } = require("./admin-shop-routes");
@@ -594,6 +595,7 @@ function startAdminServer(dataProvider) {
     updateRuntimeConfig,
   });
   registerAdminQrLoginRoutes({ app });
+  registerAdminNapcatLoginRoutes({ app });
   registerAdminProxyRoutes({ app, logger: adminLogger });
   registerAdminCardRoutes({
     app,

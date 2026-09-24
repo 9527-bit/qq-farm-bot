@@ -24,6 +24,9 @@ let plantPhaseManifestPath = '';
 let plantPhaseManifestMtimeMs = -1;
 const skinDetailImageMap = new Map();// itemId → skinDetailImageUrl
 const staticItemInfoMap = new Map([
+    [6001, { id: 6001, name: '烟花·玉兔望月', type: 23, can_use: 1 }],
+    [204010, { id: 204010, name: '玉兔邀月' }],
+    [90042, { id: 90042, name: '稚萌熊熊' }],
     [1040, { id: 1040, name: '爱心值' }],
     [2158, { id: 2158, name: '小红花做好事头像框' }],
     [101604, { id: 101604, name: '公益小红花结算礼包' }],
@@ -38,6 +41,18 @@ const staticItemInfoMap = new Map([
     [100003, { id: 100003, name: '化肥礼包' }],
 ]);
 const staticItemImageMap = new Map([
+    [6001, '/activity/wish-sign/firework.png'],
+    [26030, '/activity/wish-sign/moon-beauty-seed.png'],
+    [80002, '/activity/wish-sign/fertilizer-4h.png'],
+    [80003, '/activity/wish-sign/fertilizer-8h.png'],
+    [80004, '/activity/wish-sign/fertilizer-12h.png'],
+    [80013, '/activity/wish-sign/organic-fertilizer-8h.png'],
+    [80014, '/activity/wish-sign/organic-fertilizer-12h.png'],
+    [1002, '/activity/wish-sign/coupon.png'],
+    [20435, '/activity/wish-sign/lily-seed.png'],
+    [204010, '/activity/wish-sign/moon-rabbit-skin.png'],
+    [90042, '/activity/wish-sign/cute-bear-skin.png'],
+    [101604, '/activity/charity-flower/settlement-pack.png'],
     [1023, '/activity/star-festival/star-token.png'],
     [1024, '/activity/qixi/qixi-feather.png'],
     [301103, '/activity/qixi/qixi-dew.png'],
@@ -99,13 +114,14 @@ function loadConfigs() {
             for (const entry of eventPlants) {
                 if (isInvalidPlant(entry)) continue;
                 const plantId = Number(entry.id);
-                const seedId = Number(entry.seed_id);
-                if (plantMap.has(plantId) || seedToPlant.has(seedId)) continue;
+                const seedId = Number(entry.seed_id) || 0;
+                if (plantMap.has(plantId) || (seedId > 0 && seedToPlant.has(seedId))) continue;
                 const plant = {
+                    ...entry,
                     id: plantId,
                     name: entry.name,
                     asset_name: entry.asset_name,
-                    seed_id: seedId,
+                    seed_id: seedId || null,
                     fruit: {
                         id: Number(entry.fruit_id),
                         count: Number(entry.fruit_count) || 0,
@@ -117,8 +133,8 @@ function loadConfigs() {
                     planting_priority: Math.max(0, Number(entry.planting_priority) || 0),
                 };
                 plantMap.set(plant.id, plant);
-                seedToPlant.set(plant.seed_id, plant);
-                fruitToPlant.set(plant.fruit.id, plant);
+                if (plant.seed_id) seedToPlant.set(plant.seed_id, plant);
+                if (plant.fruit.id) fruitToPlant.set(plant.fruit.id, plant);
             }
             plantConfig = [...plantMap.values()];
             console.warn(`[配置] 已合并活动植物配置 (${  eventPlants.length  } 种)`);
@@ -163,7 +179,7 @@ function loadConfigs() {
                     rarity_color: entry.rarity_color || 'EEC55A',
                 };
                 const existingSeedItem = itemInfoMap.get(seedId);
-                if (!existingSeedItem || plant) {
+                if (seedId > 0 && (!existingSeedItem || plant)) {
                     const seedItem = {
                         ...baseItem,
                         ...(existingSeedItem || {}),

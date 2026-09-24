@@ -8,7 +8,7 @@ const {
   removeFriendFromCache,
   updateFriendDogInfoCache,
 } = require('../models/store');
-const { sendMsgAsync, networkEvents } = require('../utils/network');
+const { sendMsgAsync, networkEvents, getUserState } = require('../utils/network');
 const { types } = require('../utils/proto');
 const { toLong, toNum, log, logWarn, randomDelay } = require('../utils/utils');
 const { getInteractRecords } = require('./interact');
@@ -32,6 +32,8 @@ const DOG_NAMES = {
 
 // ===== State =====
 let hasInitializedFromVisitors = false;
+let nextEmptyVisitorRetryAt = 0;
+let hasBootstrappedQqFriendGids = false;
 const invalidKnownFriendGidCooldownUntil = new Map();
 const visitTokensByGid = new Map();
 
@@ -297,16 +299,18 @@ function getEffectiveKnownQqFriendGids() {
 
 /**
  * On first login, seed known friend GIDs from recent visitor records.
- * Only runs once per session.
+ * Empty/failed discovery may retry on an explicit refresh, at most once per five minutes.
  */
-async function syncKnownFriendGidsFromRecentVisitorsOnce() {
-  if (hasInitializedFromVisitors) return getEffectiveKnownQqFriendGids();
+async function syncKnownFriendGidsFromRecentVisitorsOnce(retryEmpty = false) {
+  if (hasInitializedFromVisitors && (!retryEmpty || getEffectiveKnownQqFriendGids().length > 0
+    || Date.now() < nextEmptyVisitorRetryAt)) return getEffectiveKnownQqFriendGids();
+  nextEmptyVisitorRetryAt = Date.now() + 5 * 60 * 1000;
 
   const accountId = process.env.FARM_ACCOUNT_ID || '';
   const existingGids = normalizeFriendGids(getKnownFriendGids());
 
   // If we already have known GIDs, skip visitor seeding
-  if (existingGids.length > 0) {
+  if (existingGids.length > 0 && getEffectiveKnownQqFriendGids().length > 0) {
     hasInitializedFromVisitors = true;
     return getEffectiveKnownQqFriendGids();
   }
@@ -335,7 +339,7 @@ async function syncKnownFriendGidsFromRecentVisitorsOnce() {
       return getEffectiveKnownQqFriendGids();
     }
 
-    const mergedGids = normalizeFriendGids([...visitorGids]);
+    const mergedGids = normalizeFriendGids([...existingGids, ...visitorGids]);
     if (mergedGids.length > 0) {
       applyConfigSnapshot({ knownFriendGids: mergedGids }, {
         persist: false,
@@ -372,6 +376,81 @@ async function syncKnownFriendGidsFromRecentVisitorsOnce() {
     });
     return getEffectiveKnownQqFriendGids();
   }
+}
+
+/**
+ * Best-effort QQ friend GID bootstrap for login flows that do not provide
+ * platform openids (notably NapCat QR login). Every source is independent so
+ * one unavailable legacy RPC does not prevent visitor/application discovery.
+ */
+async function bootstrapQqFriendGids() {
+  if (CONFIG.platform !== 'qq') return { skipped: true, reason: 'not_qq' };
+  if (hasBootstrappedQqFriendGids) return { skipped: true, reason: 'already_bootstrapped' };
+  hasBootstrappedQqFriendGids = true;
+
+  const discovered = [];
+  const sourceCounts = { legacy: 0, applications: 0, visitors: 0 };
+  const errors = [];
+
+  try {
+    const friends = dedupeFriendsByGid(await fetchQqFriendsByLegacyMethod());
+    sourceCounts.legacy = friends.length;
+    discovered.push(...friends.map(friend => toNum(friend && friend.gid)));
+  } catch (err) {
+    errors.push(`legacy: ${err.message}`);
+  }
+
+  try {
+    const reply = await getApplications();
+    const applications = Array.isArray(reply && reply.applications) ? reply.applications : [];
+    sourceCounts.applications = applications.length;
+    discovered.push(...applications.map(application => toNum(application && application.gid)));
+  } catch (err) {
+    errors.push(`applications: ${err.message}`);
+  }
+
+  try {
+    const records = await getInteractRecords();
+    const visitorGids = normalizeFriendGids(
+      (Array.isArray(records) ? records : []).map(record => record && record.visitorGid)
+    );
+    sourceCounts.visitors = visitorGids.length;
+    discovered.push(...visitorGids);
+    hasInitializedFromVisitors = true;
+  } catch (err) {
+    errors.push(`visitors: ${err.message}`);
+  }
+
+  const ownGid = toNum(getUserState().gid);
+  const gids = normalizeFriendGids(discovered).filter(gid => gid !== ownGid);
+  const before = getEffectiveKnownQqFriendGids();
+  if (gids.length > 0) syncKnownFriendGidsFromFriends(gids.map(gid => ({ gid })));
+  const after = getEffectiveKnownQqFriendGids();
+
+  let verifiedCount = 0;
+  if (after.length > 0) {
+    try {
+      const verified = await fetchQqFriendsByKnownGids();
+      verifiedCount = verified.length;
+      syncKnownFriendGidsFromFriends(verified);
+    } catch (err) {
+      errors.push(`verify: ${err.message}`);
+    }
+  }
+
+  const addedCount = Math.max(0, after.length - before.length);
+  log('好友', `QQ 好友GID引导同步完成：发现 ${gids.length} 个，新增 ${addedCount} 个`, {
+    module: 'friend',
+    event: 'QQ好友GID引导同步',
+    result: errors.length > 0 ? 'partial' : 'ok',
+    sourceCounts,
+    discoveredCount: gids.length,
+    addedCount,
+    verifiedCount,
+    errors,
+  });
+
+  return { skipped: false, sourceCounts, discoveredCount: gids.length, addedCount, verifiedCount, errors };
 }
 
 // ===== Friend management APIs =====
@@ -597,7 +676,7 @@ async function getAllFriends(forceRefresh = false) {
   const isQQ = CONFIG.platform === 'qq';
 
   if (isQQ) {
-    await syncKnownFriendGidsFromRecentVisitorsOnce();
+    await syncKnownFriendGidsFromRecentVisitorsOnce(forceRefresh);
 
     // Try new API first
     const knownFriends = await fetchQqFriendsByKnownGids();
@@ -849,6 +928,7 @@ module.exports = {
   parseTimeToMinutes,
   inFriendQuietHours,
   getAllFriends,
+  bootstrapQqFriendGids,
   getApplications,
   acceptFriends,
   delFriend,

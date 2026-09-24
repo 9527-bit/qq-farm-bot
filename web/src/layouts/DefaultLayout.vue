@@ -17,7 +17,6 @@ onMounted(() => {
 onUnmounted(() => {
   // 清理逻辑
 })
-
 watch(() => loginPageConfig.value.logoUrl, () => {
   headerLogoFailed.value = false
 })

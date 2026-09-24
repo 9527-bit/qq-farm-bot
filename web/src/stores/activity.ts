@@ -182,13 +182,71 @@ export interface RainPoemActivityData {
 }
 
 export interface CharityFlowerActivityData {
-  uid: string; title: string; activityId: number; startTime: number; endTime: number; active: boolean
+  uid: string
+  title: string
+  activityId: number
+  startTime: number
+  endTime: number
+  active: boolean
   love: { itemId: number, count: number, personalScore: number, canDonate: boolean }
   global: { score: number, target: number, amountYuan: number, targetYuan: number, reached: boolean }
   share: { status: number, claimable: boolean, claimed: boolean, rewards: QixiItem[] }
   personalRewards: Array<{ needScore: number, reached: boolean, claimed: boolean, rewards: QixiItem[] }>
   finalReward: { threshold: number, settlementTime: number, settled: boolean, eligible: boolean, rewards: QixiItem[] }
   publicFund: { status: number, claimable: boolean, claimed: boolean, complianceAgreed: boolean, rewards: QixiItem[], successCount: number }
+}
+
+export interface PetDiaryPhotoSlot {
+  id: number
+  unlocked: boolean
+  claimed: boolean
+  claimable: boolean
+  progress: number
+  photo: string
+  say: string
+}
+
+export interface PetDiaryActivityData {
+  uid: string
+  title: string
+  activityId: number
+  groupActivityId: number
+  giftActivityId?: number
+  shopActivityId?: number
+  startTime: number
+  endTime: number
+  active: boolean
+  pet: { stage: number, progress: number, state: number }
+  home: { state: number }
+  escort: { guard: number, cake: { itemId: number, count: number, name: string } | null }
+  photoWall: {
+    slots: PetDiaryPhotoSlot[]
+    totalCount: number
+    unlockedCount: number
+    claimedCount: number
+    claimableCount: number
+  }
+  pouch: { flag: string, state: number, slot: { id: number, type: number, count: number } }
+  gifts: {
+    status: number
+    openedDays: number
+    records: StarRecordItem[]
+    totalCount: number
+    unlockedCount: number
+    claimedCount: number
+    claimableCount: number
+  }
+  shop: ActivityExchangeShopItem[]
+  balances: { cake: number, star: number }
+  items: { cake: number, star: number }
+  summary: {
+    photoUnlocked: number
+    photoTotal: number
+    photoClaimable: number
+    giftClaimable: number
+    shopCount: number
+  }
+  warning?: string
 }
 
 export type HeluSubActivityKey = 'giftLotus' | 'shop' | 'journey' | 'notes'
@@ -303,6 +361,13 @@ export const useActivityStore = defineStore('activity', () => {
   const rainPoemLoading = ref(false)
   const charityFlowerActivity = ref<CharityFlowerActivityData | null>(null)
   const charityFlowerLoading = ref(false)
+  const wishSignActivity = ref<any | null>(null)
+  const wishSignLoading = ref(false)
+  const shareRewardActivity = ref<any | null>(null)
+  const shareRewardLoading = ref(false)
+  const petDiaryActivity = ref<PetDiaryActivityData | null>(null)
+  const petDiaryLoading = ref(false)
+  const petDiaryError = ref('')
   const qixiFriends = ref<QixiFriend[]>([])
   const qixiLoading = ref(false)
   const qixiBuildLoading = ref(false)
@@ -327,6 +392,10 @@ export const useActivityStore = defineStore('activity', () => {
     qixiActivity.value = null
     rainPoemActivity.value = null
     charityFlowerActivity.value = null
+    wishSignActivity.value = null
+    shareRewardActivity.value = null
+    petDiaryActivity.value = null
+    petDiaryError.value = ''
     qixiFriends.value = []
     heluLoading.value = false
     drawLoading.value = false
@@ -336,6 +405,7 @@ export const useActivityStore = defineStore('activity', () => {
     starRecordClaimLoading.value = false
     qingmeiClaimLoading.value = false
     qingmeiSellLoading.value = false
+    petDiaryLoading.value = false
     heluError.value = ''
   }
 
@@ -356,7 +426,8 @@ export const useActivityStore = defineStore('activity', () => {
     rainPoemLoading.value = true
     try {
       const { data } = await api.get('/api/activity/rain-poem', { headers: { 'x-account-id': accountId } })
-      if (data.ok && isCurrentAccount(String(accountId))) rainPoemActivity.value = data.activity || null
+      if (data.ok && isCurrentAccount(String(accountId)))
+        rainPoemActivity.value = data.activity || null
       return data
     }
     finally { rainPoemLoading.value = false }
@@ -366,10 +437,56 @@ export const useActivityStore = defineStore('activity', () => {
     charityFlowerLoading.value = true
     try {
       const { data } = await api.get('/api/activity/charity-flower', { headers: { 'x-account-id': accountId } })
-      if (data.ok && isCurrentAccount(String(accountId))) charityFlowerActivity.value = data.activity || null
+      if (data.ok && isCurrentAccount(String(accountId)))
+        charityFlowerActivity.value = data.activity || null
       return data
     }
     finally { charityFlowerLoading.value = false }
+  }
+
+  async function fetchWishSignActivity(accountId: string) {
+    wishSignLoading.value = true
+    try {
+      const { data } = await api.get('/api/activity/wish-sign', { headers: { 'x-account-id': accountId } })
+      if (data.ok && isCurrentAccount(String(accountId))) wishSignActivity.value = data.activity || null
+      return data
+    }
+    finally { wishSignLoading.value = false }
+  }
+
+  async function fetchShareRewardActivity(accountId: string) {
+    shareRewardLoading.value = true
+    try {
+      const { data } = await api.get('/api/activity/share-reward', { headers: { 'x-account-id': accountId } })
+      if (data.ok && isCurrentAccount(String(accountId))) shareRewardActivity.value = data.activity || null
+      return data
+    }
+    finally { shareRewardLoading.value = false }
+  }
+
+  async function fetchPetDiaryActivity(accountId: string) {
+    if (!accountId)
+      return
+    const requestedId = String(accountId)
+    petDiaryLoading.value = true
+    petDiaryError.value = ''
+    try {
+      const { data } = await api.get('/api/activity/pet-diary', { headers: { 'x-account-id': accountId } })
+      if (!isCurrentAccount(requestedId))
+        return
+      if (data.ok)
+        petDiaryActivity.value = data.activity || null
+      else
+        petDiaryError.value = data.error || '获取萌宠日记失败'
+      return data
+    }
+    catch (err: any) {
+      if (isCurrentAccount(requestedId))
+        petDiaryError.value = err?.response?.data?.error || err?.message || '获取萌宠日记失败'
+    }
+    finally {
+      petDiaryLoading.value = false
+    }
   }
 
   async function buildQixiBridge(accountId: string) {
@@ -584,6 +701,13 @@ export const useActivityStore = defineStore('activity', () => {
     rainPoemLoading,
     charityFlowerActivity,
     charityFlowerLoading,
+    wishSignActivity,
+    wishSignLoading,
+    shareRewardActivity,
+    shareRewardLoading,
+    petDiaryActivity,
+    petDiaryLoading,
+    petDiaryError,
     qixiFriends,
     qixiLoading,
     qixiBuildLoading,
@@ -603,6 +727,9 @@ export const useActivityStore = defineStore('activity', () => {
     fetchQixiActivity,
     fetchRainPoemActivity,
     fetchCharityFlowerActivity,
+    fetchWishSignActivity,
+    fetchShareRewardActivity,
+    fetchPetDiaryActivity,
     buildQixiBridge,
     useQixiDew,
     sendQixiSachet,

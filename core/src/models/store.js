@@ -208,9 +208,11 @@ function deleteAccountCaches(accountId) {
 
 const ALLOWED_PLANTING_STRATEGIES = [
     'level', 'max_exp', 'max_fert_exp',
-    'max_profit', 'max_fert_profit', 'bag_priority'
+    'max_profit', 'max_fert_profit', 'bag_priority', 'task_priority'
 ];
-const ALLOWED_BAG_SEED_FALLBACK_STRATEGIES = ALLOWED_PLANTING_STRATEGIES.filter(s => s !== 'bag_priority');
+const ALLOWED_BAG_SEED_FALLBACK_STRATEGIES = ALLOWED_PLANTING_STRATEGIES.filter(
+    s => s !== 'bag_priority' && s !== 'task_priority'
+);
 const PUSHOO_CHANNELS = new Set([
     'webhook', 'qmsg', 'serverchan', 'pushplus', 'pushplushxtrip',
     'dingtalk', 'wecom', 'bark', 'gocqhttp', 'onebot', 'atri',
@@ -271,6 +273,25 @@ const DEFAULT_AUTOMATION = {
     charity_flower_donate: false,
     charity_flower_reward_claim: false,
     charity_flower_public_fund_claim: false,
+    wish_sign_draw: false,
+    wish_sign_choice: 1,
+    wish_sign_claim: false,
+    share_reward_share: false,
+    share_reward_daily: false,
+    share_reward_milestones: false,
+    // 萌宠成长日记（S3）。刻意不提供的开关：
+    // 拾物小铺兑换（exchange，需用户指定商品）、锦囊付费刷新（花点券）、
+    // markStories（纯 UI 状态无奖励）、skipBattle（是设置项不是任务）。
+    pet_diary_adopt: false,
+    pet_diary_feed: false,
+    pet_diary_draw: false,
+    pet_diary_story_claim: false,
+    pet_diary_seed_claim: false,
+    pet_diary_solar_claim: false,
+    pet_diary_treasure_open: false,
+    pet_diary_compensation_claim: false,
+    pet_diary_charm_equip: false,
+    pet_diary_battle: false,
     fertilizer_gift: false,
     fertilizer_buy_organic: false,
     fertilizer_buy_normal: false,
@@ -313,8 +334,27 @@ const RAIN_POEM_AUTOMATION_KEYS = [
     'rain_poem_prank_use',
     'rain_poem_research_unlock'
 ];
+const PET_DIARY_AUTOMATION_KEYS = [
+    'pet_diary_adopt',
+    'pet_diary_feed',
+    'pet_diary_draw',
+    'pet_diary_story_claim',
+    'pet_diary_seed_claim',
+    'pet_diary_solar_claim',
+    'pet_diary_treasure_open',
+    'pet_diary_compensation_claim',
+    'pet_diary_battle',
+    'pet_diary_charm_equip'
+];
+const WISH_SIGN_AUTOMATION_KEYS = ['wish_sign_draw', 'wish_sign_claim'];
+const SHARE_REWARD_AUTOMATION_KEYS = ['share_reward_share', 'share_reward_daily', 'share_reward_milestones'];
 
+// 注意：这里的时间窗与 web/src/constants/activity-windows.ts 是手工同步的两份字面量
+// （core 是 CommonJS、web 是 TS，无法共享模块）。改一处必须改另一处，
+// 否则前端会显示后端已强制关闭的开关。
 const TIMED_ACTIVITY_AUTOMATION_GROUPS = [
+    { startTime: 1790179200, endTime: 1791388799, keys: WISH_SIGN_AUTOMATION_KEYS },
+    { startTime: 1790179200, endTime: 1791820799, keys: SHARE_REWARD_AUTOMATION_KEYS },
     {
         startTime: 1788192000,
         endTime: 1788969599,
@@ -324,6 +364,12 @@ const TIMED_ACTIVITY_AUTOMATION_GROUPS = [
         startTime: 1787709600,
         endTime: 1788883199,
         keys: RAIN_POEM_AUTOMATION_KEYS
+    },
+    {
+        // 对应 PET_DIARY_ACTIVITY_WINDOW
+        startTime: 1789005600,
+        endTime: 1791820799,
+        keys: PET_DIARY_AUTOMATION_KEYS
     }
 ];
 
@@ -348,15 +394,31 @@ function disableHiddenActivityAutomation(automation, nowSeconds = Math.floor(Dat
     return automation;
 }
 
+// Only the main runtime calls this persistence hook; workers keep read-time guards.
+let inactiveActivityConfigNeedsSave = false;
+function persistInactiveActivityAutomation(nowSeconds = Math.floor(Date.now() / 1000)) {
+    const inactive = [...getInactiveActivityAutomationKeys(nowSeconds)];
+    const changedAccounts = [];
+    for (const [id, cfg] of Object.entries(globalConfig.accountConfigs || {})) {
+        if (!inactive.some(key => cfg.automation?.[key] === true)) continue;
+        disableHiddenActivityAutomation(cfg.automation, nowSeconds);
+        changedAccounts.push(id);
+        inactiveActivityConfigNeedsSave = true;
+    }
+    if (inactiveActivityConfigNeedsSave) {
+        saveGlobalConfig({ throwOnError: true });
+        inactiveActivityConfigNeedsSave = false;
+    }
+    return changedAccounts;
+}
+
 /** 默认间隔配置（秒） */
 const DEFAULT_INTERVALS = {
     farm: 2,
     farmMin: 2,
     farmMax: 5,
     helpMin: 30,
-    helpMax: 35,
-    stealMin: 25,
-    stealMax: 30
+    helpMax: 35
 };
 
 /** 默认静默时段 */
@@ -389,13 +451,13 @@ const DEFAULT_ACCOUNT_CONFIG = {
     },
     plantingStrategy: 'max_exp',
     prioritize2x2Crops: false,
+    prioritizeGrowthTasks: false,
     friendBadRetryDate: '',
     intervals: DEFAULT_INTERVALS,
     friendQuietHours: DEFAULT_QUIET_HOURS,
     knownFriendGids: [],
     friendBlacklist: [],
     plantBlacklist: DEFAULT_PLANT_BLACKLIST,
-    stealDelaySeconds: 1,
     fertilizerBuyOrganicCount: 1,
     fertilizerBuyOrganicThresholdHours: 10,
     fertilizerBuyNormalCount: 1,
@@ -456,7 +518,7 @@ function syncBagSeedPriority(accountId, bagSeeds, options = {}) {
     const currentIds = currentSeeds.map(seed => seed.seedId);
     const priority = normalizeBagSeedPriority(cfg.bagSeedPriority);
     const knownIds = normalizeBagSeedPriority(cfg.bagSeedKnownIds);
-    const nextPriority = [...currentIds];
+    const nextPriority = [...priority, ...currentIds.filter(id => !priority.includes(id))];
 
     const nextKnownIds = [...new Set([...knownIds, ...priority, ...currentIds])];
     const changed = JSON.stringify(nextPriority) !== JSON.stringify(priority)
@@ -591,11 +653,7 @@ function normalizeIntervals(raw) {
     let helpMax = toInt(input.helpMax, 35);
     if (helpMin > helpMax) [helpMin, helpMax] = [helpMax, helpMin];
 
-    let stealMin = toInt(input.stealMin, 25);
-    let stealMax = toInt(input.stealMax, 30);
-    if (stealMin > stealMax) [stealMin, stealMax] = [stealMax, stealMin];
-
-    return { ...input, farm, farmMin, farmMax, helpMin, helpMax, stealMin, stealMax };
+    return { ...input, farm, farmMin, farmMax, helpMin, helpMax };
 }
 
 // ==================== 配置克隆/合并 ====================
@@ -633,8 +691,8 @@ function cloneAccountConfig(config = DEFAULT_ACCOUNT_CONFIG) {
         plantingStrategy: ALLOWED_PLANTING_STRATEGIES.includes(String(config.plantingStrategy || ''))
             ? String(config.plantingStrategy) : DEFAULT_ACCOUNT_CONFIG.plantingStrategy,
         prioritize2x2Crops: config.prioritize2x2Crops === true,
+        prioritizeGrowthTasks: config.prioritizeGrowthTasks === true,
         plantBlacklist: plantBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0),
-        stealDelaySeconds: Math.max(0, Math.min(60, Number(config.stealDelaySeconds) || 1)),
         fertilizerBuyOrganicCount: Math.max(0, Math.min(999, Number(config.fertilizerBuyOrganicCount) || 1)),
         fertilizerBuyOrganicThresholdHours: Math.max(0, Math.min(720, Number(config.fertilizerBuyOrganicThresholdHours) || 10)),
         fertilizerBuyNormalCount: Math.max(0, Math.min(999, Number(config.fertilizerBuyNormalCount) || 1)),
@@ -722,6 +780,9 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
                 cfg.automation[key] = Math.max(60, Math.min(7200, Number(value) || 300));
             } else if (key === 'qixi_friend_priority') {
                 cfg.automation[key] = normalizeKnownFriendGids(value, []);
+            } else if (key === 'wish_sign_choice') {
+                const choice = Number(value);
+                cfg.automation[key] = Number.isInteger(choice) && choice >= 1 && choice <= 6 ? choice : 1;
             } else {
                 cfg.automation[key] = !!value;
             }
@@ -748,6 +809,9 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
 
     if (input.prioritize2x2Crops !== undefined && input.prioritize2x2Crops !== null) {
         cfg.prioritize2x2Crops = input.prioritize2x2Crops === true;
+    }
+    if (input.prioritizeGrowthTasks !== undefined && input.prioritizeGrowthTasks !== null) {
+        cfg.prioritizeGrowthTasks = input.prioritizeGrowthTasks === true;
     }
     cfg.friendBadRetryDate = /^\d{4}-\d{2}-\d{2}$/.test(String(input.friendBadRetryDate || ''))
         ? String(input.friendBadRetryDate) : '';
@@ -787,11 +851,6 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
     // 植物黑名单
     if (Array.isArray(input.plantBlacklist)) {
         cfg.plantBlacklist = input.plantBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0);
-    }
-
-    // 偷菜延迟
-    if (input.stealDelaySeconds !== undefined && input.stealDelaySeconds !== null) {
-        cfg.stealDelaySeconds = Math.max(0, Math.min(60, Number.parseInt(input.stealDelaySeconds, 10) || 1));
     }
 
     // 肥料购买配置
@@ -845,9 +904,9 @@ function pickDefaultPlanConfig(raw) {
         autoCodeRefresh: { ...cfg.autoCodeRefresh },
         plantingStrategy: cfg.plantingStrategy,
         prioritize2x2Crops: cfg.prioritize2x2Crops === true,
+        prioritizeGrowthTasks: cfg.prioritizeGrowthTasks === true || cfg.plantingStrategy === 'task_priority',
         intervals: { ...cfg.intervals },
         friendQuietHours: { ...cfg.friendQuietHours },
-        stealDelaySeconds: cfg.stealDelaySeconds,
         fertilizerBuyOrganicCount: cfg.fertilizerBuyOrganicCount,
         fertilizerBuyOrganicThresholdHours: cfg.fertilizerBuyOrganicThresholdHours,
         fertilizerBuyNormalCount: cfg.fertilizerBuyNormalCount,
@@ -930,6 +989,9 @@ function loadGlobalConfig() {
         for (const [key, val] of Object.entries(rawConfigs)) {
             const id = String(key || '').trim();
             if (!id) continue;
+            if ([...getInactiveActivityAutomationKeys()].some(key => val?.automation?.[key] === true)) {
+                inactiveActivityConfigNeedsSave = true;
+            }
             globalConfig.accountConfigs[id] = normalizeAccountConfig(val, DEFAULT_ACCOUNT_CONFIG);
         }
         for (const [key, val] of Object.entries(globalConfig.accountConfigs)) {
@@ -1191,13 +1253,13 @@ function getConfigSnapshot(accountId) {
         autoCodeRefresh: { ...cfg.autoCodeRefresh },
         plantingStrategy: cfg.plantingStrategy,
         prioritize2x2Crops: cfg.prioritize2x2Crops === true,
+        prioritizeGrowthTasks: cfg.prioritizeGrowthTasks === true || cfg.plantingStrategy === 'task_priority',
         friendBadRetryDate: String(cfg.friendBadRetryDate || ''),
         intervals: { ...cfg.intervals },
         friendQuietHours: { ...cfg.friendQuietHours },
         knownFriendGids: [...cfg.knownFriendGids || []],
         friendBlacklist: [...cfg.friendBlacklist || []],
         plantBlacklist: [...cfg.plantBlacklist || []],
-        stealDelaySeconds: Math.max(0, Math.min(60, Number(cfg.stealDelaySeconds) || 1)),
         fertilizerBuyOrganicCount: Math.max(0, Math.min(999, Number(cfg.fertilizerBuyOrganicCount) || 1)),
         fertilizerBuyOrganicThresholdHours: Math.max(0, Math.min(720, Number(cfg.fertilizerBuyOrganicThresholdHours) || 10)),
         fertilizerBuyNormalCount: Math.max(0, Math.min(999, Number(cfg.fertilizerBuyNormalCount) || 1)),
@@ -1229,6 +1291,9 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
                 cfg.automation[key] = Math.max(60, Math.min(7200, Number(value) || 300));
             } else if (key === 'qixi_friend_priority') {
                 cfg.automation[key] = normalizeKnownFriendGids(value, []);
+            } else if (key === 'wish_sign_choice') {
+                const choice = Number(value);
+                cfg.automation[key] = Number.isInteger(choice) && choice >= 1 && choice <= 6 ? choice : 1;
             } else {
                 cfg.automation[key] = !!value;
             }
@@ -1248,6 +1313,9 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
     }
     if (patch.prioritize2x2Crops !== undefined && patch.prioritize2x2Crops !== null) {
         cfg.prioritize2x2Crops = patch.prioritize2x2Crops === true;
+    }
+    if (patch.prioritizeGrowthTasks !== undefined && patch.prioritizeGrowthTasks !== null) {
+        cfg.prioritizeGrowthTasks = patch.prioritizeGrowthTasks === true;
     }
     if (patch.friendBadRetryDate !== undefined && patch.friendBadRetryDate !== null) {
         const retryDate = String(patch.friendBadRetryDate || '');
@@ -1278,9 +1346,6 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
     }
     if (Array.isArray(patch.plantBlacklist)) {
         cfg.plantBlacklist = patch.plantBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0);
-    }
-    if (patch.stealDelaySeconds !== undefined && patch.stealDelaySeconds !== null) {
-        cfg.stealDelaySeconds = Math.max(0, Math.min(60, Number(patch.stealDelaySeconds) || 1));
     }
     if (patch.fertilizerBuyOrganicCount !== undefined && patch.fertilizerBuyOrganicCount !== null) {
         cfg.fertilizerBuyOrganicCount = Math.max(0, Math.min(999, Number(patch.fertilizerBuyOrganicCount) || 1));
@@ -1373,6 +1438,11 @@ function getPlantingStrategy(accountId) {
     return getAccountConfigSnapshot(accountId).plantingStrategy;
 }
 
+function getPrioritizeGrowthTasks(accountId) {
+    const config = getAccountConfigSnapshot(accountId);
+    return config.prioritizeGrowthTasks === true || config.plantingStrategy === 'task_priority';
+}
+
 function getPrioritize2x2Crops(accountId) {
     return getAccountConfigSnapshot(accountId).prioritize2x2Crops === true;
 }
@@ -1436,10 +1506,6 @@ function addFriendToBlacklist(accountId, gid) {
     if (blacklist.includes(targetGid)) return false;
     setFriendBlacklist(accountId, [...blacklist, targetGid]);
     return true;
-}
-
-function getStealDelaySeconds(accountId) {
-    return Math.max(0, Math.min(60, Number(getAccountConfigSnapshot(accountId).stealDelaySeconds) || 1));
 }
 
 function getAutoAcceptFriendMinLevel(accountId) {
@@ -2013,6 +2079,7 @@ module.exports = {
     isAutomationOn,
     getPlantingStrategy,
     getPrioritize2x2Crops,
+    getPrioritizeGrowthTasks,
     getFriendBadRetryDate,
     getBagSeedPriority,
     syncBagSeedPriority,
@@ -2024,7 +2091,6 @@ module.exports = {
     getFriendBlacklist,
     setFriendBlacklist,
     addFriendToBlacklist,
-    getStealDelaySeconds,
     getAutoAcceptFriendMinLevel,
     getFertilizerBuyOrganicCount,
     getFertilizerBuyOrganicThresholdHours,
@@ -2084,7 +2150,8 @@ module.exports = {
     removeFriendFromCache,
     getAntiResaleConfig,
     setAntiResaleConfig,
-    DEFAULT_ANTI_RESALE_CONFIG
+    DEFAULT_ANTI_RESALE_CONFIG,
+    persistInactiveActivityAutomation
 };
 
 module.exports._test = {

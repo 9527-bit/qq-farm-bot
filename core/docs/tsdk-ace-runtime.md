@@ -3,8 +3,10 @@
 后续版本的发现、提取、差异检查、更新、验收和回退流程见
 [TSDK/WASM 标准更新手册](./tsdk-update-runbook.md)。
 
-适用文件：官方 `tsdk.wasm`，版本 `v3.9.0.1787057219`，SHA-256
-`98cc5301cff10f5b87a014d0a4af92630e4a6e91292cc7de5eb86422275f0070`。
+适用文件：官方 `tsdk.wasm`，版本 `v3.9.0.1790160550`，SHA-256
+`2c9e377ecc9a4fd9019f12191b589d543a60d6654580eb3e237b35f1fa5b1cb7`。该二进制来自
+本机 QQ 农场官方展开包（2026-09-24），与当前宿主的 imports、exports、数据段和解密常量兼容；
+仍需按更新手册完成本项目的受控在线验收。
 
 ## 初始化顺序
 
@@ -30,7 +32,7 @@
 | `a.a` | assertion | 抛出带位置的错误 |
 | `a.b` | write file | 账号独立数据目录 |
 | `a.c` | JS stack | 写入当前调用栈 |
-| `a.d` | TSDK version | `v3.9.0.1787057219` |
+| `a.d` | TSDK version | `v3.9.0.1790160550` |
 | `a.e` | ACEVM/JS integrity | 官方允许的空结果降级并一次告警 |
 | `a.f` | touch/gyroscope setup | 无传感器数据，一次告警 |
 | `a.g` | read file | 账号独立数据目录 |
