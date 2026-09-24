@@ -31,6 +31,7 @@ export interface AutomationConfig {
   wish_sign_draw?: boolean
   wish_sign_choice?: number
   wish_sign_claim?: boolean
+  share_reward_share?: boolean
   share_reward_daily?: boolean
   share_reward_milestones?: boolean
   pet_diary_adopt?: boolean

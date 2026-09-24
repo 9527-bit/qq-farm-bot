@@ -42,6 +42,7 @@ const defaultAutomation = {
   wish_sign_draw: false,
   wish_sign_choice: 1,
   wish_sign_claim: false,
+  share_reward_share: false,
   share_reward_daily: false,
   share_reward_milestones: false,
   pet_diary_adopt: false,

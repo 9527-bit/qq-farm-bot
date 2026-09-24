@@ -66,7 +66,7 @@ const activityKeys = computed(() => [
     ? ['pet_diary_adopt', 'pet_diary_feed', 'pet_diary_draw', 'pet_diary_story_claim', 'pet_diary_seed_claim', 'pet_diary_solar_claim', 'pet_diary_treasure_open', 'pet_diary_compensation_claim', 'pet_diary_charm_equip', 'pet_diary_battle']
     : []),
   ...(showWishSignActivity.value ? ['wish_sign_draw', 'wish_sign_claim'] : []),
-  ...(showShareRewardActivity.value ? ['share_reward_daily', 'share_reward_milestones'] : []),
+  ...(showShareRewardActivity.value ? ['share_reward_share', 'share_reward_daily', 'share_reward_milestones'] : []),
 ])
 const activityEnabledCount = computed(() => activityKeys.value.filter(key => automation.value.automation[key]).length)
 const starFestivalEnabled = computed(() => ['star_passport_claim', 'star_solar_claim', 'star_record_claim'].some(key => automation.value.automation[key]))
@@ -77,7 +77,7 @@ const rainPoemActivityEnabled = computed(() => ['rain_poem_bottle_buy', 'rain_po
 const charityFlowerActivityEnabled = computed(() => ['charity_flower_share_claim', 'charity_flower_donate', 'charity_flower_reward_claim', 'charity_flower_public_fund_claim'].some(key => automation.value.automation[key]))
 const petDiaryActivityEnabled = computed(() => ['pet_diary_adopt', 'pet_diary_feed', 'pet_diary_draw', 'pet_diary_story_claim', 'pet_diary_seed_claim', 'pet_diary_solar_claim', 'pet_diary_treasure_open', 'pet_diary_compensation_claim', 'pet_diary_charm_equip', 'pet_diary_battle'].some(key => automation.value.automation[key]))
 const wishSignActivityEnabled = computed(() => ['wish_sign_draw', 'wish_sign_claim'].some(key => automation.value.automation[key]))
-const shareRewardActivityEnabled = computed(() => ['share_reward_daily', 'share_reward_milestones'].some(key => automation.value.automation[key]))
+const shareRewardActivityEnabled = computed(() => ['share_reward_share', 'share_reward_daily', 'share_reward_milestones'].some(key => automation.value.automation[key]))
 
 function intervalTag(min: number, max: number) {
   return `${min}-${max} 秒`
@@ -658,11 +658,12 @@ watch(() => props.currentAccountId, loadQixiFriends)
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <div class="text-sm text-gray-700 font-medium dark:text-gray-300">快乐不独享</div>
-                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">自动领取每日快乐值和已达成的档位奖励；好友分享需在 QQ 原生流程中完成。</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">自动分享领取首次分享快乐值，无需好友点击；自动领取每日快乐值和已达成的档位奖励。</div>
                   </div>
                   <span class="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">2026-09-24 00:00 — 2026-10-12 23:59</span>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
+                  <BaseSwitch v-model="automation.automation.share_reward_share" label="自动分享" />
                   <BaseSwitch v-model="automation.automation.share_reward_daily" label="自动领取每日快乐值" />
                   <BaseSwitch v-model="automation.automation.share_reward_milestones" label="自动领取档位奖励" />
                 </div>

@@ -504,6 +504,7 @@ async function runStarActivityAutoClaims() {
     const wishSignChoice = Number(automation.wish_sign_choice);
     const wishSignChoiceId = Number.isInteger(wishSignChoice) && wishSignChoice >= 1 && wishSignChoice <= 6 ? wishSignChoice : 1;
     const claimWishSignEnabled = automation.wish_sign_claim === true;
+    const shareRewardShareEnabled = automation.share_reward_share === true;
     const claimShareDailyEnabled = automation.share_reward_daily === true;
     const claimShareMilestonesEnabled = automation.share_reward_milestones === true;
     const petDiaryAdoptEnabled = automation.pet_diary_adopt === true;
@@ -526,7 +527,7 @@ async function runStarActivityAutoClaims() {
         && !buyRainPoemBottleEnabled && !collectRainPoemWeatherEnabled && !useRainPoemSummonEnabled && !useRainPoemPrankEnabled
         && !unlockRainPoemResearchEnabled && !claimCharityShareEnabled && !donateCharityLoveEnabled
         && !claimCharityRewardsEnabled && !claimCharityPublicFundEnabled && !petDiaryAnyEnabled
-        && !drawWishSignEnabled && !claimWishSignEnabled && !claimShareDailyEnabled && !claimShareMilestonesEnabled) return;
+        && !drawWishSignEnabled && !claimWishSignEnabled && !shareRewardShareEnabled && !claimShareDailyEnabled && !claimShareMilestonesEnabled) return;
 
     starActivityClaimRunning = true;
     try {
@@ -749,11 +750,15 @@ async function runStarActivityAutoClaims() {
             }
         }
 
-        if (claimShareDailyEnabled || claimShareMilestonesEnabled) {
+        if (shareRewardShareEnabled || claimShareDailyEnabled || claimShareMilestonesEnabled) {
             try {
                 const { isShareRewardActive, getShareRewardActivity, operateShareReward } = require('../services/activity');
                 if (isShareRewardActive()) {
                     let share = await getShareRewardActivity();
+                    if (shareRewardShareEnabled && share.active && !share.daily.firstShareAwarded) {
+                        await operateShareReward('share');
+                        share = await getShareRewardActivity();
+                    }
                     if (claimShareDailyEnabled && share.active && !share.daily.rewardClaimed) {
                         await operateShareReward('daily');
                         share = await getShareRewardActivity();
