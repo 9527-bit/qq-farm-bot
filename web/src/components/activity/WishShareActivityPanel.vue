@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { useAccountStore } from '@/stores/account'
+import { useActivityStore } from '@/stores/activity'
+import { useToastStore } from '@/stores/toast'
 
 interface ActivityItem {
   itemId?: number
@@ -12,6 +15,86 @@ interface ActivityItem {
 
 const props = defineProps<{ kind: 'wish' | 'share', activity: any | null, loading: boolean }>()
 const emit = defineEmits<{ refresh: [] }>()
+
+const accountStore = useAccountStore()
+const activityStore = useActivityStore()
+const toast = useToastStore()
+const operating = ref(false)
+const selectedChoiceId = ref(1)
+
+watch(() => props.activity?.choices, (choices) => {
+  if (choices?.length && !choices.some((c: any) => c.id === selectedChoiceId.value)) {
+    selectedChoiceId.value = choices[0].id
+  }
+}, { immediate: true })
+
+const selectedChoiceName = computed(() => {
+  const choice = props.activity?.choices?.find((c: any) => c.id === selectedChoiceId.value)
+  return choice ? choice.name : '心愿'
+})
+
+const hasClaimableMilestones = computed(() => {
+  return props.activity?.milestones?.some((tier: any) => tier.state === 2 && (props.activity?.currentScore || 0) >= tier.threshold)
+})
+
+async function handleDrawWish() {
+  const accountId = String(accountStore.currentAccountId || '')
+  if (!accountId) return toast.warning('请先选择账号')
+  operating.value = true
+  try {
+    const res = await activityStore.operateWishSign(accountId, 'draw', selectedChoiceId.value)
+    if (res?.ok) {
+      toast.success('祈愿成功！请领取签文奖励')
+      emit('refresh')
+    } else {
+      toast.error(res?.error || '祈愿失败')
+    }
+  } catch (err: any) {
+    toast.error(err?.response?.data?.error || err?.message || '祈愿失败')
+  } finally {
+    operating.value = false
+  }
+}
+
+async function handleClaimWish(chooseId: number) {
+  const accountId = String(accountStore.currentAccountId || '')
+  if (!accountId) return toast.warning('请先选择账号')
+  operating.value = true
+  try {
+    const res = await activityStore.operateWishSign(accountId, 'claim', chooseId)
+    if (res?.ok) {
+      const items = (res.rewards || []).map((r: any) => `${r.name || r.itemName} ×${r.count || r.itemCount}`).join('，')
+      toast.success(items ? `领取成功：${items}` : '领取祈愿奖励成功！')
+      emit('refresh')
+    } else {
+      toast.error(res?.error || '领取失败')
+    }
+  } catch (err: any) {
+    toast.error(err?.response?.data?.error || err?.message || '领取失败')
+  } finally {
+    operating.value = false
+  }
+}
+
+async function handleOperateShare(action: 'daily' | 'share' | 'milestones') {
+  const accountId = String(accountStore.currentAccountId || '')
+  if (!accountId) return toast.warning('请先选择账号')
+  operating.value = true
+  try {
+    const res = await activityStore.operateShareReward(accountId, action)
+    if (res?.ok) {
+      const label = action === 'daily' ? '领取每日快乐值' : action === 'share' ? '首次分享' : '领取档位奖励'
+      toast.success(`${label}成功！`)
+      emit('refresh')
+    } else {
+      toast.error(res?.error || '操作失败')
+    }
+  } catch (err: any) {
+    toast.error(err?.response?.data?.error || err?.message || '操作失败')
+  } finally {
+    operating.value = false
+  }
+}
 
 const ACTIVITY_ITEM_IMAGES: Record<number, string> = {
   6001: '/activity/wish-sign/firework.png',
@@ -151,27 +234,70 @@ function milestoneState(state: number) {
             <span class="i-carbon-sun text-lg text-amber-500" />
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">祈愿状态</h2>
           </div>
-          <div v-if="activity.pending" class="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/25">
-            <span class="i-carbon-gift mt-0.5 shrink-0 text-xl text-amber-600" />
-            <div class="min-w-0">
-              <p class="font-medium text-stone-800 dark:text-gray-100">第 {{ activity.pending.dayId }} 日 · {{ activity.choices?.find((choice: any) => choice.id === activity.pending.chooseId)?.name || '心愿' }}</p>
-              <div class="mt-1 flex flex-wrap items-center gap-2">
-                <template v-for="reward in activity.pending.rewards" :key="`${reward.itemId}-${reward.itemCount}`">
-                  <img v-if="rewardImage(reward)" :src="rewardImage(reward)" :alt="reward.itemName" class="h-8 w-8 shrink-0 object-contain">
-                  <span class="break-words text-sm text-stone-600 dark:text-gray-300">{{ itemText(reward) }}</span>
-                </template>
+          <div v-if="activity.pending" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/25">
+            <div class="flex items-start gap-3">
+              <span class="i-carbon-gift mt-0.5 shrink-0 text-xl text-amber-600" />
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-stone-800 dark:text-gray-100">第 {{ activity.pending.dayId }} 日 · {{ activity.choices?.find((choice: any) => choice.id === activity.pending.chooseId)?.name || '心愿' }}</p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                  <template v-for="reward in activity.pending.rewards" :key="`${reward.itemId}-${reward.itemCount}`">
+                    <img v-if="rewardImage(reward)" :src="rewardImage(reward)" :alt="reward.itemName" class="h-8 w-8 shrink-0 object-contain">
+                    <span class="break-words text-sm text-stone-600 dark:text-gray-300">{{ itemText(reward) }}</span>
+                  </template>
+                </div>
+                <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">签文已生成，奖励待领取</p>
               </div>
-              <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">奖励待领取</p>
+            </div>
+            <div class="mt-3 flex justify-end">
+              <BaseButton
+                variant="primary"
+                size="sm"
+                :loading="operating"
+                :disabled="operating"
+                @click="handleClaimWish(activity.pending.chooseId)"
+              >
+                领取签文奖励
+              </BaseButton>
             </div>
           </div>
-          <p v-else class="mt-4 text-sm text-gray-600 dark:text-gray-300">{{ activity.remainingCount > 0 ? '今日仍有祈愿机会' : '今日祈愿已完成' }}</p>
+          <div v-else class="mt-4">
+            <p class="text-sm text-gray-600 dark:text-gray-300">{{ activity.remainingCount > 0 ? '今日仍有祈愿机会，点击下方心愿即可立即祈愿：' : '今日祈愿已完成' }}</p>
+          </div>
           <div class="mt-5 border-t border-gray-100 pt-4 dark:border-gray-700">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">祈愿池 · 六种心愿</p>
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">祈愿池 · 六种心愿</p>
+              <span v-if="activity.remainingCount > 0 && !activity.pending" class="text-xs text-amber-600 dark:text-amber-400">点击心愿卡片选择</span>
+            </div>
             <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <div v-for="choice in activity.choices" :key="choice.id" class="rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
-                <span class="block text-xs text-gray-400 dark:text-gray-500">愿望 {{ choice.id }}</span>
+              <button
+                v-for="choice in activity.choices"
+                :key="choice.id"
+                type="button"
+                class="rounded-xl border px-3 py-3 text-left transition text-sm"
+                :class="[
+                  selectedChoiceId === choice.id
+                    ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-sm ring-2 ring-amber-400 dark:bg-amber-950/40 dark:text-amber-200'
+                    : 'border-gray-200 bg-gray-50/70 text-gray-700 hover:border-amber-300 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-300',
+                  (activity.remainingCount <= 0 || activity.pending) ? 'cursor-default opacity-85' : 'cursor-pointer hover:shadow-sm'
+                ]"
+                :disabled="activity.remainingCount <= 0 || !!activity.pending"
+                @click="selectedChoiceId = choice.id"
+              >
+                <span class="block text-xs" :class="selectedChoiceId === choice.id ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-400 dark:text-gray-500'">愿望 {{ choice.id }}</span>
                 <span class="mt-1 block font-medium">{{ choice.name }}</span>
-              </div>
+              </button>
+            </div>
+            <div v-if="activity.remainingCount > 0 && !activity.pending" class="mt-4 flex items-center justify-between gap-3 border-t border-dashed border-gray-200 pt-3 dark:border-gray-700">
+              <span class="text-xs text-gray-500 dark:text-gray-400">已选心愿：<strong class="text-amber-600 dark:text-amber-400 font-semibold">{{ selectedChoiceName }}</strong></span>
+              <BaseButton
+                variant="primary"
+                size="sm"
+                :loading="operating"
+                :disabled="operating"
+                @click="handleDrawWish"
+              >
+                立即祈愿
+              </BaseButton>
             </div>
           </div>
         </section>
@@ -213,19 +339,82 @@ function milestoneState(state: number) {
       <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
         <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">今日进度</h2>
         <div class="mt-4 grid gap-3 sm:grid-cols-3">
-          <div v-for="entry in [
-            { label: '每日快乐值', value: activity.daily?.rewardClaimed ? '已领取' : '待领取' },
-            { label: '首次分享', value: activity.daily?.firstShareAwarded ? '已完成' : '待完成' },
-            { label: '分享领取次数', value: `${activity.daily?.claimedCount ?? '—'} / ${activity.daily?.claimLimit || '—'}` },
-          ]" :key="entry.label" class="rounded-xl bg-stone-50 p-4 dark:bg-gray-900/40">
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ entry.label }}</p>
-            <p class="mt-2 font-semibold text-stone-800 dark:text-gray-200">{{ entry.value }}</p>
+          <div class="rounded-xl bg-stone-50 p-4 dark:bg-gray-900/40 flex flex-col justify-between">
+            <div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">每日快乐值</p>
+              <p class="mt-2 font-semibold text-stone-800 dark:text-gray-200">
+                {{ activity.daily?.rewardClaimed ? '已领取' : '待领取' }}
+              </p>
+            </div>
+            <div class="mt-3">
+              <BaseButton
+                v-if="!activity.daily?.rewardClaimed"
+                variant="primary"
+                size="sm"
+                class="w-full"
+                :loading="operating"
+                :disabled="operating"
+                @click="handleOperateShare('daily')"
+              >
+                领取快乐值
+              </BaseButton>
+              <span v-else class="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                <span class="i-carbon-checkmark" /> 今日已领
+              </span>
+            </div>
+          </div>
+          <div class="rounded-xl bg-stone-50 p-4 dark:bg-gray-900/40 flex flex-col justify-between">
+            <div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">首次分享</p>
+              <p class="mt-2 font-semibold text-stone-800 dark:text-gray-200">
+                {{ activity.daily?.firstShareAwarded ? '已完成' : '待完成' }}
+              </p>
+            </div>
+            <div class="mt-3">
+              <BaseButton
+                v-if="!activity.daily?.firstShareAwarded"
+                variant="primary"
+                size="sm"
+                class="w-full"
+                :loading="operating"
+                :disabled="operating"
+                @click="handleOperateShare('share')"
+              >
+                一键分享
+              </BaseButton>
+              <span v-else class="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                <span class="i-carbon-checkmark" /> 今日已完成
+              </span>
+            </div>
+          </div>
+          <div class="rounded-xl bg-stone-50 p-4 dark:bg-gray-900/40 flex flex-col justify-between">
+            <div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">分享领取次数</p>
+              <p class="mt-2 font-semibold text-stone-800 dark:text-gray-200">
+                {{ `${activity.daily?.claimedCount ?? '—'} / ${activity.daily?.claimLimit || '—'}` }}
+              </p>
+            </div>
+            <div class="mt-3 text-xs text-gray-400">
+              今日分享次数统计
+            </div>
           </div>
         </div>
       </section>
       <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">快乐值档位</h2>
+          <div class="flex items-center gap-3">
+            <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">快乐值档位</h2>
+            <BaseButton
+              v-if="hasClaimableMilestones"
+              variant="primary"
+              size="sm"
+              :loading="operating"
+              :disabled="operating"
+              @click="handleOperateShare('milestones')"
+            >
+              一键领取达成档位
+            </BaseButton>
+          </div>
           <span v-if="shareTarget > 0" class="text-xs text-gray-500 dark:text-gray-400">
             {{ nextMilestone ? `距下一档还差 ${nextMilestone.threshold - shareScore} 快乐值` : '全部档位已达成' }}
           </span>

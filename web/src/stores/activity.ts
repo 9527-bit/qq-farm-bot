@@ -464,6 +464,42 @@ export const useActivityStore = defineStore('activity', () => {
     finally { shareRewardLoading.value = false }
   }
 
+  async function operateWishSign(accountId: string, action: 'draw' | 'claim', chooseId?: number) {
+    wishSignLoading.value = true
+    try {
+      const { data } = await api.post(
+        '/api/activity/wish-sign/operate',
+        { action, chooseId },
+        { headers: { 'x-account-id': accountId } },
+      )
+      if (data?.ok) {
+        await fetchWishSignActivity(accountId)
+      }
+      return data
+    }
+    finally {
+      wishSignLoading.value = false
+    }
+  }
+
+  async function operateShareReward(accountId: string, action: 'daily' | 'share' | 'milestones') {
+    shareRewardLoading.value = true
+    try {
+      const { data } = await api.post(
+        '/api/activity/share-reward/operate',
+        { action },
+        { headers: { 'x-account-id': accountId } },
+      )
+      if (data?.ok) {
+        await fetchShareRewardActivity(accountId)
+      }
+      return data
+    }
+    finally {
+      shareRewardLoading.value = false
+    }
+  }
+
   async function fetchPetDiaryActivity(accountId: string) {
     if (!accountId)
       return
@@ -730,6 +766,8 @@ export const useActivityStore = defineStore('activity', () => {
     fetchWishSignActivity,
     fetchShareRewardActivity,
     fetchPetDiaryActivity,
+    operateWishSign,
+    operateShareReward,
     buildQixiBridge,
     useQixiDew,
     sendQixiSachet,
