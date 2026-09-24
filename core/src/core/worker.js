@@ -500,6 +500,12 @@ async function runStarActivityAutoClaims() {
     const donateCharityLoveEnabled = automation.charity_flower_donate === true;
     const claimCharityRewardsEnabled = automation.charity_flower_reward_claim === true;
     const claimCharityPublicFundEnabled = automation.charity_flower_public_fund_claim === true;
+    const drawWishSignEnabled = automation.wish_sign_draw === true;
+    const wishSignChoice = Number(automation.wish_sign_choice);
+    const wishSignChoiceId = Number.isInteger(wishSignChoice) && wishSignChoice >= 1 && wishSignChoice <= 6 ? wishSignChoice : 1;
+    const claimWishSignEnabled = automation.wish_sign_claim === true;
+    const claimShareDailyEnabled = automation.share_reward_daily === true;
+    const claimShareMilestonesEnabled = automation.share_reward_milestones === true;
     const petDiaryAdoptEnabled = automation.pet_diary_adopt === true;
     const petDiaryFeedEnabled = automation.pet_diary_feed === true;
     const petDiaryDrawEnabled = automation.pet_diary_draw === true;
@@ -519,7 +525,8 @@ async function runStarActivityAutoClaims() {
         && !useQixiDewEnabled && !buildQixiBridgeEnabled && !giftQixiSachetEnabled
         && !buyRainPoemBottleEnabled && !collectRainPoemWeatherEnabled && !useRainPoemSummonEnabled && !useRainPoemPrankEnabled
         && !unlockRainPoemResearchEnabled && !claimCharityShareEnabled && !donateCharityLoveEnabled
-        && !claimCharityRewardsEnabled && !claimCharityPublicFundEnabled && !petDiaryAnyEnabled) return;
+        && !claimCharityRewardsEnabled && !claimCharityPublicFundEnabled && !petDiaryAnyEnabled
+        && !drawWishSignEnabled && !claimWishSignEnabled && !claimShareDailyEnabled && !claimShareMilestonesEnabled) return;
 
     starActivityClaimRunning = true;
     try {
@@ -721,6 +728,42 @@ async function runStarActivityAutoClaims() {
                 if (claimCharityPublicFundEnabled && charity?.publicFund?.claimable && charity?.publicFund?.complianceAgreed) {
                     await claimCharityFlowerPublicFund();
                 }
+            }
+        }
+
+        if (drawWishSignEnabled || claimWishSignEnabled) {
+            try {
+                const { isWishSignActive, getWishSignActivity, operateWishSign } = require('../services/activity');
+                if (isWishSignActive()) {
+                    let wish = await getWishSignActivity();
+                    if (drawWishSignEnabled && wish.active && wish.remainingCount > 0 && !wish.pending) {
+                        await operateWishSign('draw', wishSignChoiceId);
+                        wish = await getWishSignActivity();
+                    }
+                    if (claimWishSignEnabled && wish.active && wish.pending?.chooseId) {
+                        await operateWishSign('claim', wish.pending.chooseId);
+                    }
+                }
+            } catch (err) {
+                log('活动', `秋祈良愿自动操作失败: ${err.message}`, { module: 'activity', event: '秋祈良愿自动操作', result: 'error' });
+            }
+        }
+
+        if (claimShareDailyEnabled || claimShareMilestonesEnabled) {
+            try {
+                const { isShareRewardActive, getShareRewardActivity, operateShareReward } = require('../services/activity');
+                if (isShareRewardActive()) {
+                    let share = await getShareRewardActivity();
+                    if (claimShareDailyEnabled && share.active && !share.daily.rewardClaimed) {
+                        await operateShareReward('daily');
+                        share = await getShareRewardActivity();
+                    }
+                    if (claimShareMilestonesEnabled && share.active && share.milestones.some(tier => tier.state === 2)) {
+                        await operateShareReward('milestones');
+                    }
+                }
+            } catch (err) {
+                log('活动', `快乐不独享自动领取失败: ${err.message}`, { module: 'activity', event: '快乐不独享自动领取', result: 'error' });
             }
         }
 
@@ -1892,6 +1935,18 @@ async function handleApiCall(msg) {
             case 'getCharityFlowerActivity': {
                 const { getCharityFlowerActivity } = require('../services/activity');
                 result = await getCharityFlowerActivity();
+                break;
+            }
+            case 'getWishSignActivity':
+            case 'getShareRewardActivity': {
+                const activity = require('../services/activity');
+                result = await activity[method]();
+                break;
+            }
+            case 'operateWishSign':
+            case 'operateShareReward': {
+                const activity = require('../services/activity');
+                result = await activity[method](...args);
                 break;
             }
             case 'getPetDiaryActivity': {
