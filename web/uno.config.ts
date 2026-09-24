@@ -21,6 +21,7 @@ export default defineConfig({
     'i-carbon-circle-dash-function': 'i-carbon-circle-dash',
     'i-carbon-circle-dash-string': 'i-carbon-circle-dash',
     'i-carbon-circle-dash-return': 'i-carbon-circle-dash',
+    'i-fa-solid-paw': 'i-fas-paw',
   },
   presets: [
     presetUno(),

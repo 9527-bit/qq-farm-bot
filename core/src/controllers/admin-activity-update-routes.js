@@ -19,9 +19,15 @@ function findUnknownActivities(activities, knownIds) {
 }
 
 function registerAdminActivityUpdateRoutes({ app, provider, requireAdminToken }) {
-  const knownActivityIds = Object.entries(activity)
-    .filter(([key, value]) => key.endsWith('_ACTIVITY_ID') && Number.isFinite(Number(value)))
-    .map(([, value]) => Number(value));
+  const knownActivityIds = [
+    ...new Set([
+      ...Object.entries(activity)
+        .filter(([key, value]) => (key.endsWith('_ACTIVITY_ID') || key.endsWith('_GROUP_ID')) && Number.isFinite(Number(value)))
+        .map(([, value]) => Number(value)),
+      2026091000,
+      2026091001,
+    ]),
+  ];
   const buildDateProbeIds = (days = 3, slots = 10) => {
     const ids = [];
     const now = new Date();

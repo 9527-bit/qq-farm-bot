@@ -206,17 +206,47 @@ const activityCards = computed(() => {
         activityIds: [2026070300],
       }]
   return source.map((group) => {
-    const adaptedKey = group.id === 2026090100
+    const isPetDiary = group.id === 2026090100
+      || group.title?.includes('萌宠')
+      || group.title?.includes('比熊')
+      || group.activityIds.some(id => String(id).startsWith('20260901') || String(id).startsWith('20260910'))
+
+    const isRainPoem = group.id === 2026070300
+      || group.title?.includes('雨落成诗')
+      || group.activityIds.some(id => String(id).startsWith('20260703'))
+
+    const isCharityFlower = group.id === 2026090900
+      || group.title?.includes('小红花')
+      || group.title?.includes('公益')
+      || group.activityIds.some(id => String(id).startsWith('20260909'))
+
+    const isWishSign = group.id === 2026092400
+      || group.title?.includes('秋祈良愿')
+      || group.title?.includes('祈愿')
+      || group.activityIds.some(id => String(id).startsWith('20260924'))
+
+    const isShareReward = group.id === 2026092500
+      || group.title?.includes('快乐不独享')
+      || group.activityIds.some(id => String(id).startsWith('20260925'))
+
+    const adapted = isPetDiary
       ? 'pet-diary' as const
-      : group.activityIds.includes(2026070300) ? 'rain-poem' as const : group.activityIds.includes(2026090900) ? 'charity-flower' as const : null
-    const adapted = group.activityIds.includes(2026092400) ? 'wish-sign' as const : group.activityIds.includes(2026092500) ? 'share-reward' as const : adaptedKey
+      : isRainPoem
+        ? 'rain-poem' as const
+        : isCharityFlower
+          ? 'charity-flower' as const
+          : isWishSign
+            ? 'wish-sign' as const
+            : isShareReward
+              ? 'share-reward' as const
+              : null
     const window = { startMs: group.startTime * 1000, endMs: group.endTime * 1000 }
     const hue = Math.abs(group.id * 37) % 360
     return {
       key: String(group.id),
       activityIds: group.activityIds,
       adaptedKey: adapted,
-      title: adapted === 'pet-diary' ? '萌宠日记' : group.title || `活动 ${group.id}`,
+      title: group.title || (adapted === 'pet-diary' ? '萌宠日记' : `活动 ${group.id}`),
       description: adapted
         ? adapted === 'pet-diary' ? '查看比熊成长、爪印手记、拾物小铺与比熊赠礼' : adapted === 'charity-flower' ? '查看爱心、公益进度与奖励状态' : adapted === 'wish-sign' ? '查看祈愿状态、祈愿池和每日奖励' : adapted === 'share-reward' ? '查看每日快乐值与档位进度' : '查看天气、每日进度与气象研究'
         : ACTIVITY_CLIENT_PREVIEWS.some(item => item.title === group.title || item.ids.some(id => group.activityIds.includes(id)))
@@ -224,7 +254,7 @@ const activityCards = computed(() => {
           : '暂未适配详情',
       icon: {
         '': 'i-carbon-calendar',
-        'pet-diary': 'i-fa-solid-paw',
+        'pet-diary': 'i-fas-paw',
         'charity-flower': 'i-carbon-favorite',
         'rain-poem': 'i-carbon-rain-heavy', 'wish-sign': 'i-carbon-sun', 'share-reward': 'i-carbon-share',
       }[adapted || ''] || 'i-carbon-calendar',
@@ -466,6 +496,23 @@ watch(rainPoemActivityActive, (active) => {
 watch(petDiaryActivityActive, (active) => {
   if (!active && selectedActivityCard.value?.adaptedKey === 'pet-diary')
     selectedActivity.value = null
+})
+watch(wishSignActivityActive, (active) => {
+  if (!active && selectedActivityCard.value?.adaptedKey === 'wish-sign')
+    selectedActivity.value = null
+})
+watch(shareRewardActivityActive, (active) => {
+  if (!active && selectedActivityCard.value?.adaptedKey === 'share-reward')
+    selectedActivity.value = null
+})
+watch(selectedActivity, (key) => {
+  if (!key || !currentAccountId.value)
+    return
+  const card = activityCards.value.find(c => c.key === key)
+  if (card?.adaptedKey === 'wish-sign')
+    activityStore.fetchWishSignActivity(String(currentAccountId.value))
+  else if (card?.adaptedKey === 'share-reward')
+    activityStore.fetchShareRewardActivity(String(currentAccountId.value))
 })
 onMounted(() => {
   nowTimer = window.setInterval(() => {
