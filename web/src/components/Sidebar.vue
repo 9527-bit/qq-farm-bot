@@ -446,7 +446,8 @@ async function copyToken() {
       </div>
       <!-- Mobile Close Button -->
       <button
-        class="h-8 w-8 flex items-center justify-center rounded-lg text-gray-500 transition lg:hidden hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+        aria-label="关闭导航"
+        class="h-11 w-11 flex flex-none items-center justify-center rounded-lg text-gray-500 transition lg:hidden hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
         @click="appStore.closeSidebar"
       >
         <div class="i-carbon-close text-xl" />

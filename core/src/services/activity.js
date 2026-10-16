@@ -17,6 +17,7 @@ const { getDataDir } = require('../config/runtime-paths');
 const { createModuleLogger } = require('./logger');
 const { readJsonFile, writeJsonFileAtomic } = require('./json-db');
 const { getBag, getBagItems, useItem } = require('./warehouse');
+const solarTermNames = new Map(require('../gameConfig/SolarTerms.json').terms.map(term => [term.id, term.name]));
 const wishSignRewards = require('../gameConfig/WishSignRewards.json');
 
 const activityLogger = createModuleLogger('activity');
@@ -55,13 +56,11 @@ const CHARITY_FLOWER_DONATE_ALL_CMD = 36;
 const CHARITY_FLOWER_CLAIM_REWARD_CMD = 37;
 const CHARITY_FLOWER_CLAIM_XHH_CMD = 38;
 const WISH_SIGN_GROUP_ID = 2026092400;
-const WISH_SIGN_GROUP_ACTIVITY_ID = 2026092400;
 const WISH_SIGN_ACTIVITY_ID = 2026092401;
 const WISH_SIGN_ACTIVITY_UID = 'WishSignMainUI';
 const WISH_SIGN_START_TIME = 1790179200;
 const WISH_SIGN_END_TIME = 1791388799;
 const SHARE_REWARD_GROUP_ID = 2026092500;
-const SHARE_REWARD_GROUP_ACTIVITY_ID = 2026092500;
 const SHARE_REWARD_ACTIVITY_ID = 2026092501;
 const SHARE_REWARD_ACTIVITY_UID = 'HappySharePanel';
 const SHARE_REWARD_START_TIME = 1790179200;
@@ -74,8 +73,6 @@ const PET_DIARY_GROUP_ACTIVITY_ID = 2026090100;
 const PET_DIARY_ACTIVITY_ID = 2026090101;       // 比熊主体，承载 ActivityNode 字段 115
 const PET_DIARY_GIFT_ACTIVITY_ID = 2026090102;  // 比熊赠礼（star_record）
 const PET_DIARY_SHOP_ACTIVITY_ID = 2026090103;  // 拾物小铺（exchange_shop）
-const PET_DIARY_SEASON_ACTIVITY_ID = 2026091000;
-const PET_DIARY_SEASON_SUB_ACTIVITY_ID = 2026091001;
 const PET_DIARY_START_TIME = 1789005600;
 const PET_DIARY_END_TIME = 1791820799;
 const PET_DIARY_ITEM_IDS = { cake: 1028, star: 1029 };
@@ -2591,7 +2588,7 @@ function solarStatusLabel(status) {
   if (status === 3) return '已领取';
   if (status === 1) return '未开启';
   if (status === 5) return '已结束';
-  return `状态${status}`;
+  return '暂不可领取';
 }
 
 function normalizeSolarTerm(rawBytes) {
@@ -2605,22 +2602,34 @@ function normalizeSolarTerm(rawBytes) {
     startTime: getProtoNumber(entries, 3),
     endTime: getProtoNumber(entries, 4),
     rewards: getProtoBytesAll(entries, 5).map(parseActivityItemMessage).filter(Boolean),
-    title: getProtoString(entries, 6, ''),
+    title: getProtoString(entries, 6, '') || solarTermNames.get(getProtoNumber(entries, 1)) || '节令赠礼',
   };
 }
 
+function isSolarTermClaimable(term, now) {
+  return term?.status === 2 && Number.isFinite(now) && term.startTime > 0
+    && term.endTime >= term.startTime && now >= term.startTime && now <= term.endTime;
+}
 function normalizeSolarTermsInfo(rawBody) {
   const entries = readProtoFields(rawBody);
   const terms = getProtoBytesAll(entries, 1)
     .map(normalizeSolarTerm)
     .filter((term) => term.id > 0);
   const configEntries = readProtoFields(getProtoBytes(entries, 3));
-
+  const nowTime = getProtoNumber(entries, 2) || require('../utils/utils').getServerTimeSec();
+  for (const term of terms) {
+    term.claimable = isSolarTermClaimable(term, nowTime);
+    term.statusLabel = term.status === 3 ? '已领取' : nowTime > term.endTime && term.endTime > 0 ? '已结束'
+      : nowTime < term.startTime ? '未开始' : term.claimable ? '可领取' : '暂不可领取';
+  }
+  const group = term => term.claimable ? 0 : term.startTime <= nowTime && nowTime <= term.endTime ? 1 : term.startTime > nowTime ? 2 : 3;
+  terms.sort((a, b) => group(a) - group(b) || (group(a) === 3 ? b.startTime - a.startTime : a.startTime - b.startTime));
   return {
-    nowTime: getProtoNumber(entries, 2),
+    nowTime,
     terms,
     claimableCount: terms.filter((term) => term.claimable).length,
-    currentTerm: terms.find((term) => term.claimable) || terms.find((term) => term.status === 3) || terms[0] || null,
+    currentTerm: terms.find(term => term.startTime <= nowTime && nowTime <= term.endTime) || null,
+    nextTerm: terms.find(term => term.startTime > nowTime) || null,
     tipsText: getProtoString(configEntries, 3, ''),
   };
 }
@@ -2670,8 +2679,8 @@ async function claimSolarTermsReward(termId = 0) {
   if (resolvedTermId <= 0) throw new Error('未找到可领取的节令奖励');
 
   const target = (before.terms || []).find((term) => term.id === resolvedTermId) || null;
-  if (target && !target.claimable) {
-    throw new Error(`${target.title || '该节令'}当前不可领取`);
+  if (!target || !target.claimable) {
+    throw new Error(`${target?.title || '该节令'}当前不可领取`);
   }
 
   const result = normalizeSolarTermsClaimResult(await claimSolarTermsRaw(resolvedTermId));
@@ -3362,10 +3371,10 @@ module.exports = {
   CHARITY_FLOWER_GROUP_ACTIVITY_ID,
   CHARITY_FLOWER_ACTIVITY_ID,
   WISH_SIGN_GROUP_ID,
-  WISH_SIGN_GROUP_ACTIVITY_ID,
+  WISH_SIGN_GROUP_ACTIVITY_ID: WISH_SIGN_GROUP_ID,
   WISH_SIGN_ACTIVITY_ID,
   SHARE_REWARD_GROUP_ID,
-  SHARE_REWARD_GROUP_ACTIVITY_ID,
+  SHARE_REWARD_GROUP_ACTIVITY_ID: SHARE_REWARD_GROUP_ID,
   SHARE_REWARD_ACTIVITY_ID,
   isWishSignActive,
   isShareRewardActive,
@@ -3376,8 +3385,8 @@ module.exports = {
   operateWishSign,
   operateShareReward,
   PET_DIARY_GROUP_ACTIVITY_ID,
-  PET_DIARY_SEASON_ACTIVITY_ID,
-  PET_DIARY_SEASON_SUB_ACTIVITY_ID,
+  PET_DIARY_SEASON_ACTIVITY_ID: 2026091000,
+  PET_DIARY_SEASON_SUB_ACTIVITY_ID: 2026091001,
   PET_DIARY_ACTIVITY_ID,
   PET_DIARY_GIFT_ACTIVITY_ID,
   PET_DIARY_SHOP_ACTIVITY_ID,
@@ -3447,3 +3456,27 @@ module.exports = {
   normalizeNanguaGroup,
   normalizeHeluGroup,
 };
+
+let milkTeaService;
+function getMilkTeaService() {
+  if (!milkTeaService) milkTeaService = require('./activity-milk-tea').createMilkTeaService({ types, sendMsgAsync, getBag, getBagItems, getUserState, getServerTimeSec: require('../utils/utils').getServerTimeSec, itemDto: petDiaryHelpers.itemDto });
+  return milkTeaService;
+}
+module.exports.getMilkTea = () => getMilkTeaService().getMilkTea();
+module.exports.operateMilkTea = (action, params) => getMilkTeaService().operateMilkTea(action, params);
+module.exports.milkTeaRecords = (kind, params) => getMilkTeaService().milkTeaRecords(kind, params);
+
+// These actions previously emitted only wire request logs, with no account-visible outcome.
+const { withActivityOperationLog } = require('./activity-operation-log');
+for (const [method, label] of Object.entries({
+  operateWishSign: action => `秋祈良愿${({ draw: '祈愿', claim: '领取奖励' })[action] || '操作'}`,
+  operateShareReward: action => `快乐不独享${({ daily: '领取每日快乐值', share: '分享', milestones: '领取档位奖励' })[action] || '操作'}`,
+  claimCharityFlowerShareReward: '公益小红花领取分享奖励',
+  donateCharityFlowerLove: '公益小红花送出爱心',
+  claimCharityFlowerReward: '公益小红花领取档位奖励',
+  claimCharityFlowerPublicFund: '公益小红花送出公益金',
+})) module.exports[method] = withActivityOperationLog(module.exports[method], label);
+
+module.exports.isSolarTermClaimable = isSolarTermClaimable;
+
+module.exports.normalizeSolarTermsInfo = normalizeSolarTermsInfo;
