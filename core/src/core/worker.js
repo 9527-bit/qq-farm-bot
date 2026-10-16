@@ -534,7 +534,8 @@ async function runStarActivityAutoClaims() {
 
     starActivityClaimRunning = true;
     try {
-        const {
+        await runWithRequestPriority('background', async () => {
+            const {
             getStarActivity,
             getSolarTermsInfo,
             claimSeasonPassportRewards,
@@ -897,13 +898,16 @@ async function runStarActivityAutoClaims() {
         if (milkTeaEnabled) {
             const { AUTO_ACTIONS, phase } = require('../services/activity-milk-tea');
             const service = require('../services/activity');
+            let state = null;
             for (const [key, action] of Object.entries(AUTO_ACTIONS)) {
                 if (!loginReady || friendSyncPaused || getAutomation()?.[key] !== true) continue;
                 const currentPhase = phase(require('../utils/utils').getServerTimeSec());
                 if (!['business', 'settling'].includes(currentPhase)) break;
                 try {
-                    const state = await service.getMilkTea();
-                    if (!Number(state.summary.shop_open_at) && !['shareDaily', 'shareRewards', 'fundRewards'].includes(action)) continue;
+                    if (!state) {
+                        state = await service.getMilkTea();
+                    }
+                    if (!Number(state?.summary?.shop_open_at) && !['shareDaily', 'shareRewards', 'fundRewards'].includes(action)) continue;
                     let params = {};
                     if (action === 'buy') {
                         const goods = state.goods.find(x => x.category_tag === 'seed' && x.unlocked && x.remaining > 0 && !x.paid && x.affordable);
@@ -928,8 +932,11 @@ async function runStarActivityAutoClaims() {
                     if (action === 'shareDaily' && state.share?.daily?.daily_reward_claimed) continue;
                     if (action === 'shareRewards' && !state.share?.milestones?.some(x => Number(x.state) === 2)) continue;
                     if (action === 'fundRewards' && (!state.fund?.unlocked || !state.fund.tiers.some(x => Number(x.state) === 2))) continue;
-                    await service.operateMilkTea(action, params);
+                    const res = await service.operateMilkTea(action, params);
+                    state = res?.activity || null;
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 } catch (error) {
+                    state = null;
                     // Mutation failures are logged by the shared service; retain query failures here.
                     if (!error.milkTeaLogged) log('活动', `奶茶热销中自动检查失败：${error.message}`, { module: 'activity', event: '奶茶热销中自动检查', result: 'error' });
                 }
@@ -949,6 +956,7 @@ async function runStarActivityAutoClaims() {
                 charm: petDiaryCharmEnabled
             });
         }
+        });
     } catch (err) {
         if (!isTransientNetworkError(err)) {
             log('活动', `活动自动领取检查失败: ${  err.message}`, {

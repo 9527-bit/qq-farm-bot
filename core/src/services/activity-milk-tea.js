@@ -38,7 +38,9 @@ function createMilkTeaService({ types, sendMsgAsync, getBag, getBagItems, getSer
   const fail = message => { throw businessError('MILK_TEA_UNAVAILABLE', message); };
   const list = value => Array.isArray(value) ? value : [];
   const plain = (type, value) => type.toObject(value, { longs: String, defaults: true });
-  let pendingRead;
+  let pendingRead = null;
+  let cachedState = null;
+  let cacheTime = 0;
   async function rpc(method, requestType, replyType, input) {
     const { body } = await sendMsgAsync('gamepb.activitypb.ActivityService', method, Buffer.from(requestType.encode(requestType.fromObject(input)).finish()));
     return normalizeWireMaps(plain(replyType, replyType.decode(body)));
@@ -84,7 +86,13 @@ function createMilkTeaService({ types, sendMsgAsync, getBag, getBagItems, getSer
     const opened = Number(state.summary.shop_open_at) > 0;
     const shop = opened ? await op('shop') : { shop: null };
     const workshop = opened ? await op('workshop') : { recipes: [] };
-    const work = await op('work'); const inventory = await bag();
+    const work = await op('work');
+    let inventory = [];
+    try {
+      inventory = await bag();
+    } catch (err) {
+      log('活动', `奶茶热销中背包读取失败：${err.message}`, { module: 'activity', event: '奶茶热销中数据读取', result: 'warn' });
+    }
     const recipes = list(workshop.recipes).map(recipe => ({ ...recipe, config: catalog.MilkTeaRecipeConfig.find(x => String(x.recipe_id) === recipe.recipe_id), fruits: inventory.filter(x => String(x.id) === String(catalog.MilkTeaRecipeConfig.find(c => String(c.recipe_id) === recipe.recipe_id)?.fruit_item_id?.split(':')[0])).map(x => ({ ...itemDto(x), uid: String(x.uid) })) }));
     const goods = list(children.find(x => x.head?.id === '2026110102')?.shop?.goods).map(g => ({ ...g, items: list(g.item).map(itemDto), costs: list(g.cost).map(itemDto), remaining: Math.max(0, Number(g.purchase_limit) - Number(g.purchased_count)), unlocked: list(g.cond_hints).every(x => x.satisfied), affordable: available(list(g.cost), inventory), paid: Number(g.diamond_cost_count) > 0 || list(g.cost).some(x => Number(x.id) === 1004) }));
     for (const good of goods) good.maxPurchasable = state.phase !== 'business' && good.category_tag === 'seed' ? 0 : maximumPurchase(good, inventory);
@@ -99,12 +107,27 @@ function createMilkTeaService({ types, sendMsgAsync, getBag, getBagItems, getSer
     }));
     const shareView = share ? { ...share, milestones: list(share.milestones).map(tier => ({ ...tier, rewards: list(tier.rewards).map(itemDto) })) } : null;
     const fundView = fund ? { ...fund, unlock_cost: list(fund.unlock_cost).map(itemDto), tiers: list(fund.tiers).map(tier => ({ ...tier, reward: list(tier.reward).map(itemDto) })) } : null;
-    return { ...state, share: shareView, fund: fundView, shop: shop.shop, recipes, work, goods, balances: ['1001', '1004', '1041', '1042'].map(id => itemDto({ id, count: inventory.filter(x => String(x.id) === id).reduce((n, x) => n + BigInt(String(x.count || 0)), 0n).toString() })), levels, durations: catalog.MilkTeaHireDurationConfig, interactions: catalog.MilkTeaInteractionType };
+    return { ...state, _inventory: inventory, share: shareView, fund: fundView, shop: shop.shop, recipes, work, goods, balances: ['1001', '1004', '1041', '1042'].map(id => itemDto({ id, count: inventory.filter(x => String(x.id) === id).reduce((n, x) => n + BigInt(String(x.count || 0)), 0n).toString() })), levels, durations: catalog.MilkTeaHireDurationConfig, interactions: catalog.MilkTeaInteractionType };
   }
-  function getMilkTea() { if (!pendingRead) pendingRead = read().finally(() => { pendingRead = null; }); return pendingRead; }
+  function getMilkTea(force = false) {
+    const now = Date.now();
+    if (!force && cachedState && (now - cacheTime < 3000)) {
+      return Promise.resolve(cachedState);
+    }
+    if (!pendingRead) {
+      pendingRead = read().then(state => {
+        cachedState = state;
+        cacheTime = Date.now();
+        return state;
+      }).finally(() => {
+        pendingRead = null;
+      });
+    }
+    return pendingRead;
+  }
   async function mutate(action, input = {}) {
     if (!ACTIONS[action] && !['buy', 'shareDaily', 'shareRewards', 'fundRewards'].includes(action)) fail('活动操作无效');
-    const state = await getMilkTea(); const inventory = await bag(); const now = getServerTimeSec();
+    const state = await getMilkTea(); const inventory = state._inventory || []; const now = getServerTimeSec();
     state.phase = phase(now, state);
     if (!['business', 'settling'].includes(state.phase)) fail('活动未开始或已结束');
     if (state.phase !== 'business' && !['cashier', 'wages', 'buy', 'shareDaily', 'shareRewards', 'fundRewards'].includes(action)) fail('结算期不支持此操作');
@@ -168,7 +191,10 @@ function createMilkTeaService({ types, sendMsgAsync, getBag, getBagItems, getSer
       const result = await op(action, params);
       if (action === 'hire' && (!result.results?.length || result.results.some(entry => !entry.success))) fail('雇佣失败，请刷新员工列表后重试');
     }
-    pendingRead = null; return { ok: true, detail, activity: await getMilkTea() };
+    cachedState = null;
+    cacheTime = 0;
+    pendingRead = null;
+    return { ok: true, detail, activity: await getMilkTea(true) };
   }
   const skippedLogs = new Map();
   const operateMilkTea = (action, params) => serializeMutation(async () => {
