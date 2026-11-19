@@ -1,3 +1,7 @@
+const { runExclusiveAutomationTask } = require('../services/automation-lock');
+const { runWithOperationContext } = require('../utils/operation-context');
+const apiContexts = new Map();
+let lastRanchMarketCheck = 0;
 const process = require('node:process');
 const { parentPort, workerData } = require('node:worker_threads');
 
@@ -250,7 +254,8 @@ function getLocalDateKey() {
 
 // ==================== 每日任务 ====================
 
-async function runDailyRoutines(force = false, options = {}) {
+function runDailyRoutines(force = false, options = {}) { return runExclusiveAutomationTask('runDailyRoutines', () => runDailyRoutinesUnlocked(force, options)); }
+async function runDailyRoutinesUnlocked(force = false, options = {}) {
     if (!loginReady || friendSyncPaused) return;
     try {
         const automation = getAutomation() || {};
@@ -281,18 +286,18 @@ function startDailyRoutineTimer() {
     runDailyRoutines(true, { skipTask: true }).catch(() => null);
 
     // 每 60 秒检查一次日期是否变化
-    workerScheduler.setIntervalTask('daily_routine_interval', 60000, () => {
+    workerScheduler.setIntervalTask('daily_routine_interval', 60000, async () => {
         if (!loginReady) return;
         const today = getLocalDateKey();
         if (today === lastDailyRunDate) {
             // 分享资格在服务端日切后可能延迟刷新；服务内部有 10 分钟冷却，
             // 持续检查可避免零点单次未命中后必须重连才能领取。
-            performDailyShare(false).catch(() => null);
-            if (!friendSyncPaused) require('../services/mall-gift-auto-buy').autoBuyCouponGifts().catch(() => null);
+            await performDailyShare(false).catch(() => null);
+            if (!friendSyncPaused) await require('../services/mall-gift-auto-buy').autoBuyCouponGifts().catch(() => null);
             return;
         }
         lastDailyRunDate = today;
-        runDailyRoutines(true)
+        return runDailyRoutines(true)
             .then(() => runBadOnceOnStartup(true))
             .catch(() => null);
     });
@@ -475,13 +480,14 @@ async function runPetDiaryAutomation(flags) {
         if (nextEnd) {
             const delayMs = Math.max(1000, nextEnd - nowMs + 2000);
             workerScheduler.setTimeoutTask('pet_diary_treasure_ready', delayMs, () => {
-                runStarActivityAutoClaims().catch(() => null);
+                return runStarActivityAutoClaims().catch(() => null);
             });
         }
     }
 }
 
-async function runStarActivityAutoClaims() {
+function runStarActivityAutoClaims() { return runExclusiveAutomationTask('runStarActivityAutoClaims', () => runStarActivityAutoClaimsUnlocked()); }
+async function runStarActivityAutoClaimsUnlocked() {
     if (!loginReady || friendSyncPaused || starActivityClaimRunning) return;
 
     const automation = getAutomation() || {};
@@ -799,7 +805,7 @@ async function runStarActivityAutoClaims() {
             if (useRainPoemSummonEnabled && !lightningHarvestComplete && rainPoem?.weather?.rainstorm && Number(rainPoem?.weather?.endTime || 0) > 0) {
                 const renewDelayMs = Math.max(1000, (Number(rainPoem.weather.endTime) - Math.floor(Date.now() / 1000) + 2) * 1000);
                 workerScheduler.setTimeoutTask('rain_poem_weather_renew', renewDelayMs, () => {
-                    runStarActivityAutoClaims().catch(() => null);
+                    return runStarActivityAutoClaims().catch(() => null);
                 });
             }
 
@@ -982,10 +988,10 @@ function stopStarActivityClaimTimer() {
 function startStarActivityClaimTimer() {
     stopStarActivityClaimTimer();
     workerScheduler.setTimeoutTask('star_activity_claim_initial', 10000, () => {
-        runStarActivityAutoClaims().catch(() => null);
+        return runStarActivityAutoClaims().catch(() => null);
     });
     workerScheduler.setIntervalTask('star_activity_claim_interval', 5 * 60 * 1000, () => {
-        runStarActivityAutoClaims().catch(() => null);
+        return runStarActivityAutoClaims().catch(() => null);
     }, { preventOverlap: true });
 }
 
@@ -1006,10 +1012,10 @@ function startMysteryShopAutoBuyTimer() {
     const { AUTO_BUY_CHECK_INTERVAL_MS } = require('../services/mystery-shop');
     stopMysteryShopAutoBuyTimer();
     workerScheduler.setTimeoutTask('mystery_shop_auto_buy_initial', 10000, () => {
-        runMysteryShopAutoBuy().catch(() => null);
+        return runMysteryShopAutoBuy().catch(() => null);
     });
     workerScheduler.setIntervalTask('mystery_shop_auto_buy_interval', AUTO_BUY_CHECK_INTERVAL_MS, () => {
-        runMysteryShopAutoBuy().catch(() => null);
+        return runMysteryShopAutoBuy().catch(() => null);
     }, { preventOverlap: true });
 }
 
@@ -1278,6 +1284,7 @@ function applyRuntimeConfig(config, syncStatusAfter = false) {
         persist: false,
         accountId
     });
+    require('../services/ranch/automation').resetSchedule();
     const nextCapitalMode = require('../models/store').getCapitalMode();
     require('../services/capital-mode').reconcileConfigChange(prevCapitalMode, nextCapitalMode).catch(() => null);
 
@@ -1337,7 +1344,7 @@ function applyRuntimeConfig(config, syncStatusAfter = false) {
             ].some(key => !prevAuto?.[key] && newAuto?.[key]);
             if (starClaimBecameEnabled) {
                 workerScheduler.setTimeoutTask('star_activity_claim_after_save', 2000, () => {
-                    runStarActivityAutoClaims().catch(() => null);
+                    return runStarActivityAutoClaims().catch(() => null);
                 });
             }
 
@@ -1349,7 +1356,7 @@ function applyRuntimeConfig(config, syncStatusAfter = false) {
             ].some(key => prevAuto?.[key] !== newAuto?.[key]);
             if (newAuto?.mystery_shop_auto_buy && mysteryShopConfigChanged) {
                 workerScheduler.setTimeoutTask('mystery_shop_auto_buy_after_save', 2000, () => {
-                    runMysteryShopAutoBuy().catch(() => null);
+                    return runMysteryShopAutoBuy().catch(() => null);
                 });
             }
 
@@ -1424,6 +1431,9 @@ onMasterMessage(async (msg) => {
             await startBot(msg.config);
         } else if (msg.type === 'stop') {
             await stopBot();
+        } else if (msg.type === 'api_cancel') {
+            const context = apiContexts.get(msg.id);
+            if (context) context.cancelled = true;
         } else if (msg.type === 'api_call') {
             handleApiCall(msg);
         } else if (msg.type === 'config_sync') {
@@ -1525,7 +1535,7 @@ async function startBot(config) {
         onFarmHarvested = async () => {
             if (getAutomation().rain_poem_summon_use === true) {
                 workerScheduler.setTimeoutTask('rain_poem_after_harvest', 2000, () => {
-                    runStarActivityAutoClaims().catch(() => null);
+                    return runStarActivityAutoClaims().catch(() => null);
                 });
             }
             if (harvestSellRunning) return;
@@ -1634,6 +1644,19 @@ async function startBot(config) {
         initTaskSystem();
         startDailyRoutineTimer();
         startStarActivityClaimTimer();
+        workerScheduler.setIntervalTask('ranch_adoption_tick', 30000, async () => {
+            if (!loginReady || !isRunning || friendSyncPaused) return;
+            const ranch = require('../services/ranch/automation');
+            const auto = getAutomation();
+            if (require('../config/ranch-automation').isRanchMarketEnabled(auto) && Date.now() - lastRanchMarketCheck >= auto.ranch_check_minutes * 60000) {
+                lastRanchMarketCheck = Date.now();
+                ranch.requestMarketCheck();
+            }
+            if (Date.now() >= ranch.getRoutineState().nextCheckAt) {
+                await ranch.run({ canContinue: () => loginReady && isRunning && !friendSyncPaused });
+            }
+            try { await require('../services/activity-muge').runMugeAutomation(getAutomation()); } catch (error) { log('活动', error.message); }
+        });
         startMysteryShopAutoBuyTimer();
 
         syncStatus();
@@ -1688,6 +1711,7 @@ async function stopBot() {
     stopFriendCheckLoop();
     stopDailyRoutineTimer();
     stopStarActivityClaimTimer();
+    workerScheduler.clear('ranch_adoption_tick');
     cleanupTaskSystem();
     workerScheduler.clearAll();
     resourceMonitor.dispose();
@@ -1720,6 +1744,17 @@ function onReconnectFailed(info) {
 // ==================== API 调用处理 ====================
 
 async function handleApiCall(msg) {
+    const context = { deadline: Number(msg.deadline) || Date.now() + 60000, sent: 0, cancelled: false };
+    apiContexts.set(msg.id, context);
+    try {
+        if (!isRunning || !loginReady) throw new Error('账号未连接');
+        await runWithOperationContext(context, () => runExclusiveAutomationTask(`api:${msg.method}`, () => executeApiCall(msg)));
+    } catch (error) {
+        sendToMaster({ type: 'api_response', id: msg.id, result: null, error: error.message });
+    } finally { apiContexts.delete(msg.id); }
+}
+async function executeApiCall(msg) {
+    if (!isRunning || !loginReady) throw new Error('账号未连接');
     const { id, method, args } = msg;
     let result = null;
     let error = null;
@@ -1738,6 +1773,16 @@ async function handleApiCall(msg) {
 
     try {
         switch (method) {
+            case 'getRanchState':
+                result = await require('../services/ranch').getRanchState(...args); break;
+            case 'prepareRanchAction':
+                result = await require('../services/ranch').prepareRanchAction(...args); break;
+            case 'operateRanch':
+                result = await require('../services/ranch').operateRanch(...args); break;
+            case 'getMugeActivity':
+                result = await require('../services/activity-muge').getMugeActivity(); break;
+            case 'operateMugeActivity':
+                result = await require('../services/activity-muge').operateMugeActivity(...args); break;
             case 'getLands':
                 result = await getLandsDetail();
                 try {

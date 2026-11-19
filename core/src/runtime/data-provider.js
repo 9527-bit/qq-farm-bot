@@ -165,6 +165,18 @@ function createDataProvider(deps) {
             return { ...result, accountId: id };
         },
 
+        // Queries are coalesced per account/view; mutations remain explicit.
+        getRanchState: (ref, view, shopId, hostGid) => {
+            const id = resolveAccountId(ref);
+            return callWorkerReadOnce(`ranch:${id}:${view}:${shopId}:${hostGid}`, id, 'getRanchState', view, shopId, hostGid, { _timeoutMs: 60000 });
+        },
+        prepareRanchAction: (ref, action, input) => callWorkerApi(resolveAccountId(ref), 'prepareRanchAction', action, input, { _timeoutMs: 60000 }),
+        operateRanch: (ref, action, input) => callWorkerApi(resolveAccountId(ref), 'operateRanch', action, input, { _timeoutMs: 60000 }),
+        getMugeActivity: ref => {
+            const id = resolveAccountId(ref);
+            return callWorkerReadOnce(`muge:${id}`, id, 'getMugeActivity', { _timeoutMs: 45000 });
+        },
+        operateMugeActivity: (ref, action, input) => callWorkerApi(resolveAccountId(ref), 'operateMugeActivity', action, input, { _timeoutMs: 60000 }),
         // ========== Farm API ==========
         getLands: (ref) => callWorkerApi(resolveAccountId(ref), 'getLands'),
         getDiamondBalance: (ref) => callWorkerApi(resolveAccountId(ref), 'getDiamondBalance'),

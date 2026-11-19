@@ -1,3 +1,4 @@
+const { runExclusiveAutomationTask } = require('./automation-lock');
 const { CONFIG } = require('../config/config');
 const { getUserState, isConnected, networkEvents } = require('../utils/network');
 const { toNum, log, logWarn, randomDelay } = require('../utils/utils');
@@ -39,7 +40,8 @@ function isTransientNetworkError(err) {
  * 检查并执行农场操作
  * @returns {boolean} 是否有需要执行的操作
  */
-async function checkFarm() {
+function checkFarm() { return runExclusiveAutomationTask('checkFarm', () => checkFarmUnlocked()); }
+async function checkFarmUnlocked() {
   const userState = getUserState();
   if (isCheckingFarm || !userState.gid || !isAutomationOn('farm') || !isConnected()) {
     return false;
@@ -64,7 +66,8 @@ async function checkFarm() {
  * 执行农场操作
  * @param {string} opType - 操作类型：'all' | 'harvest' | 'plant' | 'clear' | 'upgrade'
  */
-async function runFarmOperation(opType) {
+function runFarmOperation(opType) { return runExclusiveAutomationTask('runFarmOperation', () => runFarmOperationUnlocked(opType)); }
+async function runFarmOperationUnlocked(opType) {
   const landsReply = await getAllLands();
   if (!landsReply.lands || landsReply.lands.length === 0) {
     if (opType !== 'all') log('农场', '没有土地数据');

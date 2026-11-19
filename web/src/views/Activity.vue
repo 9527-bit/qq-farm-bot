@@ -18,6 +18,25 @@ import { useActivityStore } from '@/stores/activity'
 import { useToastStore } from '@/stores/toast'
 import { useUserStore } from '@/stores/user'
 
+const MugeActivityPanel = defineAsyncComponent(() => import('@/components/activity/MugeActivityPanel.vue'))
+const mugeWindow = ref<any>(null)
+const mugeWindowError = ref('')
+async function loadMugeWindow() {
+  if (!currentAccountId.value) return
+  const id = String(currentAccountId.value)
+  try {
+    const { data } = await api.get('/api/activities/muge', { headers: { 'x-account-id': id }, timeout: 65000, skipErrorToast: true } as any)
+    if (id !== String(currentAccountId.value)) return
+    if (!data.ok) throw new Error(data.error)
+    mugeWindow.value = { startMs: data.data.startTime, endMs: data.data.endTime, status: data.data.active ? 1 : 0, offset: data.data.serverTime - Date.now() }
+    mugeWindowError.value = ''
+  } catch (error: any) {
+    if (id !== String(currentAccountId.value)) return
+    mugeWindowError.value = error.response?.data?.error || error.message
+    const { data } = await api.get('/api/activities/muge/window').catch(() => ({ data: null }))
+    if (id === String(currentAccountId.value)) mugeWindow.value = data?.data || null
+  }
+}
 const PetDiaryActivityPanel = defineAsyncComponent(() => import('@/components/activity/PetDiaryActivityPanel.vue'))
 const MilkTeaActivityPanel = defineAsyncComponent(() => import('@/components/activity/MilkTeaActivityPanel.vue'))
 const SolarTermsActivityPanel = defineAsyncComponent(() => import('@/components/activity/SolarTermsActivityPanel.vue'))
@@ -216,7 +235,10 @@ const activityCards = computed(() => {
       activityIds: [2026110100],
     })
   }
+  source.splice(0, source.length, ...source.filter(group => !group.activityIds.some(id => String(id).startsWith('20261117'))))
+  source.push({ id: 2026111700, title: '牧歌初启', startTime: (mugeWindow.value?.startMs || 0) / 1000, endTime: (mugeWindow.value?.endMs || 0) / 1000, activityIds: [2026111700] })
   const cards = source.map((group) => {
+    const isMuge = group.id === 2026111700
     const isMilkTea = group.id === 2026110100
       || group.title?.includes('奶茶')
       || group.activityIds.some(id => String(id).startsWith('20261101'))
@@ -244,7 +266,7 @@ const activityCards = computed(() => {
       || group.title?.includes('快乐不独享')
       || group.activityIds.some(id => String(id).startsWith('20260925'))
 
-    const adapted = isMilkTea
+    const adapted = isMuge ? 'muge' as const : isMilkTea
       ? 'milk-tea' as const
       : isPetDiary
         ? 'pet-diary' as const
@@ -266,22 +288,23 @@ const activityCards = computed(() => {
       adaptedKey: adapted,
       title: group.title || (adapted === 'pet-diary' ? '萌宠日记' : adapted === 'milk-tea' ? '奶茶热销中' : `活动 ${group.id}`),
       description: adapted
-        ? adapted === 'milk-tea' ? '经营奶茶小店、兑换商店与兼职工作' : adapted === 'pet-diary' ? '查看比熊成长、爪印手记、拾物小铺与比熊赠礼' : adapted === 'charity-flower' ? '查看爱心、公益进度与奖励状态' : adapted === 'wish-sign' ? '查看祈愿状态、祈愿池和每日奖励' : adapted === 'share-reward' ? '查看每日快乐值与档位进度' : '查看天气、每日进度与气象研究'
+        ? adapted === 'muge' ? '兴牧庆典、牧友同行、成长手册与牧场人格' : adapted === 'milk-tea' ? '经营奶茶小店、兑换商店与兼职工作' : adapted === 'pet-diary' ? '查看比熊成长、爪印手记、拾物小铺与比熊赠礼' : adapted === 'charity-flower' ? '查看爱心、公益进度与奖励状态' : adapted === 'wish-sign' ? '查看祈愿状态、祈愿池和每日奖励' : adapted === 'share-reward' ? '查看每日快乐值与档位进度' : '查看天气、每日进度与气象研究'
         : ACTIVITY_CLIENT_PREVIEWS.some(item => item.title === group.title || item.ids.some(id => group.activityIds.includes(id)))
           ? '已读取客户端静态预览，动态规则待服务端开放'
           : '暂未适配详情',
       icon: {
         '': 'i-carbon-calendar',
+        'muge': 'i-carbon-sprout',
         'milk-tea': 'i-carbon-cafe',
         'pet-diary': 'i-fas-paw',
         'charity-flower': 'i-carbon-favorite',
         'rain-poem': 'i-carbon-rain-heavy', 'wish-sign': 'i-carbon-sun', 'share-reward': 'i-carbon-share',
       }[adapted || ''] || 'i-carbon-calendar',
-      image: adapted === 'milk-tea' ? '/activity/milk-tea/img_s4Main_bg.png' : adapted === 'pet-diary' ? '/activity/pet-diary/scene-home-adult.webp?v=20260912' : adapted === 'wish-sign' ? '/activity/wish-sign/card-bg.svg' : adapted === 'share-reward' ? '/activity/share-reward/card-bg.svg' : group.imageUrl || (adapted === 'rain-poem' ? '/activity/rain-poem/day-rain-bg.jpg' : ''),
+      image: adapted === 'muge' ? '/activity/muge/icon.png' : adapted === 'milk-tea' ? '/activity/milk-tea/img_s4Main_bg.png' : adapted === 'pet-diary' ? '/activity/pet-diary/scene-home-adult.webp?v=20260912' : adapted === 'wish-sign' ? '/activity/wish-sign/card-bg.svg' : adapted === 'share-reward' ? '/activity/share-reward/card-bg.svg' : group.imageUrl || (adapted === 'rain-poem' ? '/activity/rain-poem/day-rain-bg.jpg' : ''),
       imagePosition: adapted === 'pet-diary' ? 'center 64%' : 'center',
       window,
-      updatedMs: window.startMs,
-      status: activityWindowStatus(window),
+      updatedMs: isMuge ? Date.parse('2026-11-19T00:00:00+08:00') : window.startMs,
+      status: isMuge ? (!window.startMs || !window.endMs || nowMs.value + (mugeWindow.value?.offset || 0) < window.startMs ? 'upcoming' : nowMs.value + (mugeWindow.value?.offset || 0) >= window.endMs || mugeWindow.value?.status !== 1 ? 'ended' : 'active') : activityWindowStatus(window),
       pending: !adapted && group.activityIds.some(id => unknownActivityIds.value.has(id)),
       backgroundStyle: {
         background: `radial-gradient(circle at 84% 18%, hsl(${(hue + 42) % 360} 82% 68% / 0.38), transparent 34%), radial-gradient(circle at 12% 92%, hsl(${(hue + 310) % 360} 75% 58% / 0.26), transparent 38%), linear-gradient(135deg, hsl(${hue} 52% 38%), hsl(${(hue + 32) % 360} 58% 18%))`,
@@ -358,6 +381,7 @@ function formatActivityDateTime(timestampMs: number) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
+    timeZone: 'Asia/Shanghai',
   }).format(new Date(timestampMs))
 }
 
@@ -513,6 +537,9 @@ async function exchangeStarSand(item: { id: number, itemName?: string, name?: st
 }
 
 watch(currentAccountId, () => {
+  selectedActivity.value = null
+  mugeWindow.value = null
+  void loadMugeWindow()
   activityStore.clearActivityData()
   refreshAll()
 })
@@ -551,12 +578,14 @@ watch(selectedActivity, (key) => {
 onMounted(() => {
   nowTimer = window.setInterval(() => {
     nowMs.value = Date.now()
+    if (selectedActivityCard.value && selectedActivityCard.value.status !== 'active') selectedActivity.value = null
     if (document.visibilityState === 'visible')
       refreshAll()
   }, ACTIVITY_REFRESH_INTERVAL_MS)
   document.addEventListener('visibilitychange', handleVisibilityChange)
   refreshAll()
   loadActivityDirectory()
+  void loadMugeWindow()
 })
 onUnmounted(() => {
   if (nowTimer)
@@ -650,13 +679,14 @@ onUnmounted(() => {
         </BaseButton>
       </header>
 
+      <p v-if="mugeWindowError" class="text-sm text-amber-700">牧歌初启：{{ mugeWindowError }} <button class="underline" @click="loadMugeWindow">重试</button></p>
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <button
           v-for="card in filteredActivityCards"
           :key="card.key"
           class="group relative min-h-52 overflow-hidden rounded-lg text-left text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-500"
-          :class="card.status === 'ended' ? 'cursor-not-allowed grayscale saturate-0' : 'hover:-translate-y-0.5 hover:shadow-lg'"
-          :disabled="card.status === 'ended'"
+          :class="card.status !== 'active' ? 'cursor-not-allowed grayscale saturate-0' : 'hover:-translate-y-0.5 hover:shadow-lg'"
+          :disabled="card.status !== 'active'"
           @click="selectedActivity = card.key"
         >
           <img v-if="card.image" :src="card.image" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-500" :style="{ objectPosition: card.imagePosition }" :class="card.status === 'active' && 'group-hover:scale-105'">
@@ -681,7 +711,7 @@ onUnmounted(() => {
                 {{ card.title }}
               </h2>
               <p class="mt-1 text-sm text-cyan-50/80">
-                {{ card.permanent ? '按各节令开放时间领取' : `${formatActivityDateTime(card.window.startMs)} — ${formatActivityDateTime(card.window.endMs)}` }}
+                {{ card.permanent ? '按各节令开放时间领取' : `${card.window.startMs ? formatActivityDateTime(card.window.startMs) : '时间待同步'} — ${card.window.endMs ? formatActivityDateTime(card.window.endMs) : '时间待同步'}` }}
               </p>
               <div class="mt-4 flex items-center gap-2 text-xs text-white/65">
                 <span :class="card.icon" class="shrink-0 text-base text-cyan-200" />
@@ -696,6 +726,7 @@ onUnmounted(() => {
       </div>
     </section>
 
+    <MugeActivityPanel v-else-if="selectedActivityCard?.adaptedKey === 'muge' && selectedActivityCard.status === 'active'" @back="selectedActivity = null" />
     <SolarTermsActivityPanel v-else-if="selectedActivity === 'solar-terms'" :labels="L" @back="selectedActivity = null" />
     <div v-else-if="selectedActivityCard?.adaptedKey === 'rain-poem' && selectedActivityCard.status === 'active'" class="space-y-3">
       <button class="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900 dark:hover:text-white" @click="selectedActivity = null">

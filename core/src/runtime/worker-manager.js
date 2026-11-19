@@ -739,6 +739,7 @@ function createWorkerManager(deps) {
             scheduler.setTimeoutTask(`api_timeout_${  accountId  }_${  reqId}`, timeoutMs, () => {
                 if (wrk.requests.has(reqId)) {
                     wrk.requests.delete(reqId);
+                    try { wrk.process.send({ type: 'api_cancel', id: reqId }); } catch {}
                     reject(new Error('API Timeout'));
                 }
             });
@@ -747,6 +748,7 @@ function createWorkerManager(deps) {
                 type: 'api_call',
                 id: reqId,
                 method,
+                deadline: Date.now() + timeoutMs,
                 args: actualArgs
             });
         });

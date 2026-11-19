@@ -1,3 +1,4 @@
+const { runExclusiveAutomationTask } = require('./automation-lock');
 const { CONFIG } = require('../config/config');
 const {
   isAutomationOn,
@@ -196,7 +197,8 @@ function trackBadVisitResult(result, target, context = {}) {
  * Main friend check routine: visits friends to steal, help, and/or put weeds/bugs.
  * Called by the loop or triggered externally.
  */
-async function checkFriends(options = {}) {
+function checkFriends(options = {}) { return runExclusiveAutomationTask('checkFriends', () => checkFriendsUnlocked(options)); }
+async function checkFriendsUnlocked(options = {}) {
   const userState = getUserState();
   if (!isAutomationOn('friend') || !isConnected()) return false;
 
@@ -517,7 +519,8 @@ async function checkFriends(options = {}) {
   }
 }
 
-async function runScheduledStealCheck() {
+function runScheduledStealCheck() { return runExclusiveAutomationTask('runScheduledStealCheck', () => runScheduledStealCheckUnlocked()); }
+async function runScheduledStealCheckUnlocked() {
   const accountId = process.env.FARM_ACCOUNT_ID || '';
   const userState = getUserState();
   if (!isAutomationOn('friend') || !isAutomationOn('friend_steal') || !isConnected()) {
@@ -824,7 +827,8 @@ async function acceptFriendsWithRetry(gids) {
 /**
  * Run a one-time "bad" operation on startup to put weeds/insects on friends' farms.
  */
-async function runBadOnceOnStartup(force = false) {
+function runBadOnceOnStartup(force = false) { return runExclusiveAutomationTask('runBadOnceOnStartup', () => runBadOnceOnStartupUnlocked(force)); }
+async function runBadOnceOnStartupUnlocked(force = false) {
   if (!force && badExecutedOnStartup) return;
 
   const badEnabled = isAutomationOn('friend_bad');

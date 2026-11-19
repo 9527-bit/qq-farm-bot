@@ -38,6 +38,16 @@ const nowMs = ref(Date.now())
 let nowTimer: ReturnType<typeof window.setInterval> | null = null
 const showMilkTeaActivity = computed(() => isWithinActivityWindowMs(MILK_TEA_ACTIVITY_WINDOW, nowMs.value))
 const showMilkTeaBusiness = computed(() => isWithinActivityWindowMs(MILK_TEA_BUSINESS_WINDOW, nowMs.value))
+const ranchAnimals = ref<Array<{ value: number, label: string, kind: string }>>([])
+const mugeWindow = ref<any>(null)
+const showMuge = computed(() => mugeWindow.value?.status === 1 && nowMs.value >= mugeWindow.value.startMs && nowMs.value < mugeWindow.value.endMs)
+async function loadMugeWindow() {
+  if (!props.currentAccountId) { mugeWindow.value = null; return }
+  try { ranchAnimals.value = (await api.get('/api/ranch/options')).data.data || [] } catch {}
+  try { mugeWindow.value = (await api.get('/api/activities/muge/window')).data.data } catch { mugeWindow.value = null }
+}
+const ranchSettings = [{"key": "ranch_harvest", "label": "自动收获"}, {"key": "ranch_produce", "label": "自动生产"}, {"key": "ranch_buy", "label": "自动购买幼崽补栏"}, {"key": "ranch_upgrade", "label": "自动解锁与升级设施"}, {"key": "ranch_sell", "label": "自动出售产物"}, {"key": "ranch_market_organic_poop", "label": "自动用便便兑换有机化肥"}, {"key": "ranch_market_organic_pinecone", "label": "自动用松果兑换有机化肥"}, {"key": "ranch_grass", "label": "自动补充牧草"}, {"key": "ranch_grass_buy", "label": "自动购买牧草"}, {"key": "ranch_fill_cans", "label": "自动添加背包罐头"}, {"key": "ranch_feed_normal", "label": "自动普通罐头喂养"}, {"key": "ranch_feed_organic", "label": "自动有机罐头喂养"}, {"key": "ranch_clean", "label": "自动清理"}, {"key": "ranch_stroke", "label": "自动抚摸"}, {"key": "ranch_friend_steal", "label": "自动偷取好友产物"}, {"key": "ranch_friend_clean", "label": "自动清理好友牧场"}, {"key": "ranch_friend_mosquito", "label": "自动放蚊子"}, {"key": "ranch_task", "label": "自动领取任务"}, {"key": "ranch_illustrated", "label": "自动领取图鉴奖励"}, {"key": "ranch_share", "label": "自动领取每日分享"}, {"key": "ranch_daily_benefit", "label": "自动领取每日福利"}]
+const mugeSettings = [{"key": "muge_celebration_claim", "label": "自动领取庆典奖励"}, {"key": "muge_friends_claim", "label": "自动领取牧友奖励"}, {"key": "muge_task_claim", "label": "自动领取手册任务"}, {"key": "muge_handbook_claim", "label": "自动领取手册档位"}, {"key": "muge_share_claim", "label": "自动领取人格分享奖励"}]
 const milkTeaSettings = computed(() => [
   { key: 'mall_coupon_gift_buy', label: '自动购买点券礼包', detail: '买完奶茶点券礼包剩余限额，余额不足时跳过' },
   { key: 'milk_tea_cashier', label: '自动领取收益', detail: '领取店铺累计营业收益' },
@@ -77,6 +87,8 @@ const selectedLandNames = computed(() => props.fertilizerLandTypeOptions.filter(
 const selectedLandTypeCount = computed(() => Array.isArray(automation.value.automation.fertilizer_land_types) ? automation.value.automation.fertilizer_land_types.length : 0)
 const activityKeys = computed(() => [
   'star_solar_claim',
+  ...ranchSettings.map(item => item.key),
+  ...(showMuge.value ? mugeSettings.map(item => item.key) : []),
   ...(showMilkTeaActivity.value ? ['mall_coupon_gift_buy', 'milk_tea_cashier', 'milk_tea_wages', 'milk_tea_share_daily', 'milk_tea_share_rewards', 'milk_tea_fund_rewards'] : []),
   ...(showMilkTeaBusiness.value ? ['milk_tea_upgrade', 'milk_tea_craft', 'milk_tea_boost', 'milk_tea_hire', 'milk_tea_seed_buy'] : []),
   ...(showRainPoemActivity.value
@@ -285,15 +297,17 @@ function cancel() {
 }
 onMounted(() => {
   loadQixiFriends()
+  void loadMugeWindow()
   nowTimer = window.setInterval(() => {
     nowMs.value = Date.now()
+    void loadMugeWindow()
   }, 60000)
 })
 onUnmounted(() => {
   if (nowTimer)
     window.clearInterval(nowTimer)
 })
-watch(() => props.currentAccountId, loadQixiFriends)
+watch(() => props.currentAccountId, () => { loadQixiFriends(); void loadMugeWindow() })
 </script>
 
 <template>
@@ -559,6 +573,17 @@ watch(() => props.currentAccountId, loadQixiFriends)
             </div>
 
             <div v-else class="space-y-4">
+              <section class="border border-gray-100 rounded-lg p-4 space-y-3 dark:border-gray-700">
+                <h3 class="text-sm font-medium">牧场</h3>
+                <div class="grid gap-3 sm:grid-cols-2"><BaseSwitch v-for="item in ranchSettings" :key="item.key" v-model="automation.automation[item.key]" :label="item.label" /></div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <label class="text-sm">养殖策略<select v-model="automation.automation.ranch_strategy" class="mt-1 w-full rounded border bg-transparent p-2"><option value="level">当前等级优先</option><option value="preferred">指定动物</option><option value="bag_priority">优先使用背包幼崽</option></select></label>
+                  <template v-if="automation.automation.ranch_strategy === 'preferred'"><label class="text-sm">窝<select v-model.number="automation.automation.ranch_coop_animal" class="mt-1 w-full rounded border bg-transparent p-2"><option :value="0">请选择</option><option v-for="animal in ranchAnimals.filter(a => a.kind === '窝')" :key="animal.value" :value="animal.value">{{ animal.label }}</option></select></label><label class="text-sm">棚<select v-model.number="automation.automation.ranch_shed_animal" class="mt-1 w-full rounded border bg-transparent p-2"><option :value="0">请选择</option><option v-for="animal in ranchAnimals.filter(a => a.kind === '棚')" :key="animal.value" :value="animal.value">{{ animal.label }}</option></select></label></template>
+                  <label class="text-sm">巡查间隔（分钟）<input v-model.number="automation.automation.ranch_check_minutes" type="number" min="1" max="60" class="mt-1 w-full rounded border bg-transparent p-2"></label>
+                  <label class="text-sm">牧草补充阈值（%）<input v-model.number="automation.automation.ranch_grass_threshold_percent" type="number" min="1" max="100" class="mt-1 w-full rounded border bg-transparent p-2"></label>
+                </div>
+              </section>
+              <section v-if="showMuge" class="border border-gray-100 rounded-lg p-4 space-y-3 dark:border-gray-700"><h3 class="text-sm font-medium">牧歌初启</h3><div class="grid gap-3 sm:grid-cols-2"><BaseSwitch v-for="item in mugeSettings" :key="item.key" v-model="automation.automation[item.key]" :label="item.label" /></div></section>
               <section class="border border-gray-100 rounded-lg bg-gray-50/70 p-4 space-y-3 dark:border-gray-700 dark:bg-gray-900/25">
                 <div class="text-sm text-gray-700 font-medium dark:text-gray-300">
                   日常任务

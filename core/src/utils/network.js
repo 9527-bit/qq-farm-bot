@@ -18,6 +18,9 @@ const { createGatewayToken } = require('./gateway-token');
 const { evaluateGatewayHealth, getOldestPendingAgeMs } = require('./gateway-health');
 const { createRequestGate, getRequestPriority } = require('./request-priority');
 const { TsdkRuntime } = require('./tsdk-runtime');
+const { types: adoptionTypes } = require('./adoption-proto');
+const { runExclusiveAutomationTask } = require('../services/automation-lock');
+const { assertOperationActive, noteOperationSent } = require('./operation-context');
 
 const CLIENT_VERSION_RE = /^\d+(?:\.\d+){2,4}_\d{8}$/;
 
@@ -133,6 +136,7 @@ function buildTsdkDeviceInfo(deviceProtocol) {
 }
 
 function createTsdkRuntime(deviceProtocol) {
+    if (isSceneLoginVersion()) return new (require('./tsdk-adoption-runtime').TsdkRuntime)({ accountId: process.env.FARM_ACCOUNT_ID, platform: CONFIG.platform });
     return new TsdkRuntime({
         accountId: process.env.FARM_ACCOUNT_ID,
         gameId: CONFIG.tsdkGameId,
@@ -205,7 +209,48 @@ const userState = {
     goldBean: 0, // 金豆豆(ID:1005)
     openId: '',
     avatar: '',
+    globalSceneId: 1,
+    unlockedSceneIds: [],
 };
+
+
+const shareInfoState = new Map();
+function shareDateKey() {
+    return new Date(require('./utils').getServerTimeSec() * 1000 + 8 * 3600000).toISOString().slice(0, 10);
+}
+function applyShareInfos(infos = {}) {
+    const dateKey = shareDateKey();
+    for (const [key, info] of Object.entries(infos)) {
+        const id = /^\d+$/.test(key) ? key : require('protobufjs').util.longFromHash(key, false).toString();
+        shareInfoState.set(id, { shareCount: String(info.share_count || 0), claimed: info.is_claimed === true, dateKey });
+    }
+}
+function getDailyShareInfo(id) {
+    const dateKey = shareDateKey();
+    const info = shareInfoState.get(String(id));
+    return info?.dateKey === dateKey ? { ...info } : { shareCount: '0', claimed: false, dateKey };
+}
+function isSceneLoginVersion() {
+    const version = /^(\d+)\.(\d+)/.exec(CONFIG.clientVersion || '');
+    return !!version && (Number(version[1]) > 1 || Number(version[1]) === 1 && Number(version[2]) >= 15);
+}
+async function loginGameScene(sceneId) {
+    const socket = ws;
+    const body = adoptionTypes.PlayerSceneLoginRequest.encode({ global_scene_id: sceneId }).finish();
+    const response = await sendMsgAsync('gamepb.globalscenepb.GlobalSceneService', 'PlayerSceneLogin', body);
+    const scene = adoptionTypes.PlayerSceneLoginReply.decode(response.body);
+    const data = sceneId === 2 ? scene.big_farm_scene_ext_data : scene.farm_scene_ext_data;
+    if (ws !== socket || scene.global_scene_id !== sceneId || !data?.length) throw new Error('游戏场景登录回包不完整或连接已变化');
+    userState.globalSceneId = sceneId;
+    if (toNum(scene.server_time) > 0) syncServerTime(toNum(scene.server_time));
+    return scene;
+}
+function invalidateGameScene(reason) {
+    userState.globalSceneId = 0;
+    userState.unlockedSceneIds = [];
+    stopNetwork(reason);
+    networkEvents.emit('disconnect', { code: 0, reason });
+}
 
 function getUserState() { return userState; }
 function getWsErrorState() { return { ...wsErrorState }; }
@@ -258,21 +303,29 @@ async function encodeMsg(serviceName, methodName, bodyBytes, clientSeqValue) {
     return types.GateMessage.encode(msg).finish();
 }
 
-async function sendMsg(serviceName, methodName, bodyBytes, callback) {
+async function sendMsg(serviceName, methodName, bodyBytes, callback, options = {}) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         log('系统', '[WS] 连接未打开');
         return false;
     }
-    const seq = clientSeq;
-    clientSeq += 1;
+    assertOperationActive();
+    const socket = ws;
+    const seq = options.sequence ?? clientSeq;
+    if (options.sequence === undefined) clientSeq += 1;
     const encoded = await encodeMsg(serviceName, methodName, bodyBytes, seq);
+    assertOperationActive();
+    if (ws !== socket || socket.readyState !== WebSocket.OPEN) throw new Error('连接已变化，已取消旧请求');
+    const blocked = options.beforeSend?.();
+    if (blocked) throw blocked;
     if (callback) {
         pendingCallbacks.set(seq, callback);
         pendingStartedAt.set(seq, Date.now());
     }
     // ws.send(encoded);
     try {
-        ws.send(encoded);
+        socket.send(encoded);
+        noteOperationSent();
+        options.onSent?.();
     } catch (err) {
         if (callback) {
             pendingCallbacks.delete(seq);
@@ -285,10 +338,18 @@ async function sendMsg(serviceName, methodName, bodyBytes, callback) {
 }
 
 /** Promise 版发送 */
-async function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000, options = {}) {
+function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000, options = {}) {
+    if (timeout && typeof timeout === 'object') { options = timeout; timeout = 20000; }
+    const run = () => sendQueuedMessage(serviceName, methodName, bodyBytes, timeout, options);
+    return methodName === 'Heartbeat' || serviceName === 'gamepb.acepb.AceService'
+        ? run() : runExclusiveAutomationTask(`rpc:${methodName}`, run);
+}
+async function sendQueuedMessage(serviceName, methodName, bodyBytes, timeout, options) {
     const priority = getRequestPriority(options.priority);
+    assertOperationActive();
     const release = await requestGate.acquire(priority);
     try {
+      assertOperationActive();
       return await new Promise((resolve, reject) => {
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             reject(new Error(`连接未打开: ${methodName}`));
@@ -300,7 +361,7 @@ async function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000,
             return;
         }
 
-        const seq = clientSeq;
+        const seq = clientSeq++;
         const timeoutKey = `request_timeout_${seq}`;
         let settled = false;
 
@@ -319,7 +380,7 @@ async function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000,
             settled = true;
             if (err) reject(err);
             else resolve({ body, meta });
-        }).then((sent) => {
+        }, { ...options, sequence: seq }).then((sent) => {
             if (sent || settled) return;
             networkScheduler.clear(timeoutKey);
             settled = true;
@@ -369,7 +430,7 @@ function handleMessage(data) {
                 pendingCallbacks.delete(clientSeqVal);
                 pendingStartedAt.delete(clientSeqVal);
                 if (errorCode !== 0) {
-                    cb(new Error(`${meta.service_name}.${meta.method_name} 错误: code=${errorCode} ${meta.error_message || ''}`));
+                    cb(Object.assign(new Error(`${meta.service_name}.${meta.method_name} 错误: code=${errorCode} ${meta.error_message || ''}`), { name: 'GatewayError', code: errorCode, errorMessage: meta.error_message, serviceName: meta.service_name, methodName: meta.method_name }));
                 } else {
                     cb(null, msg.body, meta);
                 }
@@ -386,6 +447,13 @@ function handleMessage(data) {
 }
 
 function handleNotify(msg) {
+    if (msg.meta?.service_name?.includes('globalscenepb') && msg.meta?.method_name === 'GlobalSceneUnlockNotify') {
+        try {
+            const reply = adoptionTypes.GlobalSceneUnlockNotify.decode(msg.body);
+            userState.unlockedSceneIds = [...new Set([...userState.unlockedSceneIds, ...reply.unlocked_scenes.map(Number)])];
+        } catch (error) { logWarn('场景', error.message); }
+        return;
+    }
     if (!msg.body || msg.body.length === 0) return;
     try {
         const event = types.EventMessage.decode(msg.body);
@@ -636,10 +704,22 @@ function buildLoginBody(deviceProtocol) {
     })).finish());
 }
 
-async function sendLogin(onLoginSuccess, deviceProtocol) {
-    const body = buildLoginBody(deviceProtocol);
+function buildPlayerLoginBody(deviceProtocol) {
+    const isWechat = ['wx', 'wechat'].includes(CONFIG.platform);
+    return Buffer.from(adoptionTypes.PlayerLoginRequest.encode(adoptionTypes.PlayerLoginRequest.fromObject({
+        device_info: buildLoginDeviceInfo(deviceProtocol),
+        report_data: { minigame_channel: isWechat ? 'other' : 'other-qq', minigame_platid: 2 },
+        game_scene_id: 1,
+    })).finish());
+}
 
-    await sendMsg('gamepb.userpb.UserService', 'Login', body, (err, bodyBytes, _meta) => {
+async function sendLogin(onLoginSuccess, deviceProtocol) {
+    const loginSocket = ws;
+    const modern = isSceneLoginVersion();
+    const body = modern ? buildPlayerLoginBody(deviceProtocol) : buildLoginBody(deviceProtocol);
+
+    await sendMsg('gamepb.userpb.UserService', modern ? 'PlayerLogin' : 'Login', body, async (err, bodyBytes, _meta) => {
+        if (ws !== loginSocket) return;
         if (err) {
             log('登录', `失败: ${err.message}`);
             // 如果是验证失败，直接退出进程
@@ -650,7 +730,12 @@ async function sendLogin(onLoginSuccess, deviceProtocol) {
             return;
         }
         try {
-            const reply = types.LoginReply.decode(bodyBytes);
+            const reply = (modern ? adoptionTypes.PlayerLoginReply : types.LoginReply).decode(bodyBytes);
+            if (!reply.basic || toNum(reply.basic.gid) <= 0) throw new Error('登录回包缺少有效账号身份');
+            userState.unlockedSceneIds = modern ? (reply.unlocked_scene_ids || []).map(Number) : [];
+            userState.globalSceneId = 1;
+            shareInfoState.clear();
+            applyShareInfos(reply.basic?.share_infos || {});
             applyServerVersionInfo(reply.version_info);
             if (reply.basic) {
                 clearWsErrorState();
@@ -692,9 +777,11 @@ async function sendLogin(onLoginSuccess, deviceProtocol) {
 
             startHeartbeat();
             startAceService();
-            if (onLoginSuccess) onLoginSuccess();
+            if (modern) await loginGameScene(1);
+            if (onLoginSuccess) await onLoginSuccess();
         } catch (e) {
-            log('登录', `解码失败: ${e.message}`);
+            log('登录', `登录或场景初始化失败: ${e.message}`);
+            invalidateGameScene(e.message);
         }
     });
 }
@@ -900,7 +987,8 @@ function connect(code, onLoginSuccess) {
     });
 
     socket.on('close', (code, _reason) => {
-        if (ws === socket) ws = null;
+        if (ws !== socket) return;
+        ws = null;
         logWarn('系统', `[WS] 连接关闭 (code=${code})`);
         networkEvents.emit('disconnect', { code });
         cleanup();
@@ -922,6 +1010,9 @@ function connect(code, onLoginSuccess) {
 }
 
 function cleanup(reason = '网络清理') {
+    userState.unlockedSceneIds = [];
+    userState.globalSceneId = 0;
+    shareInfoState.clear();
     stopSecurityRuntime(reason);
     rejectAllPendingRequests(`请求已中断: ${reason}`);
     networkScheduler.clearAll();
@@ -957,6 +1048,7 @@ function getAceStatus() {
 
 module.exports = {
     connect, reconnect, cleanup, stopNetwork, getWs, isConnected,
+    loginGameScene, invalidateGameScene, applyShareInfos, getDailyShareInfo, isSceneLoginVersion,
     sendMsg, sendMsgAsync,
     getUserState,
     getWsErrorState,
@@ -964,6 +1056,7 @@ module.exports = {
     getAceStatus,
     buildLoginDeviceInfo,
     buildLoginBody,
+    buildPlayerLoginBody,
     buildHeartbeatBody,
     buildWebSocketHeaders,
     buildTsdkDeviceInfo,

@@ -30,6 +30,7 @@ export const menuRoutes: MenuItem[] = [
     icon: 'i-carbon-user-multiple',
     component: () => import('@/views/Friends.vue'),
   },
+  { path: 'ranch', name: 'ranch', label: '牧场', icon: 'i-carbon-sprout', component: () => import('@/views/Ranch.vue') },
   {
     path: 'pet',
     name: 'pet',

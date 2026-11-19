@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const { DEFAULT_CLIENT_VERSION, resolveClientVersion } = require('../src/config/config');
+const { CONFIG, DEFAULT_CLIENT_VERSION, resolveClientVersion } = require('../src/config/config');
 const { loadProto } = require('../src/utils/proto');
 const { buildHeartbeatBody, buildLoginBody } = require('../src/utils/network');
 
@@ -13,15 +13,17 @@ const OFFICIAL_HEARTBEAT_BODY = '08f9d6ffc5041211312e31342e302e345f3230323630393
 test.before(async () => loadProto());
 
 test('default client protocol is upgraded without replacing custom versions', () => {
-  assert.equal(DEFAULT_CLIENT_VERSION, '1.14.0.4_20260911');
+  assert.equal(DEFAULT_CLIENT_VERSION, '1.17.0.4_20261117');
   assert.equal(resolveClientVersion('1.13.0.5_20260723'), DEFAULT_CLIENT_VERSION);
   assert.equal(resolveClientVersion('1.13.2.9_20260723'), DEFAULT_CLIENT_VERSION);
-  assert.equal(resolveClientVersion('1.15.0.1_20261001'), '1.15.0.1_20261001');
+  assert.equal(resolveClientVersion('1.15.0.1_20261001'), DEFAULT_CLIENT_VERSION);
+  assert.equal(resolveClientVersion('1.18.0.1_20261201'), '1.18.0.1_20261201');
   assert.equal(resolveClientVersion('custom-build'), 'custom-build');
 });
 
 test('default login request reproduces the 1.14.0.4 official capture', () => {
-  assert.equal(buildLoginBody().toString('hex'), OFFICIAL_LOGIN_BODY);
+  const saved = CONFIG.clientVersion;
+  try { CONFIG.clientVersion = '1.14.0.4_20260911'; assert.equal(buildLoginBody().toString('hex'), OFFICIAL_LOGIN_BODY); } finally { CONFIG.clientVersion = saved; }
 });
 
 test('custom device protocol keeps its explicit fingerprint fields', () => {
@@ -36,5 +38,6 @@ test('custom device protocol keeps its explicit fingerprint fields', () => {
 });
 
 test('heartbeat request reproduces the official capture', () => {
-  assert.equal(buildHeartbeatBody(1220537209).toString('hex'), OFFICIAL_HEARTBEAT_BODY);
+  const saved = CONFIG.clientVersion;
+  try { CONFIG.clientVersion = '1.14.0.4_20260911'; assert.equal(buildHeartbeatBody(1220537209).toString('hex'), OFFICIAL_HEARTBEAT_BODY); } finally { CONFIG.clientVersion = saved; }
 });

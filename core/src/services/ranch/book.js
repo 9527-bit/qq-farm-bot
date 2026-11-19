@@ -1,0 +1,83 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const MCMutantInfo_json_1 = __importDefault(require("../../gameConfig/ranch/MCMutantInfo.json"));
+const MCRanchWeightTier_json_1 = __importDefault(require("../../gameConfig/ranch/MCRanchWeightTier.json"));
+const Illustrated_json_1 = __importDefault(require("../../gameConfig/ranch/Illustrated.json"));
+const { rpc } = require('./transport');
+const { animalMap, mutationMap, itemDto, quantity, sumItems, signature, error } = require('./model');
+const illustratedSort = new Map(Illustrated_json_1.default.map(row => [row.param, row.sort]));
+const giantProducts = new Map();
+for (const [animalId, mutation] of mutationMap) {
+    giantProducts.set(animalMap.get(animalId).product_item.id, mutation.giant_product_item);
+}
+async function readNormalBook() {
+    const normal = await rpc('book', { type: 101 });
+    if (normal.type !== 101)
+        throw error('RANCH_RESPONSE_MISMATCH', '牧场图鉴类型不匹配');
+    return normal;
+}
+function weightLevelDto(level) {
+    return { id: level.id, score: quantity(level.score_condition), claimed: level.claimed,
+        canClaim: level.can_claim && !level.claimed, rewards: level.rewards.map(itemDto) };
+}
+async function getBook() {
+    const normal = await readNormalBook();
+    const weight = await rpc('weightBook');
+    return {
+        normal: { level: normal.current_level, progress: normal.total_progress, nextProgress: normal.next_level_progress,
+            canClaim: normal.has_claimable_reward, rewards: normal.total_rewards.map(itemDto) },
+        giant: { score: quantity(weight.total_score), calculationMode: weight.calc_mode,
+            levels: weight.levels.map(weightLevelDto) },
+        animals: [...normal.list].sort((a, b) => (illustratedSort.get(a.fruit_id) ?? a.fruit_id) - (illustratedSort.get(b.fruit_id) ?? b.fruit_id)).map((entry) => {
+            const item = itemDto({ id: entry.fruit_id, count: 1 });
+            const giantId = giantProducts.get(item.id);
+            const giantItem = giantId ? itemDto({ id: giantId, count: 1 }) : null;
+            if (giantItem && giantItem.image === item.image)
+                giantItem.image = '';
+            return {
+                ...item, rarity: entry.rarity, layer: entry.layer, unlocked: entry.unlocked, progress: entry.progress,
+                giantItem,
+                giant: entry.giant ? { unlocked: entry.giant.unlocked, tier: entry.giant.tier,
+                    tierName: MCRanchWeightTier_json_1.default.find(row => row.tier === entry.giant.tier)?.tier_name || '',
+                    // 实机确认：best_weight_x10=1124 在官方界面显示为 11.24 kg。
+                    weightKg: entry.giant.best_weight_x10 / 100, minWeightKg: entry.giant.lo_x10 / 100, maxWeightKg: entry.giant.hi_x10 / 100,
+                    harvestCount: quantity(entry.giant.harvest_count), isNew: entry.giant.is_new } : null,
+            };
+        }),
+        mutations: MCMutantInfo_json_1.default.map(row => ({ type: row.mutation_type, name: row.name, description: row.tips, baseProbabilityPercent: row.pro })),
+    };
+}
+async function prepareBookClaim(kind) {
+    if (kind === 'normal') {
+        const normal = await readNormalBook();
+        return { kind, ids: [], count: Number(normal.has_claimable_reward), rewards: normal.total_rewards.map(itemDto) };
+    }
+    if (kind !== 'giant')
+        throw error('INVALID_ARGUMENT', '请选择普通或巨大图鉴');
+    const weight = await rpc('weightBook');
+    const levels = weight.levels.map(weightLevelDto).filter(level => level.canClaim);
+    return { kind, ids: levels.map(level => level.id), count: levels.length,
+        rewards: sumItems(levels.flatMap(level => level.rewards)), levels };
+}
+async function claimBook(plan) {
+    const rewards = [];
+    if (plan.kind === 'normal') {
+        const reply = await rpc('claimBook', { type: 101 }, true);
+        if (!reply.claimed_level_ids.length || signature(reply.total_rewards) !== signature(plan.rewards))
+            throw error('RANCH_RESULT_UNKNOWN', '图鉴奖励回包未能确认，请刷新核对');
+        rewards.push(...reply.total_rewards);
+    }
+    else {
+        for (const level of plan.levels) {
+            const reply = await rpc('claimWeight', { id: level.id }, true);
+            if (!reply.claimed_ids.includes(level.id) || signature(reply.rewards) !== signature(level.rewards))
+                throw error('RANCH_RESULT_UNKNOWN', '巨大图鉴奖励回包未能确认，请刷新核对');
+            rewards.push(...reply.rewards);
+        }
+    }
+    return rewards;
+}
+module.exports = { getBook, prepareBookClaim, claimBook };

@@ -49,6 +49,7 @@
     "assets": [
       "../web/dist/**/*",
       "src/gameConfig/**/*",
+      "src/activity-data/**/*",
       "src/proto/**/*",
       "src/utils/*.wasm",
       "src/__bolt_manifest.json",

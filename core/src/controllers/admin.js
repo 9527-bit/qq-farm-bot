@@ -1,3 +1,4 @@
+const { registerAdminAdoptionRoutes } = require('./admin-adoption-routes');
 /**
  * Admin Panel Controller
  * QQ Farm Automation Bot - 管理面板服务器
@@ -450,6 +451,7 @@ function startAdminServer(dataProvider) {
   });
   registerLogoutRoute(app, invalidateAdminSessionAndDisconnect);
 
+  registerAdminAdoptionRoutes({ app, provider, getAccountIdFromRequest, canAccessAccount, sendProviderError });
   registerAdminFarmResourceRoutes({
     app,
     provider,

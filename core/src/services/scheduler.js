@@ -1,3 +1,5 @@
+const { runWithOperationContext } = require('../utils/operation-context');
+const { runExclusiveAutomationTask, detachedAutomation } = require('./automation-lock');
 const { createModuleLogger } = require('./logger');
 const schedulerLogger = createModuleLogger('scheduler');
 
@@ -144,7 +146,10 @@ function createScheduler(namespace = 'default') {
       current.lastRunAt = Date.now();
       current.runCount += 1;
       try {
-        await callback();
+        await runWithOperationContext(undefined, () => detachedAutomation(() => {
+          const run = () => timers.get(key) === record ? callback() : undefined;
+          return /^(network|ace-|worker_manager|admin|security)/.test(ns) || ['status_sync', 'kickout_stop', 'ws_error_cleanup'].includes(key) ? run() : runExclusiveAutomationTask(`${ns}:${key}`, run);
+        }));
       } catch (err) {
         schedulerLogger.warn(`[${ns}] timeout 任务执行失败: ${key}`, {
           module: 'scheduler',
@@ -201,7 +206,10 @@ function createScheduler(namespace = 'default') {
       current.lastRunAt = Date.now();
       current.runCount += 1;
       try {
-        await callback();
+        await runWithOperationContext(undefined, () => detachedAutomation(() => {
+          const run = () => timers.get(key) === record ? callback() : undefined;
+          return /^(network|ace-|worker_manager|admin|security)/.test(ns) || ['status_sync', 'kickout_stop', 'ws_error_cleanup'].includes(key) ? run() : runExclusiveAutomationTask(`${ns}:${key}`, run);
+        }));
       } catch (err) {
         schedulerLogger.warn(`[${ns}] interval 任务执行失败: ${key}`, {
           module: 'scheduler',

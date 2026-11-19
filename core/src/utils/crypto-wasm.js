@@ -1,9 +1,10 @@
 const { TsdkRuntime } = require('./tsdk-runtime');
+const { TsdkRuntime: AdoptionRuntime } = require('./tsdk-adoption-runtime');
 
 let defaultRuntime = null;
 
 function setRuntime(runtime) {
-    if (runtime != null && !(runtime instanceof TsdkRuntime)) {
+    if (runtime != null && !(runtime instanceof TsdkRuntime) && !(runtime instanceof AdoptionRuntime)) {
         throw new TypeError('crypto-wasm runtime must be a TsdkRuntime');
     }
     defaultRuntime = runtime;

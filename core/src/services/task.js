@@ -451,7 +451,7 @@ function initTaskSystem() {
   cleanupTaskSystem();
   networkEvents.on('taskInfoNotify', onTaskInfoNotify);
   taskScheduler.setTimeoutTask('task_init_bootstrap', 15000, () => {
-    checkAndClaimTasks();
+    return checkAndClaimTasks();
   });
 }
 

@@ -1,0 +1,2033 @@
+{
+  "repository": "liyangpengs/qq-farm-bot",
+  "commit": "bd93d3f178413c16aebf8b34d1d85a6b2589f2c3",
+  "evidence": "upstream-source; not independently recovered official encoder or live capture",
+  "files": [
+    {
+      "source": "core/src/services/ranch/automation.ts",
+      "destination": "core/src/services/ranch/automation.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/automation.js",
+      "upstreamBuildSha256": "a7aafc508e96ea5abe5a38b0ecfae82d3100e1f048c35e203283d49975b0710d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/automation.ts",
+      "localSha256": "ec74bb8bd78134e634d2d881792b3231ea7f00217533225a809bc62e24e32278"
+    },
+    {
+      "source": "core/src/services/ranch/daily-share.ts",
+      "destination": "core/src/services/ranch/daily-share.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/daily-share.js",
+      "upstreamBuildSha256": "c248a86780d5a4042cc3a6c3123896ae2a5c17958be6ff05b8acf8e95fe244d0",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/daily-share.ts",
+      "localSha256": "df31e7981e7c52e510a4998eeecb7c0da7ec545a6f27f5ed1ebe3b3f39843c0d"
+    },
+    {
+      "source": "core/src/services/ranch/friend-roster.ts",
+      "destination": "core/src/services/ranch/friend-roster.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/friend-roster.js",
+      "upstreamBuildSha256": "760f77197b3603df72a2fc7568bf79697110c3358ec1185251fcf4dcfb5d489d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/friend-roster.ts",
+      "localSha256": "d294d7bb0c1e0b7a505931cf710546a18e0c12f095ba9f96a737fef7e3a9feed"
+    },
+    {
+      "source": "core/src/services/ranch/actions.ts",
+      "destination": "core/src/services/ranch/actions.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/actions.js",
+      "upstreamBuildSha256": "58ba2a64fc477ac6b61125c72c22d08b67de924266eda1f1d2757318ce12bea1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/actions.ts",
+      "localSha256": "f493b9870163096d009423198e7b681f47015590dca4c7330328ad2db944f2d2"
+    },
+    {
+      "source": "core/src/services/ranch/operation-state.ts",
+      "destination": "core/src/services/ranch/operation-state.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/operation-state.js",
+      "upstreamBuildSha256": "f5982c5adac1c8614d9274bd45a068715f35d5248ffcc40a5b6a67874e5eac02",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/operation-state.ts",
+      "localSha256": "d4f90814e19a230e7751ac865fbb41f131b06d5ecbee6432eef61e2da00c8e50"
+    },
+    {
+      "source": "core/src/services/ranch/transport.ts",
+      "destination": "core/src/services/ranch/transport.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/transport.js",
+      "upstreamBuildSha256": "417213bbaa34de919efcbf9fc043b522c665d4c8919d4a7c122f80b201f9f21b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/transport.ts",
+      "localSha256": "44aa0b0c4a26ae06188ecd31aac19e3c2acba7fc44c0d65c58dd1e745200af54"
+    },
+    {
+      "source": "core/src/services/ranch/index.ts",
+      "destination": "core/src/services/ranch/index.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/index.js",
+      "upstreamBuildSha256": "6fff0412ed6757d3a5a04fd3a09b470ab6f0af8145a51a4ff98f91a18e109233",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/index.ts",
+      "localSha256": "a5083e0571a3b2e17988c42fee274e2b177d3b81eae2ac9370d8880290a5b8ea"
+    },
+    {
+      "source": "core/src/services/ranch/friends.ts",
+      "destination": "core/src/services/ranch/friends.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/friends.js",
+      "upstreamBuildSha256": "2af9e629f8f61fb7fd9cf291af51a4ed539bbe742395144683d3e59d0bbde729",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/friends.ts",
+      "localSha256": "52a864e48a09c630fd4698c8fe820eedf92411c4f81cc6ad2e45fadf472e6a1d"
+    },
+    {
+      "source": "core/src/services/ranch/contract.ts",
+      "destination": "core/src/services/ranch/contract.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/contract.js",
+      "upstreamBuildSha256": "53d25473be139881ca339d58b47149c049b9dd0e39d1be2fd776878bfbfcb9ca",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/contract.ts",
+      "localSha256": "9e99e8ab2d017140857af5dff7c138e685f2bedf3b9523e2493193da356b6d72"
+    },
+    {
+      "source": "core/src/services/ranch/daily.ts",
+      "destination": "core/src/services/ranch/daily.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/daily.js",
+      "upstreamBuildSha256": "e62c229202c31adeca4b6f421ac805b41e7216fe0f57b700b0b336ceaecdd380",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/daily.ts",
+      "localSha256": "755f2e63cb5065d14b3c9af37b16b81028520b99548c24c298149c4a9c8825f1"
+    },
+    {
+      "source": "core/src/services/ranch/state.ts",
+      "destination": "core/src/services/ranch/state.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/state.js",
+      "upstreamBuildSha256": "ea7f26c457e9930fba68cc18c1c0becdf0ee91243013e08a2dc9d2c22418c5b3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/state.ts",
+      "localSha256": "17e80374b69b45ef3c096af47a00a9bc231c35e120f5cdc5371fc876bd4d5984"
+    },
+    {
+      "source": "core/src/services/ranch/context.ts",
+      "destination": "core/src/services/ranch/context.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/context.js",
+      "upstreamBuildSha256": "52de56b3cd8035758c9e43f85097c41577bf951a994859e3282f2204ab0635be",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/context.ts",
+      "localSha256": "e1d22ac92db6798609e2b87465dcd2b9cffdfcd2ecfdff16c4f6f89db0aa0181"
+    },
+    {
+      "source": "core/src/services/ranch/model.ts",
+      "destination": "core/src/services/ranch/model.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/model.js",
+      "upstreamBuildSha256": "1a0171eb240e0fbc656952214b22de4b071814e487ac8dc08229c1dafc683855",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/model.ts",
+      "localSha256": "a2cde038a9f379f066b9ba04cdac2373ecc7e9d9e567f52283f3aacdf1d2f92e"
+    },
+    {
+      "source": "core/src/services/ranch/book.ts",
+      "destination": "core/src/services/ranch/book.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/book.js",
+      "upstreamBuildSha256": "47d8ff7779791d0655cf84407f570264ca504e70522fa7bb1a55c092076bd917",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/book.ts",
+      "localSha256": "ec448505f516830cf07bc9cdca4690a89134e00a18a124880418047fb3fa10e0"
+    },
+    {
+      "source": "core/src/services/ranch/daily-benefit.ts",
+      "destination": "core/src/services/ranch/daily-benefit.js",
+      "upstreamBuildArtifact": "core/dist/services/ranch/daily-benefit.js",
+      "upstreamBuildSha256": "b192b61c6cd6fd29044b85f163cc633089b271bc4f4790b2da5bb725d0667a32",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/ranch/daily-benefit.ts",
+      "localSha256": "379c5358123c4f647e43936036c63208310e146f2086ca85ec5a69166532a834"
+    },
+    {
+      "source": "core/src/config/ranch-animals.ts",
+      "destination": "core/src/config/ranch-animals.js",
+      "upstreamBuildArtifact": "core/dist/config/ranch-animals.js",
+      "upstreamBuildSha256": "358273bc1426f7fd95718243432fbed060afc7c2fb794d0e4e6adfcc4ca78691",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/config/ranch-animals.ts",
+      "localSha256": "358273bc1426f7fd95718243432fbed060afc7c2fb794d0e4e6adfcc4ca78691"
+    },
+    {
+      "source": "core/src/config/ranch-automation.ts",
+      "destination": "core/src/config/ranch-automation.js",
+      "upstreamBuildArtifact": "core/dist/config/ranch-automation.js",
+      "upstreamBuildSha256": "2f8bf3b1627f68f9e875a7c1ebff136cb3f24ab0bf4319ce432c25f23147dcd0",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/config/ranch-automation.ts",
+      "localSha256": "0369b2b48e86c5ba502846a178b625d91d01d06aa6436f20d0787edbb9d16a73"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/BigFarmLevel.json",
+      "destination": "core/src/gameConfig/ranch/BigFarmLevel.json",
+      "sha256": "5f430037311e504416317022d7ad2c5b5fa0ae0e0c5a60e5888083558334f563",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/BigFarmLevel.json",
+      "localSha256": "5f430037311e504416317022d7ad2c5b5fa0ae0e0c5a60e5888083558334f563"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCFacilityConfig.json",
+      "destination": "core/src/gameConfig/ranch/MCFacilityConfig.json",
+      "sha256": "c1cc73177f0590cace8f3fced77f6b8691a70b295ba5d073b990d096ba08d9b2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCFacilityConfig.json",
+      "localSha256": "c1cc73177f0590cace8f3fced77f6b8691a70b295ba5d073b990d096ba08d9b2"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCAnimalMutation.json",
+      "destination": "core/src/gameConfig/ranch/MCAnimalMutation.json",
+      "sha256": "749781438dc3ecec871ebd7b1a8b6b591788bb8fb8b994d4848aaf1afd1f962d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCAnimalMutation.json",
+      "localSha256": "749781438dc3ecec871ebd7b1a8b6b591788bb8fb8b994d4848aaf1afd1f962d"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCAnimalConfig.json",
+      "destination": "core/src/gameConfig/ranch/MCAnimalConfig.json",
+      "sha256": "6ef6dfc6a49ce12f7b068f47cadb0b7072239b1e504a23eaf1b5e34d25f9e27b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCAnimalConfig.json",
+      "localSha256": "6ef6dfc6a49ce12f7b068f47cadb0b7072239b1e504a23eaf1b5e34d25f9e27b"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCRanchWeightTier.json",
+      "destination": "core/src/gameConfig/ranch/MCRanchWeightTier.json",
+      "sha256": "20c05e60ca77bb0ce4156aaa51ef3f3245ffb751c2fde5187b4ca0f88fdc0843",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCRanchWeightTier.json",
+      "localSha256": "20c05e60ca77bb0ce4156aaa51ef3f3245ffb751c2fde5187b4ca0f88fdc0843"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCRanchFacilityConfig.json",
+      "destination": "core/src/gameConfig/ranch/MCRanchFacilityConfig.json",
+      "sha256": "9db5028eb146512fca606fa03c2e920f4cd230dab6ac1af20d309879df27c8bf",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCRanchFacilityConfig.json",
+      "localSha256": "9db5028eb146512fca606fa03c2e920f4cd230dab6ac1af20d309879df27c8bf"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCItemInfo.json",
+      "destination": "core/src/gameConfig/ranch/MCItemInfo.json",
+      "sha256": "40251f70806f80144b6b5ca33b4b7aa85b2bf40fc4596b496c9c78693615db93",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCItemInfo.json",
+      "localSha256": "40251f70806f80144b6b5ca33b4b7aa85b2bf40fc4596b496c9c78693615db93"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCCanConfig.json",
+      "destination": "core/src/gameConfig/ranch/MCCanConfig.json",
+      "sha256": "d65ab38900d8d32f133ec786349541717b083b26910d45f821c1cc50ba6b9d45",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCCanConfig.json",
+      "localSha256": "d65ab38900d8d32f133ec786349541717b083b26910d45f821c1cc50ba6b9d45"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCTask.json",
+      "destination": "core/src/gameConfig/ranch/MCTask.json",
+      "sha256": "b129d36335beaf97839757b442369b264e8df0a88653716bbfa137aeea9248ec",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCTask.json",
+      "localSha256": "b129d36335beaf97839757b442369b264e8df0a88653716bbfa137aeea9248ec"
+    },
+    {
+      "source": "core/src/gameConfig/ranch/MCMutantInfo.json",
+      "destination": "core/src/gameConfig/ranch/MCMutantInfo.json",
+      "sha256": "c0a2cbd92806e6db24b54c1810ba00937da69acce8ae830e253321a976a7557f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ranch/MCMutantInfo.json",
+      "localSha256": "c0a2cbd92806e6db24b54c1810ba00937da69acce8ae830e253321a976a7557f"
+    },
+    {
+      "source": "core/src/gameConfig/Illustrated.json",
+      "destination": "core/src/gameConfig/ranch/Illustrated.json",
+      "sha256": "c95e72dfe2e87869d6c0127edc10ef1520a845937e2b68a5d5cc707ebbad50db",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/Illustrated.json",
+      "localSha256": "c95e72dfe2e87869d6c0127edc10ef1520a845937e2b68a5d5cc707ebbad50db"
+    },
+    {
+      "source": "core/src/gameConfig/Goods.json",
+      "destination": "core/src/gameConfig/ranch/Goods.json",
+      "sha256": "96e7eb622a3b0c44856bcb72ce427bc4df2f26418c8605274bbd8f05818e7bf2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/Goods.json",
+      "localSha256": "96e7eb622a3b0c44856bcb72ce427bc4df2f26418c8605274bbd8f05818e7bf2"
+    },
+    {
+      "source": "core/src/gameConfig/ItemInfo.json",
+      "destination": "core/src/gameConfig/ranch/ItemInfo.json",
+      "sha256": "b69d10841b69a5b5cb7e94948d950319dce6038b10079982ac7365845006a659",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/ItemInfo.json",
+      "localSha256": "b69d10841b69a5b5cb7e94948d950319dce6038b10079982ac7365845006a659"
+    },
+    {
+      "source": "core/src/proto/autumn-activities.proto",
+      "destination": "core/src/proto/adoption/autumn-activities.proto",
+      "sha256": "4459b7a1ff8228d0cacb1394f6be41e62b5bdf669a2d07c3b05161155dda1675",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/autumn-activities.proto",
+      "localSha256": "4459b7a1ff8228d0cacb1394f6be41e62b5bdf669a2d07c3b05161155dda1675"
+    },
+    {
+      "source": "core/src/proto/taskpb.proto",
+      "destination": "core/src/proto/adoption/taskpb.proto",
+      "sha256": "837e5a5473d855792dee1e0020d85b8c3f525d8e5ce6515461c0b436d7da4bb2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/taskpb.proto",
+      "localSha256": "837e5a5473d855792dee1e0020d85b8c3f525d8e5ce6515461c0b436d7da4bb2"
+    },
+    {
+      "source": "core/src/proto/sharepb.proto",
+      "destination": "core/src/proto/adoption/sharepb.proto",
+      "sha256": "f16a3becb10c616ab55dd44a85586cf472a075253b7056df4bcfad8cc355c825",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/sharepb.proto",
+      "localSha256": "f16a3becb10c616ab55dd44a85586cf472a075253b7056df4bcfad8cc355c825"
+    },
+    {
+      "source": "core/src/proto/solartermspb.proto",
+      "destination": "core/src/proto/adoption/solartermspb.proto",
+      "sha256": "2e9ef1742370a680309a44fbe14255ea58ebd3811794563fcd2bb15cb4b45670",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/solartermspb.proto",
+      "localSha256": "2e9ef1742370a680309a44fbe14255ea58ebd3811794563fcd2bb15cb4b45670"
+    },
+    {
+      "source": "core/src/proto/skinpb.proto",
+      "destination": "core/src/proto/adoption/skinpb.proto",
+      "sha256": "ebf5c848861f8cc43d4e3ef2297629bcc49a65ba2fc1b9a3f32aa5bcba5bfe4b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/skinpb.proto",
+      "localSha256": "ebf5c848861f8cc43d4e3ef2297629bcc49a65ba2fc1b9a3f32aa5bcba5bfe4b"
+    },
+    {
+      "source": "core/src/proto/dogpb.proto",
+      "destination": "core/src/proto/adoption/dogpb.proto",
+      "sha256": "aec050ae13807b1bec8487d694453984a3bc67d89ffb717675be51510999298c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/dogpb.proto",
+      "localSha256": "aec050ae13807b1bec8487d694453984a3bc67d89ffb717675be51510999298c"
+    },
+    {
+      "source": "core/src/proto/illustratedpb.proto",
+      "destination": "core/src/proto/adoption/illustratedpb.proto",
+      "sha256": "bcc7c85f77517c8c50a97c8561ae407c86eb3a7bf6dc945987e1f3b74c50b8e9",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/illustratedpb.proto",
+      "localSha256": "bcc7c85f77517c8c50a97c8561ae407c86eb3a7bf6dc945987e1f3b74c50b8e9"
+    },
+    {
+      "source": "core/src/proto/achievepb.proto",
+      "destination": "core/src/proto/adoption/achievepb.proto",
+      "sha256": "1e39666db635837b9415ea83e82b5b22a49ee69228403372ad21cb5916850ef8",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/achievepb.proto",
+      "localSha256": "1e39666db635837b9415ea83e82b5b22a49ee69228403372ad21cb5916850ef8"
+    },
+    {
+      "source": "core/src/proto/avatarframepb.proto",
+      "destination": "core/src/proto/adoption/avatarframepb.proto",
+      "sha256": "d55b152a7cb10a8185a70dda2d5b6ea44c0ea39b3caaddc373d4cef655505ece",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/avatarframepb.proto",
+      "localSha256": "d55b152a7cb10a8185a70dda2d5b6ea44c0ea39b3caaddc373d4cef655505ece"
+    },
+    {
+      "source": "core/src/proto/marqueepb.proto",
+      "destination": "core/src/proto/adoption/marqueepb.proto",
+      "sha256": "b6a15fcde7cf0aec3a477bca1e07f18f4d8aed2f76d5a467d92b6de3dc92e5d2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/marqueepb.proto",
+      "localSha256": "b6a15fcde7cf0aec3a477bca1e07f18f4d8aed2f76d5a467d92b6de3dc92e5d2"
+    },
+    {
+      "source": "core/src/proto/guidepb.proto",
+      "destination": "core/src/proto/adoption/guidepb.proto",
+      "sha256": "22888cf0b790ea7e93b8cd077460dde7c0f12f3215b991bf05893c17d5edf1a3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/guidepb.proto",
+      "localSha256": "22888cf0b790ea7e93b8cd077460dde7c0f12f3215b991bf05893c17d5edf1a3"
+    },
+    {
+      "source": "core/src/proto/randomdroppb.proto",
+      "destination": "core/src/proto/adoption/randomdroppb.proto",
+      "sha256": "8174fc05c6e5a23e29d42db9d3716ef37af3e944bcc79df0262a77ddf60de24d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/randomdroppb.proto",
+      "localSha256": "8174fc05c6e5a23e29d42db9d3716ef37af3e944bcc79df0262a77ddf60de24d"
+    },
+    {
+      "source": "core/src/proto/collectionpb.proto",
+      "destination": "core/src/proto/adoption/collectionpb.proto",
+      "sha256": "b17ee69b8b747c7876a229d815fc8f3488eef1d89d7c1ba3f53b1ef702598ca6",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/collectionpb.proto",
+      "localSha256": "b17ee69b8b747c7876a229d815fc8f3488eef1d89d7c1ba3f53b1ef702598ca6"
+    },
+    {
+      "source": "core/src/proto/careerpb.proto",
+      "destination": "core/src/proto/adoption/careerpb.proto",
+      "sha256": "b1e10f0893e18e668e387e892cc8bea443ca43f2d4d85a48005ef11624b2a539",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/careerpb.proto",
+      "localSha256": "b1e10f0893e18e668e387e892cc8bea443ca43f2d4d85a48005ef11624b2a539"
+    },
+    {
+      "source": "core/src/proto/milk-tea.proto",
+      "destination": "core/src/proto/adoption/milk-tea.proto",
+      "sha256": "fef2e72f26215f03e59a3112a000bc9b00d64b3a3de1e608474aefc82db58a05",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/milk-tea.proto",
+      "localSha256": "fef2e72f26215f03e59a3112a000bc9b00d64b3a3de1e608474aefc82db58a05"
+    },
+    {
+      "source": "core/src/proto/mysteryshoppb.proto",
+      "destination": "core/src/proto/adoption/mysteryshoppb.proto",
+      "sha256": "66f42cb7e9bf778a166787c264cd91c2e28537306b5d76c9e865107b8a002739",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/mysteryshoppb.proto",
+      "localSha256": "66f42cb7e9bf778a166787c264cd91c2e28537306b5d76c9e865107b8a002739"
+    },
+    {
+      "source": "core/src/proto/uicproxypb.proto",
+      "destination": "core/src/proto/adoption/uicproxypb.proto",
+      "sha256": "90f49ad89d4b876d1897811651235b607a52336cb9b59295d8e499e993612d77",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/uicproxypb.proto",
+      "localSha256": "90f49ad89d4b876d1897811651235b607a52336cb9b59295d8e499e993612d77"
+    },
+    {
+      "source": "core/src/proto/player-login.proto",
+      "destination": "core/src/proto/adoption/player-login.proto",
+      "sha256": "b15bff2dc74d599efa3097b8e35adc7ae30dec4bcc6396026c2cb2bb4192c977",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/player-login.proto",
+      "localSha256": "b15bff2dc74d599efa3097b8e35adc7ae30dec4bcc6396026c2cb2bb4192c977"
+    },
+    {
+      "source": "core/src/proto/pet-diary.proto",
+      "destination": "core/src/proto/adoption/pet-diary.proto",
+      "sha256": "4c6c250846707240a604ce953aa06b02e5893998fa4f22775f17e303faa78f3d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/pet-diary.proto",
+      "localSha256": "4c6c250846707240a604ce953aa06b02e5893998fa4f22775f17e303faa78f3d"
+    },
+    {
+      "source": "core/src/proto/homesteadpb.proto",
+      "destination": "core/src/proto/adoption/homesteadpb.proto",
+      "sha256": "c255e945097a5288d69e568644740a94917b6a6b92066df8d456c92acd1363f9",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/homesteadpb.proto",
+      "localSha256": "c255e945097a5288d69e568644740a94917b6a6b92066df8d456c92acd1363f9"
+    },
+    {
+      "source": "core/src/proto/seasonpb.proto",
+      "destination": "core/src/proto/adoption/seasonpb.proto",
+      "sha256": "2fe6b7c0705a9926cf540d71866d9e3812be46d1dd95c0bb396e49b67e8d50d1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/seasonpb.proto",
+      "localSha256": "2fe6b7c0705a9926cf540d71866d9e3812be46d1dd95c0bb396e49b67e8d50d1"
+    },
+    {
+      "source": "core/src/proto/rechargebonuspb.proto",
+      "destination": "core/src/proto/adoption/rechargebonuspb.proto",
+      "sha256": "0a3d4b1a74316d84f36399adeb7f89efd219a5c6256d96421f07e94eaf61c341",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/rechargebonuspb.proto",
+      "localSha256": "0a3d4b1a74316d84f36399adeb7f89efd219a5c6256d96421f07e94eaf61c341"
+    },
+    {
+      "source": "core/src/proto/animalpb.proto",
+      "destination": "core/src/proto/adoption/animalpb.proto",
+      "sha256": "7e9a7dcd4a899a2bb104875819b2761561add2bbd3e035e9c1e149b33be07d6f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/animalpb.proto",
+      "localSha256": "7e9a7dcd4a899a2bb104875819b2761561add2bbd3e035e9c1e149b33be07d6f"
+    },
+    {
+      "source": "core/src/proto/notifypb.proto",
+      "destination": "core/src/proto/adoption/notifypb.proto",
+      "sha256": "2786d692ae4d83417eabf7e11e98bcc1c3f2d8007ed1bc7e78233b2073b27d51",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/notifypb.proto",
+      "localSha256": "2786d692ae4d83417eabf7e11e98bcc1c3f2d8007ed1bc7e78233b2073b27d51"
+    },
+    {
+      "source": "core/src/proto/ranchpb.proto",
+      "destination": "core/src/proto/adoption/ranchpb.proto",
+      "sha256": "ed38435c4b9b2cac34cdddbc568a04dc0f3814e9244d950c744a6d0782ff4a72",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/ranchpb.proto",
+      "localSha256": "ed38435c4b9b2cac34cdddbc568a04dc0f3814e9244d950c744a6d0782ff4a72"
+    },
+    {
+      "source": "core/src/proto/interactpb.proto",
+      "destination": "core/src/proto/adoption/interactpb.proto",
+      "sha256": "fed69c5c3d615c2b9eb952a9aaef2965b61112cfe706e19095ff590579b019ef",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/interactpb.proto",
+      "localSha256": "fed69c5c3d615c2b9eb952a9aaef2965b61112cfe706e19095ff590579b019ef"
+    },
+    {
+      "source": "core/src/proto/bulletinboardpb.proto",
+      "destination": "core/src/proto/adoption/bulletinboardpb.proto",
+      "sha256": "926a2c200f76cfc07aafaad84e951fd1b17bade89f59638e038c8d483ea632b4",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/bulletinboardpb.proto",
+      "localSha256": "926a2c200f76cfc07aafaad84e951fd1b17bade89f59638e038c8d483ea632b4"
+    },
+    {
+      "source": "core/src/proto/miscpb.proto",
+      "destination": "core/src/proto/adoption/miscpb.proto",
+      "sha256": "211709104c1a1987e942d7bff53082e124c5ae0a394dd868a9607186ca2b7e32",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/miscpb.proto",
+      "localSha256": "211709104c1a1987e942d7bff53082e124c5ae0a394dd868a9607186ca2b7e32"
+    },
+    {
+      "source": "core/src/proto/userpb.proto",
+      "destination": "core/src/proto/adoption/userpb.proto",
+      "sha256": "5659ee2e7b4a56e686dea52e1ea18f83e958f98f64988fb5ef16e6f9ed424524",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/userpb.proto",
+      "localSha256": "5659ee2e7b4a56e686dea52e1ea18f83e958f98f64988fb5ef16e6f9ed424524"
+    },
+    {
+      "source": "core/src/proto/game.proto",
+      "destination": "core/src/proto/adoption/game.proto",
+      "sha256": "2baa43d1e63073b480e0110578376e80a1c59153fdd78ac73309fb6bac7077bd",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/game.proto",
+      "localSha256": "2baa43d1e63073b480e0110578376e80a1c59153fdd78ac73309fb6bac7077bd"
+    },
+    {
+      "source": "core/src/proto/plantpb.proto",
+      "destination": "core/src/proto/adoption/plantpb.proto",
+      "sha256": "b45ac22b08199bb0494fee4fd9eab4f78c19383f7cf391c306977740cbd9449a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/plantpb.proto",
+      "localSha256": "b45ac22b08199bb0494fee4fd9eab4f78c19383f7cf391c306977740cbd9449a"
+    },
+    {
+      "source": "core/src/proto/muge.proto",
+      "destination": "core/src/proto/adoption/muge.proto",
+      "sha256": "6b790bda2cd9fc9050fe1b5769a373d627a13dadb7a3dd0475be95a94e34ff16",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/muge.proto",
+      "localSha256": "6b790bda2cd9fc9050fe1b5769a373d627a13dadb7a3dd0475be95a94e34ff16"
+    },
+    {
+      "source": "core/src/proto/emailpb.proto",
+      "destination": "core/src/proto/adoption/emailpb.proto",
+      "sha256": "1b1f3cf82991414d0dfcc36027819adee0de9ab9b082db17bbae4a7d9ab3272c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/emailpb.proto",
+      "localSha256": "1b1f3cf82991414d0dfcc36027819adee0de9ab9b082db17bbae4a7d9ab3272c"
+    },
+    {
+      "source": "core/src/proto/shoppb.proto",
+      "destination": "core/src/proto/adoption/shoppb.proto",
+      "sha256": "1dc73fd99ebf9e6ea5956118c48808d019a1ad3ee30f76006dc285ce1a52fd03",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/shoppb.proto",
+      "localSha256": "1dc73fd99ebf9e6ea5956118c48808d019a1ad3ee30f76006dc285ce1a52fd03"
+    },
+    {
+      "source": "core/src/proto/visitpb.proto",
+      "destination": "core/src/proto/adoption/visitpb.proto",
+      "sha256": "dbd954320229fb1c07f9a306d4ad0816eedb3822fa8f3fd4d7d3ac1b5309281d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/visitpb.proto",
+      "localSha256": "dbd954320229fb1c07f9a306d4ad0816eedb3822fa8f3fd4d7d3ac1b5309281d"
+    },
+    {
+      "source": "core/src/proto/globalscenepb.proto",
+      "destination": "core/src/proto/adoption/globalscenepb.proto",
+      "sha256": "207fdc1e9af44e5362c073b9fd48c1675fe14bccdc59909aef18097ebb852431",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/globalscenepb.proto",
+      "localSha256": "207fdc1e9af44e5362c073b9fd48c1675fe14bccdc59909aef18097ebb852431"
+    },
+    {
+      "source": "core/src/proto/qqvippb.proto",
+      "destination": "core/src/proto/adoption/qqvippb.proto",
+      "sha256": "1f544fcc763135401654a47a08ba1c4e1c78fe094e4052d42c3f08161762b8b9",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/qqvippb.proto",
+      "localSha256": "1f544fcc763135401654a47a08ba1c4e1c78fe094e4052d42c3f08161762b8b9"
+    },
+    {
+      "source": "core/src/proto/corepb.proto",
+      "destination": "core/src/proto/adoption/corepb.proto",
+      "sha256": "22a03547535984dc934c8d6cd3ac3f764ec771e3d0e370f8f62a9b5d5b3666e5",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/corepb.proto",
+      "localSha256": "22a03547535984dc934c8d6cd3ac3f764ec771e3d0e370f8f62a9b5d5b3666e5"
+    },
+    {
+      "source": "core/src/proto/itempb.proto",
+      "destination": "core/src/proto/adoption/itempb.proto",
+      "sha256": "5428859b05d7e6f1cf206e4a4b92cd5dae7e9b5e4559f7a98d9f021ff38e14b5",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/itempb.proto",
+      "localSha256": "5428859b05d7e6f1cf206e4a4b92cd5dae7e9b5e4559f7a98d9f021ff38e14b5"
+    },
+    {
+      "source": "core/src/proto/acepb.proto",
+      "destination": "core/src/proto/adoption/acepb.proto",
+      "sha256": "7c0a60edd37275961dec793b0af12470c762cc74aa1f2c450ee9f5a87117966e",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/acepb.proto",
+      "localSha256": "7c0a60edd37275961dec793b0af12470c762cc74aa1f2c450ee9f5a87117966e"
+    },
+    {
+      "source": "core/src/proto/redpacketpb.proto",
+      "destination": "core/src/proto/adoption/redpacketpb.proto",
+      "sha256": "3b5c1d162349af44b00d534437a8511c05d7977f78d7ba667e1569bf61ab4105",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/redpacketpb.proto",
+      "localSha256": "3b5c1d162349af44b00d534437a8511c05d7977f78d7ba667e1569bf61ab4105"
+    },
+    {
+      "source": "core/src/proto/mallpb.proto",
+      "destination": "core/src/proto/adoption/mallpb.proto",
+      "sha256": "ddf24222c4bce37f950950da60dae5a521fde54dd1f12cb9480c6bdb483f2094",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/mallpb.proto",
+      "localSha256": "ddf24222c4bce37f950950da60dae5a521fde54dd1f12cb9480c6bdb483f2094"
+    },
+    {
+      "source": "core/src/proto/paypb.proto",
+      "destination": "core/src/proto/adoption/paypb.proto",
+      "sha256": "94fd15a38590068af91d5d32d0385bada96dc0a28c7b8b9c9aa97eecabf88a99",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/paypb.proto",
+      "localSha256": "94fd15a38590068af91d5d32d0385bada96dc0a28c7b8b9c9aa97eecabf88a99"
+    },
+    {
+      "source": "core/src/proto/activitypb.proto",
+      "destination": "core/src/proto/adoption/activitypb.proto",
+      "sha256": "8a9f1861332e9bff3caa4993cc4e0d4c77a212afc26f036b52c5feee983e9fec",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/activitypb.proto",
+      "localSha256": "8a9f1861332e9bff3caa4993cc4e0d4c77a212afc26f036b52c5feee983e9fec"
+    },
+    {
+      "source": "core/src/proto/friendpb.proto",
+      "destination": "core/src/proto/adoption/friendpb.proto",
+      "sha256": "0533724738395c8eb599e6fdd2b83e3623acdc2f8f94532d112c5affaf59c106",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/friendpb.proto",
+      "localSha256": "0533724738395c8eb599e6fdd2b83e3623acdc2f8f94532d112c5affaf59c106"
+    },
+    {
+      "source": "core/src/proto/mutantpb.proto",
+      "destination": "core/src/proto/adoption/mutantpb.proto",
+      "sha256": "2d4c33d7d84206c461bbf01bf61e9883a7fad23fd2e5d5bc03ce20a4e7804596",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/mutantpb.proto",
+      "localSha256": "2d4c33d7d84206c461bbf01bf61e9883a7fad23fd2e5d5bc03ce20a4e7804596"
+    },
+    {
+      "source": "core/src/proto/weatherpb.proto",
+      "destination": "core/src/proto/adoption/weatherpb.proto",
+      "sha256": "824ff3aa12f374414ac4f5c45f7baffc98e92d436b43a20f5a63b273365786b7",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/proto/weatherpb.proto",
+      "localSha256": "824ff3aa12f374414ac4f5c45f7baffc98e92d436b43a20f5a63b273365786b7"
+    },
+    {
+      "source": "core/src/services/muge-activity.ts",
+      "destination": "core/src/services/activity-muge.js",
+      "upstreamBuildArtifact": "core/dist/services/muge-activity.js",
+      "upstreamBuildSha256": "d0dd241df5505c49098b595794491a9ee2e55f354a41471bb95da4ff3a6fe43f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/services/muge-activity.ts",
+      "localSha256": "1989f69578a7bfecf4ed969357e963822824899867860e697ceb3a4a24898b4c"
+    },
+    {
+      "source": "core/src/activity-data/muge-20261117.json",
+      "destination": "core/src/activity-data/muge-20261117.json",
+      "sha256": "bf04aa9978836051190be9f523abe4e413f333e55a8efd5fd6ac3409f63590d5",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/activity-data/muge-20261117.json",
+      "localSha256": "c7f2f5fa9ab4729face742462f580d83658e44a86d62befc13aac023d019fad1"
+    },
+    {
+      "source": "core/src/activity-data/muge-assets.json",
+      "destination": "core/src/activity-data/muge-assets.json",
+      "sha256": "a4965527b926691b91b9f82c9ef28b23d5f7854806f6576f382c731005af54db",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/activity-data/muge-assets.json",
+      "localSha256": "b55548b93b6c186e1fb0b90bf187eed9890251c95bf03bc22ce1a34262a26c4b"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-1.png",
+      "destination": "web/public/activity/muge/personality-1.png",
+      "sha256": "83a4f97b4c9eeea3ce6d42cdc49dfe956ac0c80f842ea2f4ec1c447bacb8fb31",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-1.png",
+      "localSha256": "83a4f97b4c9eeea3ce6d42cdc49dfe956ac0c80f842ea2f4ec1c447bacb8fb31"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-2.png",
+      "destination": "web/public/activity/muge/personality-2.png",
+      "sha256": "65ddf1207b902229bf600280ab7c76fddf093b565ef5272e52d9da1ddc915b7d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-2.png",
+      "localSha256": "65ddf1207b902229bf600280ab7c76fddf093b565ef5272e52d9da1ddc915b7d"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-3.png",
+      "destination": "web/public/activity/muge/personality-3.png",
+      "sha256": "9ac622610d57c97de9bd3b00eeb8cca1e53cc5f456453f55f0e958b65523ddbf",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-3.png",
+      "localSha256": "9ac622610d57c97de9bd3b00eeb8cca1e53cc5f456453f55f0e958b65523ddbf"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-4.png",
+      "destination": "web/public/activity/muge/personality-4.png",
+      "sha256": "8923fb1e360410d79795dd02954c7cb745e76048b908f26c5ac7e963faf93361",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-4.png",
+      "localSha256": "8923fb1e360410d79795dd02954c7cb745e76048b908f26c5ac7e963faf93361"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-5.png",
+      "destination": "web/public/activity/muge/personality-5.png",
+      "sha256": "647b3de763c897066c698995fefc8f917ae3299dece38019aa73671f1b476d11",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-5.png",
+      "localSha256": "647b3de763c897066c698995fefc8f917ae3299dece38019aa73671f1b476d11"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-6.png",
+      "destination": "web/public/activity/muge/personality-6.png",
+      "sha256": "11960027c5b5bf8d596fbe9c31e9802a3c34eef982b82e7e6434121057b9b693",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-6.png",
+      "localSha256": "11960027c5b5bf8d596fbe9c31e9802a3c34eef982b82e7e6434121057b9b693"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-7.png",
+      "destination": "web/public/activity/muge/personality-7.png",
+      "sha256": "abda572ed2ee25e407b30ffb6262db33780289b8b689edec4e9515e99538abff",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-7.png",
+      "localSha256": "abda572ed2ee25e407b30ffb6262db33780289b8b689edec4e9515e99538abff"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-8.png",
+      "destination": "web/public/activity/muge/personality-8.png",
+      "sha256": "b67d7c230bb971f8975343432ee484a5df236b3c133ef3fe1e97dbb7826b2b4a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-8.png",
+      "localSha256": "b67d7c230bb971f8975343432ee484a5df236b3c133ef3fe1e97dbb7826b2b4a"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-9.png",
+      "destination": "web/public/activity/muge/personality-9.png",
+      "sha256": "c70d1b5b9f08b5fd6bae30f1b05269e64a736ca6e689596435c368c98d12ffbb",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-9.png",
+      "localSha256": "c70d1b5b9f08b5fd6bae30f1b05269e64a736ca6e689596435c368c98d12ffbb"
+    },
+    {
+      "source": "web/public/activity-assets/muge/personality-10.png",
+      "destination": "web/public/activity/muge/personality-10.png",
+      "sha256": "a77ac7da0c2b7bdd764da671b2d7826050b16fbb85f6df1de9434d70f391063c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/personality-10.png",
+      "localSha256": "a77ac7da0c2b7bdd764da671b2d7826050b16fbb85f6df1de9434d70f391063c"
+    },
+    {
+      "source": "web/public/activity-assets/muge/icon.png",
+      "destination": "web/public/activity/muge/icon.png",
+      "sha256": "8103a669e31fcc648a707f544db38717de6cb825cb01772125a28137e2fa3ac3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/web/public/activity-assets/muge/icon.png",
+      "localSha256": "8103a669e31fcc648a707f544db38717de6cb825cb01772125a28137e2fa3ac3"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1007.png",
+      "destination": "web/public/activity/ranch/items/1007.png",
+      "sha256": "4f43e58c6c2be65e345868e4b249e0bd88cae4de1f8ee9a1ef2c7bb6e70eadcc",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1007.png",
+      "localSha256": "4f43e58c6c2be65e345868e4b249e0bd88cae4de1f8ee9a1ef2c7bb6e70eadcc"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1008.png",
+      "destination": "web/public/activity/ranch/items/1008.png",
+      "sha256": "349bd3886684d4c5ff5f9d7cd4c0f5a6a3d7cbe99cb3ad05cb79fcd929670c00",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1008.png",
+      "localSha256": "349bd3886684d4c5ff5f9d7cd4c0f5a6a3d7cbe99cb3ad05cb79fcd929670c00"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1102.png",
+      "destination": "web/public/activity/ranch/items/1102.png",
+      "sha256": "4890f09a451f687276e648c8b54bb0760dbdf4f295570f146a400e0914d317ff",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1102.png",
+      "localSha256": "4890f09a451f687276e648c8b54bb0760dbdf4f295570f146a400e0914d317ff"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/7001.png",
+      "destination": "web/public/activity/ranch/items/7001.png",
+      "sha256": "501456ce9d53293847e9277f598a7c10585f1568d5ae469cfe1d08ae50bd7a5f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/7001.png",
+      "localSha256": "501456ce9d53293847e9277f598a7c10585f1568d5ae469cfe1d08ae50bd7a5f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/7002.png",
+      "destination": "web/public/activity/ranch/items/7002.png",
+      "sha256": "26461a4630dbd6d425c403c78f2383cf352bc7dc190173ba1081edd5dbce1832",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/7002.png",
+      "localSha256": "26461a4630dbd6d425c403c78f2383cf352bc7dc190173ba1081edd5dbce1832"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/7003.png",
+      "destination": "web/public/activity/ranch/items/7003.png",
+      "sha256": "e7cc886f2c6b59d4cca52e2722a7c97f6f4ad9d831c8d0ee255477503644102d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/7003.png",
+      "localSha256": "e7cc886f2c6b59d4cca52e2722a7c97f6f4ad9d831c8d0ee255477503644102d"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/7004.png",
+      "destination": "web/public/activity/ranch/items/7004.png",
+      "sha256": "b16ae5ea45efc4f5f0cf9213b27ffe075d530e729b80afaf3c141a9262f7edf1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/7004.png",
+      "localSha256": "b16ae5ea45efc4f5f0cf9213b27ffe075d530e729b80afaf3c141a9262f7edf1"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/7005.png",
+      "destination": "web/public/activity/ranch/items/7005.png",
+      "sha256": "c89a8c15a70de196b0c88726671267b5acda5ca5b54b98ad00f25f4acc191f50",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/7005.png",
+      "localSha256": "c89a8c15a70de196b0c88726671267b5acda5ca5b54b98ad00f25f4acc191f50"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/7006.png",
+      "destination": "web/public/activity/ranch/items/7006.png",
+      "sha256": "03452ffd1ef113a797b304ac456bf97ca2576bb04675e4a7f93b1831da6d7c37",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/7006.png",
+      "localSha256": "03452ffd1ef113a797b304ac456bf97ca2576bb04675e4a7f93b1831da6d7c37"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/7007.png",
+      "destination": "web/public/activity/ranch/items/7007.png",
+      "sha256": "e6b259022df852121215e6f2757d5e9f00c21911e9a4c1fe1100ac3d7e16f0e0",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/7007.png",
+      "localSha256": "e6b259022df852121215e6f2757d5e9f00c21911e9a4c1fe1100ac3d7e16f0e0"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60001.png",
+      "destination": "web/public/activity/ranch/items/60001.png",
+      "sha256": "32cd9d05d52b9c9335f7c017958fbb713e6a148098225ea46b6a381742315023",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60001.png",
+      "localSha256": "32cd9d05d52b9c9335f7c017958fbb713e6a148098225ea46b6a381742315023"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60002.png",
+      "destination": "web/public/activity/ranch/items/60002.png",
+      "sha256": "ca780d3a6d77d7b37d512e5f9bff229e9c98c70c051e314509dbd803fb55c3bb",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60002.png",
+      "localSha256": "ca780d3a6d77d7b37d512e5f9bff229e9c98c70c051e314509dbd803fb55c3bb"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60003.png",
+      "destination": "web/public/activity/ranch/items/60003.png",
+      "sha256": "5061984d9075ccb89d89952deba6552072ec1024a5e354bd32395936aaaa9688",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60003.png",
+      "localSha256": "5061984d9075ccb89d89952deba6552072ec1024a5e354bd32395936aaaa9688"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60004.png",
+      "destination": "web/public/activity/ranch/items/60004.png",
+      "sha256": "cd03abec7318670c3253721ced3df95600c74c2c03ae1710436926b017d8f2f3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60004.png",
+      "localSha256": "cd03abec7318670c3253721ced3df95600c74c2c03ae1710436926b017d8f2f3"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60005.png",
+      "destination": "web/public/activity/ranch/items/60005.png",
+      "sha256": "ce32a5d72b4019463b2154183351fe17358bf71b37be7120caf49e7541630c8e",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60005.png",
+      "localSha256": "ce32a5d72b4019463b2154183351fe17358bf71b37be7120caf49e7541630c8e"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60006.png",
+      "destination": "web/public/activity/ranch/items/60006.png",
+      "sha256": "c6739016270088aa096f01eced5001a3ce08804c51f4d7d4524ede53d4136da7",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60006.png",
+      "localSha256": "c6739016270088aa096f01eced5001a3ce08804c51f4d7d4524ede53d4136da7"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60007.png",
+      "destination": "web/public/activity/ranch/items/60007.png",
+      "sha256": "11292dc0fad0cb58703b183a35cf6e309c4cb97a5c15314e059e5edffbff04fe",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60007.png",
+      "localSha256": "11292dc0fad0cb58703b183a35cf6e309c4cb97a5c15314e059e5edffbff04fe"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60008.png",
+      "destination": "web/public/activity/ranch/items/60008.png",
+      "sha256": "b5cb61871a9eb9f36e04a78fe887805037777ed5b2af4c7a3bcd6b910cbcbc90",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60008.png",
+      "localSha256": "b5cb61871a9eb9f36e04a78fe887805037777ed5b2af4c7a3bcd6b910cbcbc90"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60009.png",
+      "destination": "web/public/activity/ranch/items/60009.png",
+      "sha256": "0848d16ed44b51c6266dad3100b35cba9ab750a2da4120c9038e5d1d0faa88f2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60009.png",
+      "localSha256": "0848d16ed44b51c6266dad3100b35cba9ab750a2da4120c9038e5d1d0faa88f2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60010.png",
+      "destination": "web/public/activity/ranch/items/60010.png",
+      "sha256": "f6ad2c503b565d2511823bb0d439cb32ec906721461074aa511e3eb988a97766",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60010.png",
+      "localSha256": "f6ad2c503b565d2511823bb0d439cb32ec906721461074aa511e3eb988a97766"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60011.png",
+      "destination": "web/public/activity/ranch/items/60011.png",
+      "sha256": "8328bb2ab46ecf4b0c595817871ec655eda7933a1c7d5fe501b32ad58602d61a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60011.png",
+      "localSha256": "8328bb2ab46ecf4b0c595817871ec655eda7933a1c7d5fe501b32ad58602d61a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60012.png",
+      "destination": "web/public/activity/ranch/items/60012.png",
+      "sha256": "e4ca2e4f5c080dade903791fba725c4f0c6d57db8da0ab9638fcb91a31689af9",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60012.png",
+      "localSha256": "e4ca2e4f5c080dade903791fba725c4f0c6d57db8da0ab9638fcb91a31689af9"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60013.png",
+      "destination": "web/public/activity/ranch/items/60013.png",
+      "sha256": "2c1303d6678a9b64a55e52a3f3b7c191d2b78247bb7f86bedd1dba81b95e640a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60013.png",
+      "localSha256": "2c1303d6678a9b64a55e52a3f3b7c191d2b78247bb7f86bedd1dba81b95e640a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60014.png",
+      "destination": "web/public/activity/ranch/items/60014.png",
+      "sha256": "e2d28278ca20eaf5a1e06c74218c59e1f01163c354558abd9d893a62b7a6197e",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60014.png",
+      "localSha256": "e2d28278ca20eaf5a1e06c74218c59e1f01163c354558abd9d893a62b7a6197e"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60015.png",
+      "destination": "web/public/activity/ranch/items/60015.png",
+      "sha256": "79304033325e34ec6ec570a61bab19d7a4ce558bed36bf3779f505102fde6ebd",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60015.png",
+      "localSha256": "79304033325e34ec6ec570a61bab19d7a4ce558bed36bf3779f505102fde6ebd"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/60016.png",
+      "destination": "web/public/activity/ranch/items/60016.png",
+      "sha256": "af08d262d10bfb6c202604cf6115b51a57178a095bfbd24dc90004ec263be57a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/60016.png",
+      "localSha256": "af08d262d10bfb6c202604cf6115b51a57178a095bfbd24dc90004ec263be57a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65001.png",
+      "destination": "web/public/activity/ranch/items/65001.png",
+      "sha256": "43724c4314b134da2940d97a41cae3a68e85cb2c85839340799f60bf30140099",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65001.png",
+      "localSha256": "43724c4314b134da2940d97a41cae3a68e85cb2c85839340799f60bf30140099"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65002.png",
+      "destination": "web/public/activity/ranch/items/65002.png",
+      "sha256": "5ffc7417f42431fb7ec243ee73c153b4703e6c5df32b134c412d4b66b463a3e1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65002.png",
+      "localSha256": "5ffc7417f42431fb7ec243ee73c153b4703e6c5df32b134c412d4b66b463a3e1"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65003.png",
+      "destination": "web/public/activity/ranch/items/65003.png",
+      "sha256": "e3e3f17b7b5b364dfa3ab37a68aa09291f053b68f981c136a620081f1181a752",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65003.png",
+      "localSha256": "e3e3f17b7b5b364dfa3ab37a68aa09291f053b68f981c136a620081f1181a752"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65004.png",
+      "destination": "web/public/activity/ranch/items/65004.png",
+      "sha256": "2820ba1b3cdc1ee4f3597dd949036d2baa3e842a5c99474e3fa9f420599c4100",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65004.png",
+      "localSha256": "2820ba1b3cdc1ee4f3597dd949036d2baa3e842a5c99474e3fa9f420599c4100"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65005.png",
+      "destination": "web/public/activity/ranch/items/65005.png",
+      "sha256": "85517e70aada4a681a9d3b2555eda34baf38179616c20a56c2a779b9fd08657b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65005.png",
+      "localSha256": "85517e70aada4a681a9d3b2555eda34baf38179616c20a56c2a779b9fd08657b"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65006.png",
+      "destination": "web/public/activity/ranch/items/65006.png",
+      "sha256": "8102d8db4e314177ba9b2242084cd62b50425455c0eabb55baa59ff4c7c2ebf6",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65006.png",
+      "localSha256": "8102d8db4e314177ba9b2242084cd62b50425455c0eabb55baa59ff4c7c2ebf6"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65007.png",
+      "destination": "web/public/activity/ranch/items/65007.png",
+      "sha256": "b52c880b62fea6671e7c3dbe29ca5d9bdf06f69a095dc7f52dfb25d797350152",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65007.png",
+      "localSha256": "b52c880b62fea6671e7c3dbe29ca5d9bdf06f69a095dc7f52dfb25d797350152"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65008.png",
+      "destination": "web/public/activity/ranch/items/65008.png",
+      "sha256": "123e792d4fccd6a2318f344b64c31d6d46e0c76ecc0160ad4b8725f461e95e3c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65008.png",
+      "localSha256": "123e792d4fccd6a2318f344b64c31d6d46e0c76ecc0160ad4b8725f461e95e3c"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65009.png",
+      "destination": "web/public/activity/ranch/items/65009.png",
+      "sha256": "0f6e966c4854de7fdc8a2319604fe9f90d235cfdfc78e8eed197565793c7c40a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65009.png",
+      "localSha256": "0f6e966c4854de7fdc8a2319604fe9f90d235cfdfc78e8eed197565793c7c40a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65010.png",
+      "destination": "web/public/activity/ranch/items/65010.png",
+      "sha256": "9d6f15dc58806695fe2ec8f94c82742187cc25523e49fcbbe06ad9b74b67f50f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65010.png",
+      "localSha256": "9d6f15dc58806695fe2ec8f94c82742187cc25523e49fcbbe06ad9b74b67f50f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65011.png",
+      "destination": "web/public/activity/ranch/items/65011.png",
+      "sha256": "9bc01b9bb5dfe24ac0e5bc76d5e606ebf953f1836f343b4e5c822c013556de41",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65011.png",
+      "localSha256": "9bc01b9bb5dfe24ac0e5bc76d5e606ebf953f1836f343b4e5c822c013556de41"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65012.png",
+      "destination": "web/public/activity/ranch/items/65012.png",
+      "sha256": "e24f99e532ff73560680f3837d1f6fe87768aa4ff1bc310c08bde6866bad4433",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65012.png",
+      "localSha256": "e24f99e532ff73560680f3837d1f6fe87768aa4ff1bc310c08bde6866bad4433"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65013.png",
+      "destination": "web/public/activity/ranch/items/65013.png",
+      "sha256": "4f66cb46254785c8b19ce692b34051b6e16956c4b7fd257ef17b0255ffd3cef3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65013.png",
+      "localSha256": "4f66cb46254785c8b19ce692b34051b6e16956c4b7fd257ef17b0255ffd3cef3"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65014.png",
+      "destination": "web/public/activity/ranch/items/65014.png",
+      "sha256": "bc30d0f5cd2151a2856ec2814755ac05d5975eafa85b2a84f1b5a27161570638",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65014.png",
+      "localSha256": "bc30d0f5cd2151a2856ec2814755ac05d5975eafa85b2a84f1b5a27161570638"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65015.png",
+      "destination": "web/public/activity/ranch/items/65015.png",
+      "sha256": "aa3f7bf9b8a0d267a210c0300fc637a40ede36481288de1877aa04f8077d6087",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65015.png",
+      "localSha256": "aa3f7bf9b8a0d267a210c0300fc637a40ede36481288de1877aa04f8077d6087"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/65016.png",
+      "destination": "web/public/activity/ranch/items/65016.png",
+      "sha256": "55bed5d1b1e85fec1530b90261eebe48f5c430f489caff76e12c0a086fbc935f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/65016.png",
+      "localSha256": "55bed5d1b1e85fec1530b90261eebe48f5c430f489caff76e12c0a086fbc935f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70001.png",
+      "destination": "web/public/activity/ranch/items/70001.png",
+      "sha256": "61de37233565fd3838f06bfde10d34c3ed5b49b70e8990081811b3157d987981",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70001.png",
+      "localSha256": "61de37233565fd3838f06bfde10d34c3ed5b49b70e8990081811b3157d987981"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70002.png",
+      "destination": "web/public/activity/ranch/items/70002.png",
+      "sha256": "301695d3a558e820a66c7463b222c118aaa33444f0a5ba1e5e662ec9cc08a39b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70002.png",
+      "localSha256": "301695d3a558e820a66c7463b222c118aaa33444f0a5ba1e5e662ec9cc08a39b"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70003.png",
+      "destination": "web/public/activity/ranch/items/70003.png",
+      "sha256": "5314a06342291aa6032d7312b8bc9e9d7c53a7c0bd8225fc6f8778fca37e0241",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70003.png",
+      "localSha256": "5314a06342291aa6032d7312b8bc9e9d7c53a7c0bd8225fc6f8778fca37e0241"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70004.png",
+      "destination": "web/public/activity/ranch/items/70004.png",
+      "sha256": "0ff9c8495028cd229c6c3c313a3ddf03db05e40230a110e78fae376da6867f20",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70004.png",
+      "localSha256": "0ff9c8495028cd229c6c3c313a3ddf03db05e40230a110e78fae376da6867f20"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70005.png",
+      "destination": "web/public/activity/ranch/items/70005.png",
+      "sha256": "1eab439be3381ac656e74f36517d22392605092c28babda69f89f860e1f06512",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70005.png",
+      "localSha256": "1eab439be3381ac656e74f36517d22392605092c28babda69f89f860e1f06512"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70006.png",
+      "destination": "web/public/activity/ranch/items/70006.png",
+      "sha256": "c5bca96c25d2f88794f64a578182c9728fa97072e95109b069392f5a610f3f55",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70006.png",
+      "localSha256": "c5bca96c25d2f88794f64a578182c9728fa97072e95109b069392f5a610f3f55"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70007.png",
+      "destination": "web/public/activity/ranch/items/70007.png",
+      "sha256": "cbb8e9b7baa1fd41b4f418ab0654194382e3135ac63e007ca1504768668b6418",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70007.png",
+      "localSha256": "cbb8e9b7baa1fd41b4f418ab0654194382e3135ac63e007ca1504768668b6418"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70008.png",
+      "destination": "web/public/activity/ranch/items/70008.png",
+      "sha256": "94f85744161b932b99800107fe1e737758a47b370e14bcd6708c20e5d5a346ec",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70008.png",
+      "localSha256": "94f85744161b932b99800107fe1e737758a47b370e14bcd6708c20e5d5a346ec"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70009.png",
+      "destination": "web/public/activity/ranch/items/70009.png",
+      "sha256": "49784267c97be907b53534ac65499ac6e4d501ee5f8781318404d972374dae26",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70009.png",
+      "localSha256": "49784267c97be907b53534ac65499ac6e4d501ee5f8781318404d972374dae26"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70010.png",
+      "destination": "web/public/activity/ranch/items/70010.png",
+      "sha256": "510dcaffa8ac671405a151af40d7a6c744d2bb028a2fbaf3bfd9f0a89b0cf73b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70010.png",
+      "localSha256": "510dcaffa8ac671405a151af40d7a6c744d2bb028a2fbaf3bfd9f0a89b0cf73b"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70011.png",
+      "destination": "web/public/activity/ranch/items/70011.png",
+      "sha256": "bbeb86cfbb7d1b60bd1cb3086548a4376faf5acec6c06db8401ef679e830fd52",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70011.png",
+      "localSha256": "bbeb86cfbb7d1b60bd1cb3086548a4376faf5acec6c06db8401ef679e830fd52"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/70012.png",
+      "destination": "web/public/activity/ranch/items/70012.png",
+      "sha256": "636aefc2c63561a6c274d6684e28cecff1801605bc820c8489b18b690c557e58",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/70012.png",
+      "localSha256": "636aefc2c63561a6c274d6684e28cecff1801605bc820c8489b18b690c557e58"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75001.png",
+      "destination": "web/public/activity/ranch/items/75001.png",
+      "sha256": "3cfde41c36bdf529a9990981f728bbc859ec8437411497a2375779e1b796cb20",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75001.png",
+      "localSha256": "3cfde41c36bdf529a9990981f728bbc859ec8437411497a2375779e1b796cb20"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75002.png",
+      "destination": "web/public/activity/ranch/items/75002.png",
+      "sha256": "8b8f93c6a8dcfe32ea97de16c6b238dd6cd7c049784d84b29449280620db761d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75002.png",
+      "localSha256": "8b8f93c6a8dcfe32ea97de16c6b238dd6cd7c049784d84b29449280620db761d"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75003.png",
+      "destination": "web/public/activity/ranch/items/75003.png",
+      "sha256": "b385338f746383fe86eccea92da3a1203e45dd53b971866c9124e92a2a6e7940",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75003.png",
+      "localSha256": "b385338f746383fe86eccea92da3a1203e45dd53b971866c9124e92a2a6e7940"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75004.png",
+      "destination": "web/public/activity/ranch/items/75004.png",
+      "sha256": "69e8ae76175b96f09a0e2ca2281b2d0dd200ed5e431d23bc9c2d63a0a19651fa",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75004.png",
+      "localSha256": "69e8ae76175b96f09a0e2ca2281b2d0dd200ed5e431d23bc9c2d63a0a19651fa"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75005.png",
+      "destination": "web/public/activity/ranch/items/75005.png",
+      "sha256": "5c201b452356e892a9c1a41352eba795c9b53cef6a22d07a86115980c809bddc",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75005.png",
+      "localSha256": "5c201b452356e892a9c1a41352eba795c9b53cef6a22d07a86115980c809bddc"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75006.png",
+      "destination": "web/public/activity/ranch/items/75006.png",
+      "sha256": "09f1ebd536d736c32ee3f8d0d41de68f785080fc860a6a2eec210744a904b327",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75006.png",
+      "localSha256": "09f1ebd536d736c32ee3f8d0d41de68f785080fc860a6a2eec210744a904b327"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75007.png",
+      "destination": "web/public/activity/ranch/items/75007.png",
+      "sha256": "520cfad4a953bb57ed157fcae649a46c2e153e3ea1a1278b1599677e9da19329",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75007.png",
+      "localSha256": "520cfad4a953bb57ed157fcae649a46c2e153e3ea1a1278b1599677e9da19329"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75008.png",
+      "destination": "web/public/activity/ranch/items/75008.png",
+      "sha256": "2055e88c88f22edc42299d6c5c9513afea58f358e93027bd14c08fdbdd365328",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75008.png",
+      "localSha256": "2055e88c88f22edc42299d6c5c9513afea58f358e93027bd14c08fdbdd365328"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75009.png",
+      "destination": "web/public/activity/ranch/items/75009.png",
+      "sha256": "2ef8dc319c3dc1244dd1549e1b098b713e5eb5a042a2fcaaaf61a4ae6d8a7243",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75009.png",
+      "localSha256": "2ef8dc319c3dc1244dd1549e1b098b713e5eb5a042a2fcaaaf61a4ae6d8a7243"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75010.png",
+      "destination": "web/public/activity/ranch/items/75010.png",
+      "sha256": "07046862784a5bc991c2e537ff4f29d9c79a2ef06f1b693a33f9b2dfa558058a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75010.png",
+      "localSha256": "07046862784a5bc991c2e537ff4f29d9c79a2ef06f1b693a33f9b2dfa558058a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75011.png",
+      "destination": "web/public/activity/ranch/items/75011.png",
+      "sha256": "d602e1c34a5eed13fb8ef3ae75921bfb7bf4ed7d2a44f615d9d3bf690afea847",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75011.png",
+      "localSha256": "d602e1c34a5eed13fb8ef3ae75921bfb7bf4ed7d2a44f615d9d3bf690afea847"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/75012.png",
+      "destination": "web/public/activity/ranch/items/75012.png",
+      "sha256": "e7010baa6330b39429229e0af78efcf784e9953504e5c13de6ad638d34e58194",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/75012.png",
+      "localSha256": "e7010baa6330b39429229e0af78efcf784e9953504e5c13de6ad638d34e58194"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80011.png",
+      "destination": "web/public/activity/ranch/items/80011.png",
+      "sha256": "6a44d788a1fdd09a953abad05a862d519c1aa9625781942ce8f1eddd09d69c50",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80011.png",
+      "localSha256": "6a44d788a1fdd09a953abad05a862d519c1aa9625781942ce8f1eddd09d69c50"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80012.png",
+      "destination": "web/public/activity/ranch/items/80012.png",
+      "sha256": "0d1b79ff3cfc003f281f3cfdfcc80bb2d896bebc6fc5ab3c363d9d2975bb1ed8",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80012.png",
+      "localSha256": "0d1b79ff3cfc003f281f3cfdfcc80bb2d896bebc6fc5ab3c363d9d2975bb1ed8"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80013.png",
+      "destination": "web/public/activity/ranch/items/80013.png",
+      "sha256": "5ecf3d61c46b0ccd0379e9eaf4508432b2a751763cf0b227ada5b47b8f635acf",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80013.png",
+      "localSha256": "5ecf3d61c46b0ccd0379e9eaf4508432b2a751763cf0b227ada5b47b8f635acf"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80021.png",
+      "destination": "web/public/activity/ranch/items/80021.png",
+      "sha256": "45f0d71a29c392f224540b3840bb182694b54208062c5349c7c1c624517d698d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80021.png",
+      "localSha256": "45f0d71a29c392f224540b3840bb182694b54208062c5349c7c1c624517d698d"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80022.png",
+      "destination": "web/public/activity/ranch/items/80022.png",
+      "sha256": "b93647df6debca969f5234d2962f3567e351a3791d7f88161655ecbad94336ff",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80022.png",
+      "localSha256": "b93647df6debca969f5234d2962f3567e351a3791d7f88161655ecbad94336ff"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80023.png",
+      "destination": "web/public/activity/ranch/items/80023.png",
+      "sha256": "17a8f860d9af8c898e561d314e8849fb05a0613aacc192c365e0429dc979f16a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80023.png",
+      "localSha256": "17a8f860d9af8c898e561d314e8849fb05a0613aacc192c365e0429dc979f16a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80024.png",
+      "destination": "web/public/activity/ranch/items/80024.png",
+      "sha256": "7eb7d7a1435a0908da7dd7c0fdc779ed870af1c24e91bccff03215327bcb4751",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80024.png",
+      "localSha256": "7eb7d7a1435a0908da7dd7c0fdc779ed870af1c24e91bccff03215327bcb4751"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80031.png",
+      "destination": "web/public/activity/ranch/items/80031.png",
+      "sha256": "ae7d0c8db739907129e08ec6f07192dd9527326aceb367fb410060842a8a0e44",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80031.png",
+      "localSha256": "ae7d0c8db739907129e08ec6f07192dd9527326aceb367fb410060842a8a0e44"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80032.png",
+      "destination": "web/public/activity/ranch/items/80032.png",
+      "sha256": "bcb49f815c7aecf87030c5db1b812f4405d638b243a9234c0dd9a1cb137298b2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80032.png",
+      "localSha256": "bcb49f815c7aecf87030c5db1b812f4405d638b243a9234c0dd9a1cb137298b2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80033.png",
+      "destination": "web/public/activity/ranch/items/80033.png",
+      "sha256": "8cea6bb7160d0550ef24b4033cf3fc05ab77a067f82e8905c695ce6e6b370858",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80033.png",
+      "localSha256": "8cea6bb7160d0550ef24b4033cf3fc05ab77a067f82e8905c695ce6e6b370858"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/80034.png",
+      "destination": "web/public/activity/ranch/items/80034.png",
+      "sha256": "3ac73feacdf02a4e33c184239c2d800790cbadfe9b9bca9267a0f6837a2e7ee3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/80034.png",
+      "localSha256": "3ac73feacdf02a4e33c184239c2d800790cbadfe9b9bca9267a0f6837a2e7ee3"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060001.png",
+      "destination": "web/public/activity/ranch/items/1060001.png",
+      "sha256": "4a9728c9e48b9ff5b4c833f58cb7af810c73e7581c753fb84d3635f3b0f4001f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060001.png",
+      "localSha256": "4a9728c9e48b9ff5b4c833f58cb7af810c73e7581c753fb84d3635f3b0f4001f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060002.png",
+      "destination": "web/public/activity/ranch/items/1060002.png",
+      "sha256": "c38b4b35cc8e23624d33be1ce3a1d1470e037c178d0365d52a7694d3312d5aa1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060002.png",
+      "localSha256": "c38b4b35cc8e23624d33be1ce3a1d1470e037c178d0365d52a7694d3312d5aa1"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060003.png",
+      "destination": "web/public/activity/ranch/items/1060003.png",
+      "sha256": "8be9d81f75bfa83a73242c0835f1a65b6adf6a8e57b36cbf68b7721d8cdd15b7",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060003.png",
+      "localSha256": "8be9d81f75bfa83a73242c0835f1a65b6adf6a8e57b36cbf68b7721d8cdd15b7"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060004.png",
+      "destination": "web/public/activity/ranch/items/1060004.png",
+      "sha256": "1a556609e75c744bebe058d32b2d1aecf849e02576087b67257b0c5960184aeb",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060004.png",
+      "localSha256": "1a556609e75c744bebe058d32b2d1aecf849e02576087b67257b0c5960184aeb"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060005.png",
+      "destination": "web/public/activity/ranch/items/1060005.png",
+      "sha256": "fd68b55643bef8c32e413f4367543e15b05005056fbb30b910397b8d03add079",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060005.png",
+      "localSha256": "fd68b55643bef8c32e413f4367543e15b05005056fbb30b910397b8d03add079"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060006.png",
+      "destination": "web/public/activity/ranch/items/1060006.png",
+      "sha256": "45f8a7a0f74d24d35e6cddb9903214d0d501b51422f787e6400b7a9c0b9e213e",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060006.png",
+      "localSha256": "45f8a7a0f74d24d35e6cddb9903214d0d501b51422f787e6400b7a9c0b9e213e"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060007.png",
+      "destination": "web/public/activity/ranch/items/1060007.png",
+      "sha256": "ccce45927c8fd972aa7b71ba3fd66541737f9fadf772fcfcd155607d0ecfba0b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060007.png",
+      "localSha256": "ccce45927c8fd972aa7b71ba3fd66541737f9fadf772fcfcd155607d0ecfba0b"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060008.png",
+      "destination": "web/public/activity/ranch/items/1060008.png",
+      "sha256": "08973191e1742b98390db5820f4af3cabb63fc984a9a4ee91682a5e443bcb25d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060008.png",
+      "localSha256": "08973191e1742b98390db5820f4af3cabb63fc984a9a4ee91682a5e443bcb25d"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060009.png",
+      "destination": "web/public/activity/ranch/items/1060009.png",
+      "sha256": "b5c586afb7df7285e05fc4468e67729044dc5956b061a71c9e257175c4995e5e",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060009.png",
+      "localSha256": "b5c586afb7df7285e05fc4468e67729044dc5956b061a71c9e257175c4995e5e"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060010.png",
+      "destination": "web/public/activity/ranch/items/1060010.png",
+      "sha256": "b4f969c031833234ba45fbf9d644c8988ef2b4664de0834f7ee7fcfd66521c3f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060010.png",
+      "localSha256": "b4f969c031833234ba45fbf9d644c8988ef2b4664de0834f7ee7fcfd66521c3f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060011.png",
+      "destination": "web/public/activity/ranch/items/1060011.png",
+      "sha256": "5cc59f8a35dfaaaf5d884bf260ed9918c34a448ab4710fa8d6c5272950770a23",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060011.png",
+      "localSha256": "5cc59f8a35dfaaaf5d884bf260ed9918c34a448ab4710fa8d6c5272950770a23"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060012.png",
+      "destination": "web/public/activity/ranch/items/1060012.png",
+      "sha256": "b72353921c29c141d4165a3f9f1422c3df7ad37a40fc3856a8dd89aaef3d055e",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060012.png",
+      "localSha256": "b72353921c29c141d4165a3f9f1422c3df7ad37a40fc3856a8dd89aaef3d055e"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060013.png",
+      "destination": "web/public/activity/ranch/items/1060013.png",
+      "sha256": "2f7a48b78fedcde7ea460968839cac7c5355f3bf202946cc42ed55998d92c6ee",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060013.png",
+      "localSha256": "2f7a48b78fedcde7ea460968839cac7c5355f3bf202946cc42ed55998d92c6ee"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060014.png",
+      "destination": "web/public/activity/ranch/items/1060014.png",
+      "sha256": "3eb8cf60b1e2cb5032067fc100944cdc40faaecd0f21eb56ac7e8575e15f0655",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060014.png",
+      "localSha256": "3eb8cf60b1e2cb5032067fc100944cdc40faaecd0f21eb56ac7e8575e15f0655"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060015.png",
+      "destination": "web/public/activity/ranch/items/1060015.png",
+      "sha256": "bbd5de6ea801ed8be3b54cf5a12c894928cc478f25876b0a3a2954b4253dc4a2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060015.png",
+      "localSha256": "bbd5de6ea801ed8be3b54cf5a12c894928cc478f25876b0a3a2954b4253dc4a2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1060016.png",
+      "destination": "web/public/activity/ranch/items/1060016.png",
+      "sha256": "a1df26d6dbf62393dfe25642a304179de9212fa5b73bc2fa67f65cf9a9c9cea5",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1060016.png",
+      "localSha256": "a1df26d6dbf62393dfe25642a304179de9212fa5b73bc2fa67f65cf9a9c9cea5"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065001.png",
+      "destination": "web/public/activity/ranch/items/1065001.png",
+      "sha256": "dc92222bc994c2158691864b83dd3d200ea5686b81473b7ca1fcbd12c53ff0f5",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065001.png",
+      "localSha256": "dc92222bc994c2158691864b83dd3d200ea5686b81473b7ca1fcbd12c53ff0f5"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065002.png",
+      "destination": "web/public/activity/ranch/items/1065002.png",
+      "sha256": "f8e866c8dfc41edde0edab23a09b429da4d02fe4a3d78c4054c19d377390d97a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065002.png",
+      "localSha256": "f8e866c8dfc41edde0edab23a09b429da4d02fe4a3d78c4054c19d377390d97a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065003.png",
+      "destination": "web/public/activity/ranch/items/1065003.png",
+      "sha256": "d411e437f6257462425c4a18ebf0db15dcd34f152a1e7429fbe3c9b6014083c2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065003.png",
+      "localSha256": "d411e437f6257462425c4a18ebf0db15dcd34f152a1e7429fbe3c9b6014083c2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065004.png",
+      "destination": "web/public/activity/ranch/items/1065004.png",
+      "sha256": "9a905d3368c90a878d6253f4453698dcf6df19b89fe5ae6a0d1870cff9955963",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065004.png",
+      "localSha256": "9a905d3368c90a878d6253f4453698dcf6df19b89fe5ae6a0d1870cff9955963"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065005.png",
+      "destination": "web/public/activity/ranch/items/1065005.png",
+      "sha256": "86c0915d9336a222d2e9c4dc4df924af5f48652dc1f1c4f4950fc6eba4c74e7f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065005.png",
+      "localSha256": "86c0915d9336a222d2e9c4dc4df924af5f48652dc1f1c4f4950fc6eba4c74e7f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065006.png",
+      "destination": "web/public/activity/ranch/items/1065006.png",
+      "sha256": "7a94f3fee05468d1aaf37f9308d30f6b276a8765ae1764ac5a5fc82fc511081a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065006.png",
+      "localSha256": "7a94f3fee05468d1aaf37f9308d30f6b276a8765ae1764ac5a5fc82fc511081a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065007.png",
+      "destination": "web/public/activity/ranch/items/1065007.png",
+      "sha256": "8d2c257f1682afa6a05998754a269f7909d5953d67f5f83ebf1b5b52863b5514",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065007.png",
+      "localSha256": "8d2c257f1682afa6a05998754a269f7909d5953d67f5f83ebf1b5b52863b5514"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065008.png",
+      "destination": "web/public/activity/ranch/items/1065008.png",
+      "sha256": "35a67dabbeb0d69704155352b16592b0fd8a0264b848ffff6200f2c6534dd505",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065008.png",
+      "localSha256": "35a67dabbeb0d69704155352b16592b0fd8a0264b848ffff6200f2c6534dd505"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065009.png",
+      "destination": "web/public/activity/ranch/items/1065009.png",
+      "sha256": "600613a8184861d71236df5e92e1569c5150953743f9ae640006259f0c15374c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065009.png",
+      "localSha256": "600613a8184861d71236df5e92e1569c5150953743f9ae640006259f0c15374c"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065010.png",
+      "destination": "web/public/activity/ranch/items/1065010.png",
+      "sha256": "1f6c556f19a5d3274681ad873e7b5e747ba005d2b3f337ee958aae153b2ac3aa",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065010.png",
+      "localSha256": "1f6c556f19a5d3274681ad873e7b5e747ba005d2b3f337ee958aae153b2ac3aa"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065011.png",
+      "destination": "web/public/activity/ranch/items/1065011.png",
+      "sha256": "aded131f38535553f793a0e3d19a810c00592342e62da223050d24626de842f1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065011.png",
+      "localSha256": "aded131f38535553f793a0e3d19a810c00592342e62da223050d24626de842f1"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065012.png",
+      "destination": "web/public/activity/ranch/items/1065012.png",
+      "sha256": "dda8d6dab04d0b4eb02ed9b4cc84cdebd3ada0be7305c63f78572f33b3b84aa5",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065012.png",
+      "localSha256": "dda8d6dab04d0b4eb02ed9b4cc84cdebd3ada0be7305c63f78572f33b3b84aa5"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065013.png",
+      "destination": "web/public/activity/ranch/items/1065013.png",
+      "sha256": "a31aae9e2c3ea506375a6f93ca7c3e87a2a93aa9915a08c5ae58725b523d358f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065013.png",
+      "localSha256": "a31aae9e2c3ea506375a6f93ca7c3e87a2a93aa9915a08c5ae58725b523d358f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065014.png",
+      "destination": "web/public/activity/ranch/items/1065014.png",
+      "sha256": "b174b893a8211f258ef7864bebda61e46119b707865582a5582d6b26eb9d2e49",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065014.png",
+      "localSha256": "b174b893a8211f258ef7864bebda61e46119b707865582a5582d6b26eb9d2e49"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065015.png",
+      "destination": "web/public/activity/ranch/items/1065015.png",
+      "sha256": "1150a48e4a442d39f4e186e1dc737fec44662c7700ae0432ff91e364216fbe25",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065015.png",
+      "localSha256": "1150a48e4a442d39f4e186e1dc737fec44662c7700ae0432ff91e364216fbe25"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1065016.png",
+      "destination": "web/public/activity/ranch/items/1065016.png",
+      "sha256": "c726c219505b22bd01f954b3ff4b3588b5907ee03780e569833fcb65dbc49bd0",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1065016.png",
+      "localSha256": "c726c219505b22bd01f954b3ff4b3588b5907ee03780e569833fcb65dbc49bd0"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070001.png",
+      "destination": "web/public/activity/ranch/items/1070001.png",
+      "sha256": "a84bd0ab0a61f9a323502b15096bba3e50b59b1c4aa352f80e9595345e99d0ed",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070001.png",
+      "localSha256": "a84bd0ab0a61f9a323502b15096bba3e50b59b1c4aa352f80e9595345e99d0ed"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070002.png",
+      "destination": "web/public/activity/ranch/items/1070002.png",
+      "sha256": "7e1568e4e157bdd8405851089c9188e7e07674d7b25300c3a776994d51aaaace",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070002.png",
+      "localSha256": "7e1568e4e157bdd8405851089c9188e7e07674d7b25300c3a776994d51aaaace"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070003.png",
+      "destination": "web/public/activity/ranch/items/1070003.png",
+      "sha256": "e3af5a4a6b6c0225e3d7b089744fc4b0cdaa88be0d4bd866cb02af52df6c661c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070003.png",
+      "localSha256": "e3af5a4a6b6c0225e3d7b089744fc4b0cdaa88be0d4bd866cb02af52df6c661c"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070004.png",
+      "destination": "web/public/activity/ranch/items/1070004.png",
+      "sha256": "f76ce54330d065b1a5e553635556f3c983a5acfd43c6574a4184b33745dc6df8",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070004.png",
+      "localSha256": "f76ce54330d065b1a5e553635556f3c983a5acfd43c6574a4184b33745dc6df8"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070005.png",
+      "destination": "web/public/activity/ranch/items/1070005.png",
+      "sha256": "f6c08073b3eb3d94dd085a9133862749956c8672f19d9c18f5301a46009d3185",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070005.png",
+      "localSha256": "f6c08073b3eb3d94dd085a9133862749956c8672f19d9c18f5301a46009d3185"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070006.png",
+      "destination": "web/public/activity/ranch/items/1070006.png",
+      "sha256": "0be51a98e34f2ff2cd81d305ea2535665ae51876b0a3c59615ee780108811fe0",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070006.png",
+      "localSha256": "0be51a98e34f2ff2cd81d305ea2535665ae51876b0a3c59615ee780108811fe0"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070007.png",
+      "destination": "web/public/activity/ranch/items/1070007.png",
+      "sha256": "1cfb1da0fe917ca8d3ed15e6504f7e36cc0667a9bb62faa7fac8b5dbb57ec2e1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070007.png",
+      "localSha256": "1cfb1da0fe917ca8d3ed15e6504f7e36cc0667a9bb62faa7fac8b5dbb57ec2e1"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070008.png",
+      "destination": "web/public/activity/ranch/items/1070008.png",
+      "sha256": "2b3db0a11130bbae94cb79a74789a3aeb9580b0dc78eb18e260bc74c84b05866",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070008.png",
+      "localSha256": "2b3db0a11130bbae94cb79a74789a3aeb9580b0dc78eb18e260bc74c84b05866"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070009.png",
+      "destination": "web/public/activity/ranch/items/1070009.png",
+      "sha256": "f10893f8df942b7d2024d67ca96e1660e0e5003d75c8c453a81a43c3a023c5a6",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070009.png",
+      "localSha256": "f10893f8df942b7d2024d67ca96e1660e0e5003d75c8c453a81a43c3a023c5a6"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070010.png",
+      "destination": "web/public/activity/ranch/items/1070010.png",
+      "sha256": "d71dcf5dd7524906606f94c81932f51786b4f57a4256751527cf534625cc655e",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070010.png",
+      "localSha256": "d71dcf5dd7524906606f94c81932f51786b4f57a4256751527cf534625cc655e"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070011.png",
+      "destination": "web/public/activity/ranch/items/1070011.png",
+      "sha256": "3dfdbc0ac8d99de08df9df640783006b2db4f8ddef4aeaa953b8207962e48ad3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070011.png",
+      "localSha256": "3dfdbc0ac8d99de08df9df640783006b2db4f8ddef4aeaa953b8207962e48ad3"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1070012.png",
+      "destination": "web/public/activity/ranch/items/1070012.png",
+      "sha256": "d699af07bf035566b46e948cda52b3759bd762126d86a108eaa0d0d3448f6ffb",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1070012.png",
+      "localSha256": "d699af07bf035566b46e948cda52b3759bd762126d86a108eaa0d0d3448f6ffb"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075001.png",
+      "destination": "web/public/activity/ranch/items/1075001.png",
+      "sha256": "da3edf5c1b65f9dd3887fa5ce4a9840a929d240c0dab9d3eb979048665a2e951",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075001.png",
+      "localSha256": "da3edf5c1b65f9dd3887fa5ce4a9840a929d240c0dab9d3eb979048665a2e951"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075002.png",
+      "destination": "web/public/activity/ranch/items/1075002.png",
+      "sha256": "c7d326ff0a9c649459e75f28a79133789d8f94a32e3dbb90488f1f4506fb9f3f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075002.png",
+      "localSha256": "c7d326ff0a9c649459e75f28a79133789d8f94a32e3dbb90488f1f4506fb9f3f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075003.png",
+      "destination": "web/public/activity/ranch/items/1075003.png",
+      "sha256": "b8f5060b6d64c300555b5690037dbd1edf74fa248743fa3c5e3547efa7247890",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075003.png",
+      "localSha256": "b8f5060b6d64c300555b5690037dbd1edf74fa248743fa3c5e3547efa7247890"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075004.png",
+      "destination": "web/public/activity/ranch/items/1075004.png",
+      "sha256": "a6b2cf486bb2b432157e1bbc83750e13d356c46bea0ad8bb1fcddb08d838da95",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075004.png",
+      "localSha256": "a6b2cf486bb2b432157e1bbc83750e13d356c46bea0ad8bb1fcddb08d838da95"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075005.png",
+      "destination": "web/public/activity/ranch/items/1075005.png",
+      "sha256": "d6f366f4886dd6081c6d6ba609b0fd47fa57e67f2545425847eef5d564ad0665",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075005.png",
+      "localSha256": "d6f366f4886dd6081c6d6ba609b0fd47fa57e67f2545425847eef5d564ad0665"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075006.png",
+      "destination": "web/public/activity/ranch/items/1075006.png",
+      "sha256": "737e46aff0da3e1f27167169ad86df8d59f83526167f7d24db022f4f2d118d95",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075006.png",
+      "localSha256": "737e46aff0da3e1f27167169ad86df8d59f83526167f7d24db022f4f2d118d95"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075007.png",
+      "destination": "web/public/activity/ranch/items/1075007.png",
+      "sha256": "81d79f52ebff78a5ee785c9700b9e408703b63acb9e3d2427d291f788560fef7",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075007.png",
+      "localSha256": "81d79f52ebff78a5ee785c9700b9e408703b63acb9e3d2427d291f788560fef7"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075008.png",
+      "destination": "web/public/activity/ranch/items/1075008.png",
+      "sha256": "8ef97af78a5dbf30021e7d0dfafc2aa86c62fc0aa7b5badcae5a904a63b91e77",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075008.png",
+      "localSha256": "8ef97af78a5dbf30021e7d0dfafc2aa86c62fc0aa7b5badcae5a904a63b91e77"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075009.png",
+      "destination": "web/public/activity/ranch/items/1075009.png",
+      "sha256": "eeb06bdfad01cc5f7bec574ff4247a428fca7944c239246f02a3f5732aad7f6c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075009.png",
+      "localSha256": "eeb06bdfad01cc5f7bec574ff4247a428fca7944c239246f02a3f5732aad7f6c"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075010.png",
+      "destination": "web/public/activity/ranch/items/1075010.png",
+      "sha256": "93adb3c8e57f2ced8ac09a8fb5abc676e796446a22fc38635033f69fa76cf4be",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075010.png",
+      "localSha256": "93adb3c8e57f2ced8ac09a8fb5abc676e796446a22fc38635033f69fa76cf4be"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075011.png",
+      "destination": "web/public/activity/ranch/items/1075011.png",
+      "sha256": "4ec0ccc48bafacef09df83ec3dd8191099c408f54ce6b47b91d397db3e8a2797",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075011.png",
+      "localSha256": "4ec0ccc48bafacef09df83ec3dd8191099c408f54ce6b47b91d397db3e8a2797"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/1075012.png",
+      "destination": "web/public/activity/ranch/items/1075012.png",
+      "sha256": "519c44821aa1d9131319e56e61bd9e6070b046be2236855a69aa09f0cfcd4b67",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/1075012.png",
+      "localSha256": "519c44821aa1d9131319e56e61bd9e6070b046be2236855a69aa09f0cfcd4b67"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060001.png",
+      "destination": "web/public/activity/ranch/items/2060001.png",
+      "sha256": "8c7e0e5055b08c61d2b4e35813354b465cbd13a3ed2704408f6443fd38991013",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060001.png",
+      "localSha256": "8c7e0e5055b08c61d2b4e35813354b465cbd13a3ed2704408f6443fd38991013"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060002.png",
+      "destination": "web/public/activity/ranch/items/2060002.png",
+      "sha256": "5736ccb6c043cb4b0aef8c552f1c1c6823ee40f2c1d59c5b7fe78af79d941fb7",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060002.png",
+      "localSha256": "5736ccb6c043cb4b0aef8c552f1c1c6823ee40f2c1d59c5b7fe78af79d941fb7"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060003.png",
+      "destination": "web/public/activity/ranch/items/2060003.png",
+      "sha256": "1c520bdc8354036cfbd84ed99e6be7b318078fa53aa269161ea0d75e830c75f6",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060003.png",
+      "localSha256": "1c520bdc8354036cfbd84ed99e6be7b318078fa53aa269161ea0d75e830c75f6"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060004.png",
+      "destination": "web/public/activity/ranch/items/2060004.png",
+      "sha256": "5f9e17c8c39f4fe18e84871c85b47c14378dfb5563fe3ecba59ad87f250e8439",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060004.png",
+      "localSha256": "5f9e17c8c39f4fe18e84871c85b47c14378dfb5563fe3ecba59ad87f250e8439"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060005.png",
+      "destination": "web/public/activity/ranch/items/2060005.png",
+      "sha256": "35f05eb54376d397072255b23800f407e7fbd75e9faf263d5b9be5a1ea7f937f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060005.png",
+      "localSha256": "35f05eb54376d397072255b23800f407e7fbd75e9faf263d5b9be5a1ea7f937f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060006.png",
+      "destination": "web/public/activity/ranch/items/2060006.png",
+      "sha256": "1927ee17d0a0f84308139579b0c550102d82f939269ba998178394b4a460a6de",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060006.png",
+      "localSha256": "1927ee17d0a0f84308139579b0c550102d82f939269ba998178394b4a460a6de"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060007.png",
+      "destination": "web/public/activity/ranch/items/2060007.png",
+      "sha256": "f41544814739bf7aa454b1a15dcfd26daf368285efc7fd363791b8a83503e662",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060007.png",
+      "localSha256": "f41544814739bf7aa454b1a15dcfd26daf368285efc7fd363791b8a83503e662"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060008.png",
+      "destination": "web/public/activity/ranch/items/2060008.png",
+      "sha256": "1adbe3d6d9c8088820ae2ea84438c526d404f76a4bd8ed418dd37660353befda",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060008.png",
+      "localSha256": "1adbe3d6d9c8088820ae2ea84438c526d404f76a4bd8ed418dd37660353befda"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060009.png",
+      "destination": "web/public/activity/ranch/items/2060009.png",
+      "sha256": "c7cf8c1cf64b95b23b97c1bc989817942a609e12fdb50fe80f72f0b7d771afa1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060009.png",
+      "localSha256": "c7cf8c1cf64b95b23b97c1bc989817942a609e12fdb50fe80f72f0b7d771afa1"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060010.png",
+      "destination": "web/public/activity/ranch/items/2060010.png",
+      "sha256": "cb7e1dea522799afd6fb333d1241af0f815064538ee48e07c6bc54320c520278",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060010.png",
+      "localSha256": "cb7e1dea522799afd6fb333d1241af0f815064538ee48e07c6bc54320c520278"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060011.png",
+      "destination": "web/public/activity/ranch/items/2060011.png",
+      "sha256": "ce0a124a800f36b0613b20c42b00aec3adfd0578e1386fe630bc345d5daa0487",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060011.png",
+      "localSha256": "ce0a124a800f36b0613b20c42b00aec3adfd0578e1386fe630bc345d5daa0487"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060012.png",
+      "destination": "web/public/activity/ranch/items/2060012.png",
+      "sha256": "346e95a232c12cd2028a139c288f67aaf268b61521e50dbf98bcf366d3da3bdd",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060012.png",
+      "localSha256": "346e95a232c12cd2028a139c288f67aaf268b61521e50dbf98bcf366d3da3bdd"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060013.png",
+      "destination": "web/public/activity/ranch/items/2060013.png",
+      "sha256": "ca926c5326c8dca83efa7b700a780b3a84798518f4aed1ca66997a3b6d77c1f3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060013.png",
+      "localSha256": "ca926c5326c8dca83efa7b700a780b3a84798518f4aed1ca66997a3b6d77c1f3"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060014.png",
+      "destination": "web/public/activity/ranch/items/2060014.png",
+      "sha256": "9c1e5cc29fa7ffb4d41369f5bbd2e0e5529581ec4d706250a9d74aed5df2894c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060014.png",
+      "localSha256": "9c1e5cc29fa7ffb4d41369f5bbd2e0e5529581ec4d706250a9d74aed5df2894c"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060015.png",
+      "destination": "web/public/activity/ranch/items/2060015.png",
+      "sha256": "49f88f9af82c55e9c7065b535db85626717e8fc66475f7893381d37a4e4d910d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060015.png",
+      "localSha256": "49f88f9af82c55e9c7065b535db85626717e8fc66475f7893381d37a4e4d910d"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2060016.png",
+      "destination": "web/public/activity/ranch/items/2060016.png",
+      "sha256": "ddb953872aa01c2611146ea72336c84486dcba49abc488dedeced93450006b6c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2060016.png",
+      "localSha256": "ddb953872aa01c2611146ea72336c84486dcba49abc488dedeced93450006b6c"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065001.png",
+      "destination": "web/public/activity/ranch/items/2065001.png",
+      "sha256": "de64aebd8759696ba2bcbe2fa61143ef424695a36ce0624bb381f9d9547d3d02",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065001.png",
+      "localSha256": "de64aebd8759696ba2bcbe2fa61143ef424695a36ce0624bb381f9d9547d3d02"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065002.png",
+      "destination": "web/public/activity/ranch/items/2065002.png",
+      "sha256": "179d4d0eee766dd55f9843d9b6547af97a597eb2ee95e3c58619b8474cb24849",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065002.png",
+      "localSha256": "179d4d0eee766dd55f9843d9b6547af97a597eb2ee95e3c58619b8474cb24849"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065003.png",
+      "destination": "web/public/activity/ranch/items/2065003.png",
+      "sha256": "a8f53c2cc5459e9d1307e648daa8d6ed2e540aabbf793409bec5d06dcfe3d3a8",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065003.png",
+      "localSha256": "a8f53c2cc5459e9d1307e648daa8d6ed2e540aabbf793409bec5d06dcfe3d3a8"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065004.png",
+      "destination": "web/public/activity/ranch/items/2065004.png",
+      "sha256": "c34e8f10d7facd8539f265c6c7ace266d76d7bf2cd36a5040b0fa961c7d9a376",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065004.png",
+      "localSha256": "c34e8f10d7facd8539f265c6c7ace266d76d7bf2cd36a5040b0fa961c7d9a376"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065005.png",
+      "destination": "web/public/activity/ranch/items/2065005.png",
+      "sha256": "929fa8795b4e68ffc18e84f9181f454c456d0b1a2fdd8ee337e930a3e0b7ec1a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065005.png",
+      "localSha256": "929fa8795b4e68ffc18e84f9181f454c456d0b1a2fdd8ee337e930a3e0b7ec1a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065006.png",
+      "destination": "web/public/activity/ranch/items/2065006.png",
+      "sha256": "e2757f386224c8ad9b4e65b54259072e0537834d39f45eb3dcf56e85afc8a19b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065006.png",
+      "localSha256": "e2757f386224c8ad9b4e65b54259072e0537834d39f45eb3dcf56e85afc8a19b"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065007.png",
+      "destination": "web/public/activity/ranch/items/2065007.png",
+      "sha256": "0dc03112d58cd086cca1f69c674b531d662eb7c9514d4c2e13b641d5418ce0cb",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065007.png",
+      "localSha256": "0dc03112d58cd086cca1f69c674b531d662eb7c9514d4c2e13b641d5418ce0cb"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065008.png",
+      "destination": "web/public/activity/ranch/items/2065008.png",
+      "sha256": "a971da7be259be83395641243a24562d409d4741c95515f82c93901b7a9c1654",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065008.png",
+      "localSha256": "a971da7be259be83395641243a24562d409d4741c95515f82c93901b7a9c1654"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065009.png",
+      "destination": "web/public/activity/ranch/items/2065009.png",
+      "sha256": "a4192c130ab22e3bc5feead3a587679117fd99985ecadc86ec935ee6ad6e8da4",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065009.png",
+      "localSha256": "a4192c130ab22e3bc5feead3a587679117fd99985ecadc86ec935ee6ad6e8da4"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065010.png",
+      "destination": "web/public/activity/ranch/items/2065010.png",
+      "sha256": "9f8dbf6fbd5a83d4c7cbf4ff4143e7d561abd050171121a35ccb9a204da1e4ab",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065010.png",
+      "localSha256": "9f8dbf6fbd5a83d4c7cbf4ff4143e7d561abd050171121a35ccb9a204da1e4ab"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065011.png",
+      "destination": "web/public/activity/ranch/items/2065011.png",
+      "sha256": "cfdb920e798bc6ba57e39a7f7dd453d929b124445315284337b1cc4915dae3e6",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065011.png",
+      "localSha256": "cfdb920e798bc6ba57e39a7f7dd453d929b124445315284337b1cc4915dae3e6"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065012.png",
+      "destination": "web/public/activity/ranch/items/2065012.png",
+      "sha256": "a1429fa36f191c6ac85d29507800072616ae21244a9cd7778a9705787fef1ec1",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065012.png",
+      "localSha256": "a1429fa36f191c6ac85d29507800072616ae21244a9cd7778a9705787fef1ec1"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065013.png",
+      "destination": "web/public/activity/ranch/items/2065013.png",
+      "sha256": "4b35c1994e909d6553113281e3e08769c961002f38474a2468a965c888964532",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065013.png",
+      "localSha256": "4b35c1994e909d6553113281e3e08769c961002f38474a2468a965c888964532"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065014.png",
+      "destination": "web/public/activity/ranch/items/2065014.png",
+      "sha256": "61aeb8ebeebf2398234b4115ae12f7a2cb326c58f01906519c53fe3e99d72db7",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065014.png",
+      "localSha256": "61aeb8ebeebf2398234b4115ae12f7a2cb326c58f01906519c53fe3e99d72db7"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065015.png",
+      "destination": "web/public/activity/ranch/items/2065015.png",
+      "sha256": "54a2afde82bfa12003dea5430614aa9b8b60b38bd5a7a128fb6585af50b13a32",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065015.png",
+      "localSha256": "54a2afde82bfa12003dea5430614aa9b8b60b38bd5a7a128fb6585af50b13a32"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2065016.png",
+      "destination": "web/public/activity/ranch/items/2065016.png",
+      "sha256": "f997b1379d4ab2ce0ece5bfedab7376e9766efda644a75fb372ba3eca16efda4",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2065016.png",
+      "localSha256": "f997b1379d4ab2ce0ece5bfedab7376e9766efda644a75fb372ba3eca16efda4"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070001.png",
+      "destination": "web/public/activity/ranch/items/2070001.png",
+      "sha256": "938a8edc88ace81eb73f0b85faa3e9a609fb947d0249bc420f4a44f2f41c065f",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070001.png",
+      "localSha256": "938a8edc88ace81eb73f0b85faa3e9a609fb947d0249bc420f4a44f2f41c065f"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070002.png",
+      "destination": "web/public/activity/ranch/items/2070002.png",
+      "sha256": "bae0782029bf99f8b80de318944d743646a90be8d008938c92f4e01a8c4d8044",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070002.png",
+      "localSha256": "bae0782029bf99f8b80de318944d743646a90be8d008938c92f4e01a8c4d8044"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070003.png",
+      "destination": "web/public/activity/ranch/items/2070003.png",
+      "sha256": "092616590595abf71b470864e9ee854694dae23ad82e7d9abd432d95cdfb1b1b",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070003.png",
+      "localSha256": "092616590595abf71b470864e9ee854694dae23ad82e7d9abd432d95cdfb1b1b"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070004.png",
+      "destination": "web/public/activity/ranch/items/2070004.png",
+      "sha256": "40a2ca04a681d01a5c1e9f438cb201569158968445f8ed8bd1bd7af56657d875",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070004.png",
+      "localSha256": "40a2ca04a681d01a5c1e9f438cb201569158968445f8ed8bd1bd7af56657d875"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070005.png",
+      "destination": "web/public/activity/ranch/items/2070005.png",
+      "sha256": "83217f34710fbb4b7b8de8f33ed330add9dda0592d28a0c10888f4acd58db287",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070005.png",
+      "localSha256": "83217f34710fbb4b7b8de8f33ed330add9dda0592d28a0c10888f4acd58db287"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070006.png",
+      "destination": "web/public/activity/ranch/items/2070006.png",
+      "sha256": "336905e3e3c5f988dcac9db21176e43145c6c03734bd1240c72d7bdfbecd9987",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070006.png",
+      "localSha256": "336905e3e3c5f988dcac9db21176e43145c6c03734bd1240c72d7bdfbecd9987"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070007.png",
+      "destination": "web/public/activity/ranch/items/2070007.png",
+      "sha256": "c6b663ad7c0ecd24aae567b2b9c4412257e2d4428f289ed1e73863d41ab91da9",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070007.png",
+      "localSha256": "c6b663ad7c0ecd24aae567b2b9c4412257e2d4428f289ed1e73863d41ab91da9"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070008.png",
+      "destination": "web/public/activity/ranch/items/2070008.png",
+      "sha256": "e30afb83c9bb378667019608b195570e6e1ff3aad2a65ec402b19b17942cca48",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070008.png",
+      "localSha256": "e30afb83c9bb378667019608b195570e6e1ff3aad2a65ec402b19b17942cca48"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070009.png",
+      "destination": "web/public/activity/ranch/items/2070009.png",
+      "sha256": "7ee4782c09d142474ee88e907b32ce9d4b05891647126ddb781bdfe6b3c23db7",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070009.png",
+      "localSha256": "7ee4782c09d142474ee88e907b32ce9d4b05891647126ddb781bdfe6b3c23db7"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070010.png",
+      "destination": "web/public/activity/ranch/items/2070010.png",
+      "sha256": "f07b56d8e269af498633418b694b5721b2a2103a5ad7aa467f272fd5f21b90b2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070010.png",
+      "localSha256": "f07b56d8e269af498633418b694b5721b2a2103a5ad7aa467f272fd5f21b90b2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070011.png",
+      "destination": "web/public/activity/ranch/items/2070011.png",
+      "sha256": "b80772e9ad6dd5a7630b27190ecb7350c619a2b2086c5ff4f1fa537d0226b8ee",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070011.png",
+      "localSha256": "b80772e9ad6dd5a7630b27190ecb7350c619a2b2086c5ff4f1fa537d0226b8ee"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2070012.png",
+      "destination": "web/public/activity/ranch/items/2070012.png",
+      "sha256": "0b08378eeee54fc453c69a36f3f4abc007863ac7118af16a4b1324616c5bbc7d",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2070012.png",
+      "localSha256": "0b08378eeee54fc453c69a36f3f4abc007863ac7118af16a4b1324616c5bbc7d"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075001.png",
+      "destination": "web/public/activity/ranch/items/2075001.png",
+      "sha256": "f0fdf83a9aa34f38991956aaff96dadcb6c4fa170190ae9d2f2213b9d538bcec",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075001.png",
+      "localSha256": "f0fdf83a9aa34f38991956aaff96dadcb6c4fa170190ae9d2f2213b9d538bcec"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075002.png",
+      "destination": "web/public/activity/ranch/items/2075002.png",
+      "sha256": "eb85c767785a8d2f57cae28ce710fc3611c3e5d22c41cbc087128046d841e672",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075002.png",
+      "localSha256": "eb85c767785a8d2f57cae28ce710fc3611c3e5d22c41cbc087128046d841e672"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075003.png",
+      "destination": "web/public/activity/ranch/items/2075003.png",
+      "sha256": "2f264badc4cca970a391d8848ea9cf21a73a6da6b40196f302215e2833fd0a4c",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075003.png",
+      "localSha256": "2f264badc4cca970a391d8848ea9cf21a73a6da6b40196f302215e2833fd0a4c"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075004.png",
+      "destination": "web/public/activity/ranch/items/2075004.png",
+      "sha256": "8a926a028d172bb434b24300f0a93f259a8d8f016f2428bbadb150cc9dea604a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075004.png",
+      "localSha256": "8a926a028d172bb434b24300f0a93f259a8d8f016f2428bbadb150cc9dea604a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075005.png",
+      "destination": "web/public/activity/ranch/items/2075005.png",
+      "sha256": "6cbb29c540271f85a0ede4a9038cccb4dd47eaff35eac71ec481f3050682cc8a",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075005.png",
+      "localSha256": "6cbb29c540271f85a0ede4a9038cccb4dd47eaff35eac71ec481f3050682cc8a"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075006.png",
+      "destination": "web/public/activity/ranch/items/2075006.png",
+      "sha256": "5ff25c8ef961458bdead6370a8c714ca3926ceb6693b85830c13ddd32f13d194",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075006.png",
+      "localSha256": "5ff25c8ef961458bdead6370a8c714ca3926ceb6693b85830c13ddd32f13d194"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075007.png",
+      "destination": "web/public/activity/ranch/items/2075007.png",
+      "sha256": "d7e807b96e2b2919beb40d7a58f143b6efd2c14c650dd2008a98951b79b596d3",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075007.png",
+      "localSha256": "d7e807b96e2b2919beb40d7a58f143b6efd2c14c650dd2008a98951b79b596d3"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075008.png",
+      "destination": "web/public/activity/ranch/items/2075008.png",
+      "sha256": "5077edf8bcf7e9ecfa68dd7717801e46ca2d0e8187a4dd467798ebf043073c16",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075008.png",
+      "localSha256": "5077edf8bcf7e9ecfa68dd7717801e46ca2d0e8187a4dd467798ebf043073c16"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075009.png",
+      "destination": "web/public/activity/ranch/items/2075009.png",
+      "sha256": "1973471da58a1196ce484183ca3395bd9fc3ec24c9ca3fde5f69563a5b7a4d39",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075009.png",
+      "localSha256": "1973471da58a1196ce484183ca3395bd9fc3ec24c9ca3fde5f69563a5b7a4d39"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075010.png",
+      "destination": "web/public/activity/ranch/items/2075010.png",
+      "sha256": "0e7636bc780d211d5e2b7c38ff71aac335b5562bc5955f338364bce0c9ba26e2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075010.png",
+      "localSha256": "0e7636bc780d211d5e2b7c38ff71aac335b5562bc5955f338364bce0c9ba26e2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075011.png",
+      "destination": "web/public/activity/ranch/items/2075011.png",
+      "sha256": "244ce4f6ff377b32af96a0c93822a1afae7293def9343de9322053d6cfbda450",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075011.png",
+      "localSha256": "244ce4f6ff377b32af96a0c93822a1afae7293def9343de9322053d6cfbda450"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/2075012.png",
+      "destination": "web/public/activity/ranch/items/2075012.png",
+      "sha256": "30e27d81671de7588b925930176705413b11e19391626d4cfb6b503f282075a4",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/2075012.png",
+      "localSha256": "30e27d81671de7588b925930176705413b11e19391626d4cfb6b503f282075a4"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/3601001.png",
+      "destination": "web/public/activity/ranch/items/3601001.png",
+      "sha256": "b946d3aa207d9484a1acf530410eb6e709ec3f71e1360c32002affcb332535f2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/3601001.png",
+      "localSha256": "b946d3aa207d9484a1acf530410eb6e709ec3f71e1360c32002affcb332535f2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/3602001.png",
+      "destination": "web/public/activity/ranch/items/3602001.png",
+      "sha256": "b946d3aa207d9484a1acf530410eb6e709ec3f71e1360c32002affcb332535f2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/3602001.png",
+      "localSha256": "b946d3aa207d9484a1acf530410eb6e709ec3f71e1360c32002affcb332535f2"
+    },
+    {
+      "source": "core/src/gameConfig/seed_images_named/seed_images/3702001.png",
+      "destination": "web/public/activity/ranch/items/3702001.png",
+      "sha256": "b946d3aa207d9484a1acf530410eb6e709ec3f71e1360c32002affcb332535f2",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/gameConfig/seed_images_named/seed_images/3702001.png",
+      "localSha256": "b946d3aa207d9484a1acf530410eb6e709ec3f71e1360c32002affcb332535f2"
+    },
+    {
+      "source": "core/src/utils/tsdk-runtime.ts",
+      "destination": "core/src/utils/tsdk-adoption-runtime.js",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/utils/tsdk-runtime.ts",
+      "sha256": "d416d0b692af897a15b40ec4c39ec29b103f2bf2d03a04283e5cb94a63d8ea7d",
+      "localSha256": "446d04ed187dfee72ea03243a631ed5ab7e41ebee6f50df1a5007974080312c7"
+    },
+    {
+      "source": "core/src/utils/tsdk.wasm",
+      "destination": "core/src/utils/tsdk-qq-1794737607.wasm",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/utils/tsdk.wasm",
+      "sha256": "ab6eb0f0ee86ce8984b0c37a481ff51e7722961ff0b50a9f91e2fa9ff351ce74",
+      "localSha256": "ab6eb0f0ee86ce8984b0c37a481ff51e7722961ff0b50a9f91e2fa9ff351ce74"
+    },
+    {
+      "source": "core/src/utils/tsdk-wx.wasm",
+      "destination": "core/src/utils/tsdk-wx-1794837963.wasm",
+      "url": "https://raw.githubusercontent.com/liyangpengs/qq-farm-bot/bd93d3f178413c16aebf8b34d1d85a6b2589f2c3/core/src/utils/tsdk-wx.wasm",
+      "sha256": "d14a4f5d59c8a27128019dbad25fe3cd3d5243dfc389eb9bcbb345efb1cebc9a",
+      "localSha256": "d14a4f5d59c8a27128019dbad25fe3cd3d5243dfc389eb9bcbb345efb1cebc9a"
+    }
+  ],
+  "adaptationNotes": [
+    "TypeScript was transpiled to CommonJS for the local backend; adopted modules are maintained here as JavaScript.",
+    "A separate protobuf Root preserves existing local protocol types.",
+    "Local SHA-256 records the integrated file; source SHA-256 records the fetched input where available.",
+    "The upstream protocol is not independently recovered from the official client; all integration tests use synthetic fixtures."
+  ]
+}

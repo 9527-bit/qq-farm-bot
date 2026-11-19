@@ -1,3 +1,5 @@
+const { RANCH_AUTOMATION_DEFAULTS, normalizeRanchSetting } = require('../config/ranch-automation');
+const adoptionWindow = require('./adoption-activity-window');
 const process = require('node:process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -244,6 +246,8 @@ const FERTILIZER_LAND_TYPE_SET = new Set(DEFAULT_FERTILIZER_LAND_TYPES);
 
 /** 默认自动化配置 */
 const DEFAULT_AUTOMATION = {
+    ...RANCH_AUTOMATION_DEFAULTS,
+    ...Object.fromEntries(adoptionWindow.MUGE_KEYS.map(key => [key, false])),
     farm: true,
     farm_push: true,
     land_upgrade: false,
@@ -395,6 +399,7 @@ function isActivityWindowActive(group, nowSeconds = Math.floor(Date.now() / 1000
 
 function getInactiveActivityAutomationKeys(nowSeconds = Math.floor(Date.now() / 1000)) {
     const keys = new Set(HIDDEN_ACTIVITY_AUTOMATION_KEYS);
+    if (!adoptionWindow.isActive(adoptionWindow.readWindow(), nowSeconds * 1000)) adoptionWindow.MUGE_KEYS.forEach(key => keys.add(key));
     for (const group of TIMED_ACTIVITY_AUTOMATION_GROUPS) {
         if (isActivityWindowActive(group, nowSeconds)) continue;
         for (const key of group.keys || []) keys.add(key);
@@ -786,7 +791,9 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
         for (const [key, value] of Object.entries(input.automation)) {
             if (!ALLOWED_AUTOMATION_KEYS.has(key)) continue;
 
-            if (key === 'fertilizer') {
+            if (key.startsWith('ranch_')) {
+                cfg.automation[key] = normalizeRanchSetting(key, value);
+            } else if (key === 'fertilizer') {
                 const allowed = ['both', 'normal', 'organic', 'smart', 'smart_only', 'smart_normal', 'final_normal', 'final_organic', 'none'];
                 cfg.automation[key] = allowed.includes(value) ? value : cfg.automation[key];
             } else if (key === 'fertilizer_land_types') {
@@ -1309,7 +1316,9 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
     if (patch.automation && typeof patch.automation === 'object') {
         for (const [key, value] of Object.entries(patch.automation)) {
             if (cfg.automation[key] === undefined) continue;
-            if (key === 'fertilizer') {
+            if (key.startsWith('ranch_')) {
+                cfg.automation[key] = normalizeRanchSetting(key, value);
+            } else if (key === 'fertilizer') {
                 const allowed = ['both', 'normal', 'organic', 'smart', 'smart_only', 'smart_normal', 'final_normal', 'final_organic', 'none'];
                 cfg.automation[key] = allowed.includes(value) ? value : cfg.automation[key];
             } else if (key === 'fertilizer_land_types') {

@@ -1,3 +1,4 @@
+const adoptionItems = require('./adoption-items');
 const fs = require('node:fs');
 const path = require('node:path');
 const { filterInvalidPlants, isInvalidPlant, isInvalidSeedId } = require('./invalidPlants');
@@ -641,7 +642,7 @@ function getItemImageById(itemId) {
     const skinImg = skinDetailImageMap.get(numericId);
     if (skinImg) return skinImg;
 
-    return '';
+    return adoptionItems.getAdoptionImage(numericId);
 }
 
 /** 根据物品ID获取物品信息 */
@@ -649,7 +650,7 @@ function getItemById(itemId) {
     const numericId = Number(itemId) || 0;
     const staticInfo = staticItemInfoMap.get(numericId);
     const itemInfo = itemInfoMap.get(numericId);
-    if (!staticInfo) return itemInfo;
+    if (!staticInfo) return itemInfo || adoptionItems.getAdoptionItem(numericId);
     return {
         ...(itemInfo || {}),
         ...staticInfo,
@@ -742,6 +743,7 @@ function getMutantEffectsByIds(ids) {
 loadConfigs();
 
 module.exports = {
+    getShopGoodsById: adoptionItems.getShopGoodsById,
     loadConfigs,
     getAllPlants,
     getAllSeeds,

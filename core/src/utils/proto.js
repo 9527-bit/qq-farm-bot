@@ -23,6 +23,7 @@ function getProtoReadyPromise() {
 
 async function loadProto() {
     log('系统', '正在加载 Protobuf 定义...');
+    await require('./adoption-proto').loadAdoptionProto();
     root = new protobuf.Root();
     await root.load([
         getResourcePath('proto', 'game.proto'),
