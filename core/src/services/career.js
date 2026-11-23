@@ -30,6 +30,18 @@ async function getCareerInfo(gid) {
     };
   });
 
+  const ranch = reply.ranch ? {
+    totalHarvestCount: toNum(reply.ranch.total_harvest_count),
+    totalMatureCount: toNum(reply.ranch.total_mature_count),
+    totalStealCount: toNum(reply.ranch.total_steal_count),
+    level: toNum(reply.ranch.level),
+    exp: toNum(reply.ranch.exp),
+    products: (reply.ranch.harvest_items || []).map(item => ({
+      id: toNum(item.item_id),
+      count: toNum(item.harvest_count),
+    })),
+  } : null;
+
   return {
     items,
     totalHarvestCount: toNum(reply.total_harvest_count),
@@ -41,7 +53,16 @@ async function getCareerInfo(gid) {
     gid: toNum(reply.gid) || numericGid,
     platform: toNum(reply.platform),
     openId: String(reply.open_id || ''),
+    ...(ranch ? { ranch } : {}),
   };
 }
 
-module.exports = { getCareerInfo };
+async function getCareerInfoOrNull(gid) {
+  try {
+    return await getCareerInfo(gid);
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { getCareerInfo, getCareerInfoOrNull };

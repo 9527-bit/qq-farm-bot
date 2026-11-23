@@ -228,10 +228,15 @@ function handleLogoFileChange(event: Event) {
           />
           <BaseInput
             v-model="localSystemConfig.clientVersion"
-            label="客户端版本"
+            label="QQ 客户端版本"
             type="text"
-            placeholder="1.13.0.5_20260723"
-            class="col-span-2"
+            placeholder="1.17.0.4_20261117"
+          />
+          <BaseInput
+            v-model="localSystemConfig.wxClientVersion"
+            label="微信客户端版本"
+            type="text"
+            placeholder="1.17.0.4_20261117"
           />
           <div class="flex flex-col gap-1.5">
             <label class="text-sm text-gray-700 font-medium dark:text-gray-300">平台</label>

@@ -1,24 +1,26 @@
 const process = require('node:process');
 
 const DEFAULT_CLIENT_VERSION = '1.17.0.4_20261117';
+const DEFAULT_WX_CLIENT_VERSION = '1.17.0.4_20261117';
 
 function parseClientVersion(value) {
     const match = String(value || '').trim().match(/^(\d+(?:\.\d+){2,4})_(\d{8})$/);
     return match ? { parts: match[1].split('.').map(Number), date: Number(match[2]) } : null;
 }
 
-function resolveClientVersion(value) {
+function resolveClientVersion(value, baselineVersion = DEFAULT_CLIENT_VERSION) {
+    const fallback = String(baselineVersion || DEFAULT_CLIENT_VERSION).trim() || DEFAULT_CLIENT_VERSION;
     const version = String(value || '').trim();
     const candidate = parseClientVersion(version);
-    const baseline = parseClientVersion(DEFAULT_CLIENT_VERSION);
-    if (!candidate || !baseline) return version || DEFAULT_CLIENT_VERSION;
+    const baseline = parseClientVersion(fallback);
+    if (!candidate || !baseline) return version || fallback;
     if (candidate.date !== baseline.date) {
-        return candidate.date < baseline.date ? DEFAULT_CLIENT_VERSION : version;
+        return candidate.date < baseline.date ? fallback : version;
     }
     const width = Math.max(candidate.parts.length, baseline.parts.length);
     for (let index = 0; index < width; index += 1) {
         const delta = (candidate.parts[index] || 0) - (baseline.parts[index] || 0);
-        if (delta !== 0) return delta < 0 ? DEFAULT_CLIENT_VERSION : version;
+        if (delta !== 0) return delta < 0 ? fallback : version;
     }
     return version;
 }
@@ -27,6 +29,7 @@ function resolveClientVersion(value) {
 const DEFAULT_SYSTEM_CONFIG = {
     serverUrl: 'wss://gate-obt.nqf.qq.com/prod/ws',
     clientVersion: DEFAULT_CLIENT_VERSION,
+    wxClientVersion: DEFAULT_WX_CLIENT_VERSION,
     platform: 'qq',
     os: 'iOS'
 };
@@ -35,6 +38,7 @@ const DEFAULT_SYSTEM_CONFIG = {
 const CONFIG = {
     serverUrl: DEFAULT_SYSTEM_CONFIG.serverUrl,
     clientVersion: DEFAULT_SYSTEM_CONFIG.clientVersion,
+    wxClientVersion: DEFAULT_SYSTEM_CONFIG.wxClientVersion,
     platform: DEFAULT_SYSTEM_CONFIG.platform,
     os: DEFAULT_SYSTEM_CONFIG.os,
     tsdkAceEnabled: process.env.FARM_TSDK_ACE_ENABLED !== 'false',
@@ -57,11 +61,15 @@ const CONFIG = {
  * @param {object} config - 包含 serverUrl, clientVersion, platform, os 的配置对象
  */
 function updateRuntimeConfig(config) {
+    if (!config || typeof config !== 'object') return;
     if (config.serverUrl && typeof config.serverUrl === 'string') {
         CONFIG.serverUrl = config.serverUrl;
     }
     if (config.clientVersion && typeof config.clientVersion === 'string') {
-        CONFIG.clientVersion = resolveClientVersion(config.clientVersion);
+        CONFIG.clientVersion = resolveClientVersion(config.clientVersion, DEFAULT_CLIENT_VERSION);
+    }
+    if (config.wxClientVersion && typeof config.wxClientVersion === 'string') {
+        CONFIG.wxClientVersion = resolveClientVersion(config.wxClientVersion, DEFAULT_WX_CLIENT_VERSION);
     }
     if (config.platform && typeof config.platform === 'string') {
         CONFIG.platform = config.platform;
@@ -78,6 +86,7 @@ function getRuntimeConfig() {
     return {
         serverUrl: CONFIG.serverUrl,
         clientVersion: CONFIG.clientVersion,
+        wxClientVersion: CONFIG.wxClientVersion,
         platform: CONFIG.platform,
         os: CONFIG.os
     };
@@ -108,6 +117,7 @@ const PHASE_NAMES = ['未知', '种子', '发芽', '小叶', '大叶', '开花',
 module.exports = {
     CONFIG,
     DEFAULT_CLIENT_VERSION,
+    DEFAULT_WX_CLIENT_VERSION,
     PlantPhase,
     PHASE_NAMES,
     updateRuntimeConfig,

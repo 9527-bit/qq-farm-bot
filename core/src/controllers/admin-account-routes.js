@@ -53,13 +53,15 @@ function parseOfficialGatewayUrl(value) {
   return { code, clientVersion };
 }
 
-function syncGatewayClientVersion(gateway, store, updateRuntimeConfig) {
+function syncGatewayClientVersion(gateway, store, updateRuntimeConfig, platform = "") {
   if (!gateway || !store || typeof store.getSystemConfig !== "function") return false;
+  const resolvedPlatform = String(platform || gateway.platform || "qq").trim().toLowerCase();
+  const field = resolvedPlatform === "wx" || resolvedPlatform === "wechat" ? "wxClientVersion" : "clientVersion";
   const currentSystemConfig = store.getSystemConfig() || {};
-  if (String(currentSystemConfig.clientVersion || "") === gateway.clientVersion) return false;
+  if (String(currentSystemConfig[field] || "") === gateway.clientVersion) return false;
   const savedSystemConfig = store.setSystemConfig({
     ...currentSystemConfig,
-    clientVersion: gateway.clientVersion,
+    [field]: gateway.clientVersion,
   });
   if (savedSystemConfig && typeof updateRuntimeConfig === "function") {
     updateRuntimeConfig(savedSystemConfig);
@@ -301,7 +303,7 @@ function registerAdminAccountRoutes({
 
       if (!isUpdate && currentUser) nextAccount.username = currentUser.username;
       const data = addOrUpdateAccount(nextAccount);
-      const clientVersionUpdated = syncGatewayClientVersion(gateway, store, updateRuntimeConfig);
+      const clientVersionUpdated = syncGatewayClientVersion(gateway, store, updateRuntimeConfig, nextAccount.platform);
       if (body.wxSessionId && body.wxid && currentUser) {
         const wxLoginAdapter = require("../services/wx-login-adapter");
         wxLoginAdapter.consumePendingWxInfo(body.wxSessionId, body.wxid, currentUser.username);

@@ -82,6 +82,24 @@ test('both versioned upstream WASM files initialize and round-trip independently
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('QQ TSDK feature normalization handles uint8 wraparound when reference byte is 255', () => {
+    const { TsdkRuntime } = require('../src/utils/tsdk-adoption-runtime');
+    const runtime = new TsdkRuntime({ platform: 'qq', accountId: 'wraparound' });
+    runtime.memory = new WebAssembly.Memory({ initial: 1 });
+    const view = new Uint8Array(runtime.memory.buffer);
+    // QQ_HOST_FEATURE_STATE: currentPtr=17288, referencePtr=17352, length=64, nodeMismatchIndex=1
+    view.fill(7, 17288, 17288 + 64);
+    view.fill(7, 17352, 17352 + 64);
+    view[17352 + 1] = 255;
+    view[17288 + 1] = 0; // (255 + 1) & 0xFF === 0
+    runtime.normalizeQqHostFeatureState();
+    assert.equal(view[17288 + 1], 255);
+
+    // Non-wraparound mismatch still throws
+    view[17288 + 1] = 2;
+    assert.throws(() => runtime.normalizeQqHostFeatureState(), /宿主特征布局与已验证版本不一致/);
+});
+
 test('scene switching restores the farm after failures even when the operation expires', async () => {
     const file = path.resolve(__dirname, '../src/services/ranch/transport.js');
     const realRequire = createRequire(file);

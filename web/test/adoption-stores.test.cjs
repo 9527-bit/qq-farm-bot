@@ -59,6 +59,31 @@ test('ranch mutation failures lock resubmission until refreshed and duplicate cl
   assert.equal(h.store.uncertain, false);
 });
 
+test('ranch friend blacklist toggle updates current list and ignores stale responses after account switch', async t => {
+  const pending = deferred();
+  const h = harness(t, 'ranch', {
+    get: async () => ({ data: { ok: true, data: { unlocked: true, friends: [{ gid: '101', name: '好友A', blacklisted: false }] } } }),
+    post: () => pending.promise,
+  });
+  await h.store.load({ view: 'friends' });
+  const req = h.store.toggleFriendBlacklist('101');
+  pending.resolve({ data: { ok: true, data: { gid: 101, blacklisted: true, blacklist: [101] } } });
+  await req;
+  assert.equal(h.store.state.friends[0].blacklisted, true);
+
+  const stale = deferred();
+  const h2 = harness(t, 'ranch', {
+    get: async () => ({ data: { ok: true, data: { unlocked: true, friends: [{ gid: '202', name: '好友B', blacklisted: false }] } } }),
+    post: () => stale.promise,
+  });
+  await h2.store.load({ view: 'friends' });
+  const oldToggle = h2.store.toggleFriendBlacklist('202');
+  h2.account.currentAccountId = 'b';
+  stale.resolve({ data: { ok: true, data: { gid: 202, blacklisted: true, blacklist: [202] } } });
+  assert.equal(await oldToggle, null);
+  assert.equal(h2.store.state, null);
+});
+
 test('Muge stale actions do not replace new-account data and end-time blocks sending', async t => {
   const pending = deferred();
   let writes = 0;

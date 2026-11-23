@@ -4,6 +4,7 @@ import api from '@/api'
 export interface SystemConfig {
   serverUrl: string
   clientVersion: string
+  wxClientVersion: string
   platform: string
   os: string
 }
@@ -42,7 +43,8 @@ interface UseAdminSystemConfigOptions {
 
 const defaultSystemConfigValues: SystemConfig = {
   serverUrl: 'wss://gate-obt.nqf.qq.com/prod/ws',
-  clientVersion: '1.13.0.5_20260723',
+  clientVersion: '1.17.0.4_20261117',
+  wxClientVersion: '1.17.0.4_20261117',
   platform: 'qq',
   os: 'iOS',
 }
@@ -304,10 +306,10 @@ export function useAdminManagementConfig(options: UseAdminSystemConfigOptions) {
     try {
       const { data } = await api.get('/api/admin/system-config')
       if (data?.ok) {
-        if (data.data.saved)
-          localSystemConfig.value = { ...data.data.saved }
         if (data.data.default)
-          defaultSystemConfig.value = { ...data.data.default }
+          defaultSystemConfig.value = { ...defaultSystemConfigValues, ...data.data.default }
+        if (data.data.saved)
+          localSystemConfig.value = { ...defaultSystemConfig.value, ...data.data.saved }
       }
     }
     catch (e: any) {

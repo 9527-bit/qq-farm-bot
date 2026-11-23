@@ -1,14 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RANCH_MARKET_SWITCH_KEYS = exports.RANCH_ANIMAL_OPTIONS = exports.RANCH_SWITCH_KEYS = exports.RANCH_AUTOMATION_DEFAULTS = void 0;
-exports.normalizeRanchSetting = normalizeRanchSetting;
-exports.migrateRanchMarketAutomation = migrateRanchMarketAutomation;
-exports.isRanchMarketEnabled = isRanchMarketEnabled;
-const ranch_animals_1 = require("./ranch-animals");
-exports.RANCH_AUTOMATION_DEFAULTS = {
+const ranch_animals_1 = require('./ranch-animals');
+
+const RANCH_FEED_STAGES = Object.freeze(['any', 'longest', 'to_production', 'near_harvest']);
+const RANCH_NEAR_HARVEST_MS = 10 * 60_000;
+
+// 遵循项目约定：所有新增牧场自动化布尔开关默认关闭，由用户按账号显式开启。
+const RANCH_AUTOMATION_DEFAULTS = {
     ranch_harvest: false,
     ranch_produce: false,
     ranch_buy: false,
+    ranch_activate_shed: false,
     ranch_upgrade: false,
     ranch_sell: false,
     // 旧总开关仅用于兼容旧配置；运行时分别检查两种货币开关。
@@ -20,7 +22,9 @@ exports.RANCH_AUTOMATION_DEFAULTS = {
     ranch_grass_threshold_percent: 20,
     ranch_fill_cans: false,
     ranch_feed_normal: false,
+    ranch_feed_normal_stage: 'longest',
     ranch_feed_organic: false,
+    ranch_feed_organic_stage: 'near_harvest',
     ranch_clean: false,
     ranch_stroke: false,
     ranch_friend_steal: false,
@@ -38,18 +42,37 @@ exports.RANCH_AUTOMATION_DEFAULTS = {
     ranch_coop_cub_priority: [],
     ranch_shed_cub_priority: [],
 };
-exports.RANCH_SWITCH_KEYS = Object.keys(exports.RANCH_AUTOMATION_DEFAULTS).filter(key => typeof exports.RANCH_AUTOMATION_DEFAULTS[key] === 'boolean');
-exports.RANCH_ANIMAL_OPTIONS = [...ranch_animals_1.animalMap.values()].filter(animal => animal.enable_flag).map(animal => ({ value: animal.id, label: animal.name, kind: animal.husbandry_type }));
+
+const RANCH_SWITCH_KEYS = Object.keys(RANCH_AUTOMATION_DEFAULTS)
+    .filter(key => typeof RANCH_AUTOMATION_DEFAULTS[key] === 'boolean');
+
+const RANCH_ANIMAL_OPTIONS = [...ranch_animals_1.animalMap.values()]
+    .filter(animal => animal.enable_flag)
+    .map(animal => ({ value: animal.id, label: animal.name, kind: animal.husbandry_type }));
+
+const RANCH_MARKET_SWITCH_BY_CURRENCY = Object.freeze({
+    7002: 'ranch_market_organic_poop',
+    1008: 'ranch_market_organic_pinecone',
+});
+const RANCH_MARKET_SWITCH_KEYS = Object.values(RANCH_MARKET_SWITCH_BY_CURRENCY);
+
 function normalizeRanchSetting(key, value) {
+    if (key === 'ranch_feed_normal_stage' || key === 'ranch_feed_organic_stage') {
+        if (typeof value !== 'string' || !RANCH_FEED_STAGES.includes(value)) {
+            throw Object.assign(new Error('请选择有效的罐头使用时机'), { code: 'INVALID_CONFIG' });
+        }
+        return value;
+    }
     if (key === 'ranch_strategy' || key === 'ranch_bag_fallback') {
         const allowed = key === 'ranch_strategy' ? ['level', 'preferred', 'bag_priority'] : ['level', 'preferred'];
-        if (!allowed.includes(String(value)))
+        if (!allowed.includes(String(value))) {
             throw Object.assign(new Error('请选择有效的养殖策略'), { code: 'INVALID_CONFIG' });
+        }
         return String(value);
     }
     if (key === 'ranch_coop_animal' || key === 'ranch_shed_animal') {
         const id = Number(value);
-        if (id !== 0 && !exports.RANCH_ANIMAL_OPTIONS.some(animal => animal.value === id && animal.kind === (key === 'ranch_coop_animal' ? '窝' : '棚'))) {
+        if (id !== 0 && !RANCH_ANIMAL_OPTIONS.some(animal => animal.value === id && animal.kind === (key === 'ranch_coop_animal' ? '窝' : '棚'))) {
             throw Object.assign(new Error('所选动物不适用于当前窝或棚'), { code: 'INVALID_CONFIG' });
         }
         return id;
@@ -75,23 +98,36 @@ function normalizeRanchSetting(key, value) {
         }
         return number;
     }
-    if (typeof value !== 'boolean')
+    if (typeof value !== 'boolean') {
         throw Object.assign(new Error('牧场开关必须为布尔值'), { code: 'INVALID_CONFIG' });
+    }
     return value;
 }
-exports.RANCH_MARKET_SWITCH_KEYS = ['ranch_market_organic_poop', 'ranch_market_organic_pinecone'];
+
 /** 旧配置的总开关只填充缺失的新字段，已明确设置的独立开关优先。 */
 function migrateRanchMarketAutomation(input) {
     const result = { ...input };
     if (typeof result.ranch_market_organic === 'boolean') {
-        for (const key of exports.RANCH_MARKET_SWITCH_KEYS) {
-            if (result[key] === undefined)
-                result[key] = result.ranch_market_organic;
+        for (const key of RANCH_MARKET_SWITCH_KEYS) {
+            if (result[key] === undefined) result[key] = result.ranch_market_organic;
         }
     }
     return result;
 }
+
 function isRanchMarketEnabled(input) {
-    return exports.RANCH_MARKET_SWITCH_KEYS.some(key => (input[key] ?? input.ranch_market_organic) === true);
+    return RANCH_MARKET_SWITCH_KEYS.some(key => (input[key] ?? input.ranch_market_organic) === true);
 }
-//# sourceMappingURL=ranch-automation.js.map
+
+module.exports = {
+    RANCH_FEED_STAGES,
+    RANCH_NEAR_HARVEST_MS,
+    RANCH_AUTOMATION_DEFAULTS,
+    RANCH_SWITCH_KEYS,
+    RANCH_ANIMAL_OPTIONS,
+    RANCH_MARKET_SWITCH_BY_CURRENCY,
+    RANCH_MARKET_SWITCH_KEYS,
+    normalizeRanchSetting,
+    migrateRanchMarketAutomation,
+    isRanchMarketEnabled,
+};

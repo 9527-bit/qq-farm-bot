@@ -25,37 +25,56 @@ export const useRanchStore = defineStore('ranch', () => {
     const id = account.currentAccountId
     const options = { timeout: 65000, headers: { 'x-account-id': id }, skipErrorToast: true } as any
     const response = body === undefined ? await api.get(path, { ...options, params: query }) : await api.post(path, body, options)
-    if (!response.data?.ok) throw new Error(response.data?.error || '牧场请求失败')
+    if (!response.data?.ok)
+      throw new Error(response.data?.error || '牧场请求失败')
     return response.data.data
   }
   async function load(params = query) {
-    if (!account.currentAccountId || loading.value || busy.value) return
+    if (!account.currentAccountId || loading.value || busy.value)
+      return
     query = params
     const version = ++generation
     loading.value = true
     error.value = ''
     try {
       const result = await call('/api/ranch')
-      if (version === generation) { state.value = result; uncertain.value = false }
-    } catch (cause: any) {
-      if (version === generation) error.value = cause.response?.data?.error || cause.message
-    } finally { if (version === generation) loading.value = false }
+      if (version === generation) {
+        state.value = result
+        uncertain.value = false
+      }
+    }
+    catch (cause: any) {
+      if (version === generation)
+        error.value = cause.response?.data?.error || cause.message
+    }
+    finally {
+      if (version === generation)
+        loading.value = false
+    }
   }
   async function quote(action: string, input: Record<string, unknown>): Promise<RanchQuote | null> {
-    if (loading.value || busy.value || uncertain.value || !account.currentAccountId) return null
+    if (loading.value || busy.value || uncertain.value || !account.currentAccountId)
+      return null
     const version = generation
     busy.value = true
     error.value = notice.value = ''
     try {
       const result = await call(`/api/ranch/${action}/quote`, input)
       return version === generation ? result : null
-    } catch (cause: any) {
-      if (version === generation) error.value = cause.response?.data?.error || cause.message
+    }
+    catch (cause: any) {
+      if (version === generation)
+        error.value = cause.response?.data?.error || cause.message
       return null
-    } finally { if (version === generation) busy.value = false }
+    }
+    finally {
+      if (version === generation)
+        busy.value = false
+    }
   }
   async function execute(action: string, input: Record<string, unknown>) {
-    if (busy.value || loading.value || uncertain.value || !account.currentAccountId) return false
+    if (busy.value || loading.value || uncertain.value || !account.currentAccountId)
+      return false
     const version = generation
     busy.value = true
     error.value = notice.value = ''
@@ -66,14 +85,51 @@ export const useRanchStore = defineStore('ranch', () => {
         notice.value = result.notice || (result.status === 'skipped' ? '当前没有可操作项目' : '操作已完成')
         ok = true
       }
-    } catch (cause: any) {
+    }
+    catch (cause: any) {
       if (version === generation) {
         error.value = `${cause.response?.data?.error || cause.message}；请刷新核对结果`
         uncertain.value = true
       }
-    } finally { if (version === generation) busy.value = false }
-    if (ok && version === generation) await load()
+    }
+    finally {
+      if (version === generation)
+        busy.value = false
+    }
+    if (ok && version === generation)
+      await load()
     return ok
   }
-  return { state, loading, busy, error, notice, uncertain, load, quote, execute }
+  async function toggleFriendBlacklist(gid: string) {
+    if (busy.value || !account.currentAccountId)
+      return null
+    const version = generation
+    busy.value = true
+    error.value = notice.value = ''
+    try {
+      const result = await call('/api/ranch/friend-blacklist/toggle', { gid: Number(gid) })
+      if (version === generation) {
+        if (Array.isArray(state.value?.friends)) {
+          state.value = {
+            ...state.value,
+            friends: state.value.friends.map((friend: any) =>
+              String(friend.gid) === String(gid) ? { ...friend, blacklisted: !!result?.blacklisted } : friend,
+            ),
+          }
+        }
+        notice.value = result?.blacklisted ? '已加入牧场好友黑名单' : '已移出牧场好友黑名单'
+      }
+      return version === generation ? result : null
+    }
+    catch (cause: any) {
+      if (version === generation)
+        error.value = cause.response?.data?.error || cause.message
+      return null
+    }
+    finally {
+      if (version === generation)
+        busy.value = false
+    }
+  }
+  return { state, loading, busy, error, notice, uncertain, load, quote, execute, toggleFriendBlacklist }
 })

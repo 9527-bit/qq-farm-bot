@@ -12,12 +12,30 @@ const { createScheduler } = require('../services/scheduler');
 const { updateStatusFromLogin, updateStatusGold, updateStatusLevel } = require('../services/status');
 const { recordOperation, recordTongQiGift, getTongQiGiftCount } = require('../services/stats');
 const { types } = require('./proto');
-const { toLong, toNum, syncServerTime, log, logWarn } = require('./utils');
+const { toLong, toNum, syncServerTime, log, logWarn, sleep } = require('./utils');
 const cryptoWasm = require('./crypto-wasm');
 const { createGatewayToken } = require('./gateway-token');
 const { evaluateGatewayHealth, getOldestPendingAgeMs } = require('./gateway-health');
-const { createRequestGate, getRequestPriority } = require('./request-priority');
+const {
+    describeRequestClassMarker,
+    isClassQueueFull,
+    maxQueuedForClass,
+    resolveRequestClass,
+    selectDispatchIndex,
+} = require('./request-priority');
+const { getAmbientRequestClass } = require('./request-context');
+const {
+    LOW_PRIORITY_IDLE_POLL_MS,
+    LOW_PRIORITY_IDLE_WAIT_MAX_MS,
+    LOW_PRIORITY_QUEUE_WAIT_MS,
+    isGatewayIdleForLowPriority,
+} = require('./low-priority-gate');
+const {
+    countBlockingQueuedRequests,
+    shouldLogRequestPressure,
+} = require('./request-pressure');
 const { TsdkRuntime } = require('./tsdk-runtime');
+const { isWechatPlatform, getClientVersion, setClientVersionForPlatform } = require('./client-profile');
 const { types: adoptionTypes } = require('./adoption-proto');
 const { runExclusiveAutomationTask } = require('../services/automation-lock');
 const { assertOperationActive, noteOperationSent } = require('./operation-context');
@@ -36,11 +54,12 @@ function extractServerClientVersion(versionInfo) {
 
 function applyServerVersionInfo(versionInfo) {
     const clientVersion = extractServerClientVersion(versionInfo);
-    if (!clientVersion || clientVersion === CONFIG.clientVersion) return false;
-    const previous = CONFIG.clientVersion;
-    CONFIG.clientVersion = clientVersion;
-    log('系统', `服务端版本信息已自动更新客户端版本: ${previous} -> ${clientVersion}`);
-    networkEvents.emit('client_version_update', { clientVersion, previous });
+    const platform = isWechatPlatform(CONFIG.platform) ? 'wx' : 'qq';
+    const previous = getClientVersion(platform);
+    if (!clientVersion || clientVersion === previous) return false;
+    setClientVersionForPlatform(clientVersion, platform);
+    log('系统', `服务端版本信息已自动更新 ${platform.toUpperCase()} 客户端版本: ${previous} -> ${clientVersion}`);
+    networkEvents.emit('client_version_update', { clientVersion, previous, platform });
     return true;
 }
 
@@ -56,13 +75,23 @@ function getStoreModule() {
 // ============ 事件发射器 (用于推送通知) ============
 const networkEvents = new EventEmitter();
 
+class GatewayBusyError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'GatewayBusyError';
+    }
+}
+
 // ============ 内部状态 ============
 let ws = null;
 let clientSeq = 1;
 let serverSeq = 0;
 const pendingCallbacks = new Map();
 const pendingStartedAt = new Map();
-const requestGate = createRequestGate({ maxActive: 8, maxQueued: 100 });
+const pendingMeta = new Map();
+const requestQueue = [];
+let nextQueuedRequestId = 1;
+let lastRequestPressureLogAt = 0;
 let wsErrorState = { code: 0, at: 0, message: '' };
 const networkScheduler = createScheduler('network');
 let tsdkRuntime = null;
@@ -183,10 +212,19 @@ function stopSecurityRuntime(reason = '停止') {
     cryptoWasm.setRuntime(null);
 }
 
+function rejectAllQueuedRequests(reason = '请求被中断') {
+    const entries = requestQueue.splice(0);
+    for (const entry of entries) {
+        settleQueuedRequest(entry, new Error(reason));
+    }
+    return entries.length;
+}
+
 function rejectAllPendingRequests(reason = '请求被中断') {
     const entries = Array.from(pendingCallbacks.entries());
     pendingCallbacks.clear();
     pendingStartedAt.clear();
+    pendingMeta.clear();
     for (const [, callback] of entries) {
         try {
             callback(new Error(reason));
@@ -231,7 +269,7 @@ function getDailyShareInfo(id) {
     return info?.dateKey === dateKey ? { ...info } : { shareCount: '0', claimed: false, dateKey };
 }
 function isSceneLoginVersion() {
-    const version = /^(\d+)\.(\d+)/.exec(CONFIG.clientVersion || '');
+    const version = /^(\d+)\.(\d+)/.exec(getClientVersion() || '');
     return !!version && (Number(version[1]) > 1 || Number(version[1]) === 1 && Number(version[2]) >= 15);
 }
 async function loginGameScene(sceneId) {
@@ -337,66 +375,221 @@ async function sendMsg(serviceName, methodName, bodyBytes, callback, options = {
     return true;
 }
 
+function settleQueuedRequest(entry, error, value) {
+    if (!entry || entry.settled) return;
+    entry.settled = true;
+    if (entry.timeoutKey) networkScheduler.clear(entry.timeoutKey);
+    if (entry.queueWaitKey) networkScheduler.clear(entry.queueWaitKey);
+    if (error) entry.reject(error);
+    else entry.resolve(value);
+}
+
+function countPendingByClass(requestClass) {
+    let count = 0;
+    for (const meta of pendingMeta.values()) {
+        if (meta.requestClass === requestClass) count += 1;
+    }
+    return count;
+}
+
+function getGatewayLoad() {
+    const now = Date.now();
+    return {
+        pending: pendingMeta.size || pendingCallbacks.size,
+        queued: requestQueue.length,
+        blockingQueued: countBlockingQueuedRequests(requestQueue),
+        criticalPending: countPendingByClass('critical'),
+        businessPending: countPendingByClass('foreground') + countPendingByClass('farm') + countPendingByClass('friend'),
+        foregroundPending: countPendingByClass('foreground'),
+        backgroundPending: countPendingByClass('background'),
+        heartbeatMisses: heartbeatMissCount,
+        oldestPendingAgeMs: getOldestPendingAgeMs(pendingStartedAt.values(), now),
+    };
+}
+
+function isGatewayIdleForBackground() {
+    return isGatewayIdleForLowPriority(getGatewayLoad());
+}
+
+async function waitForGatewayIdle(
+    maxWaitMs = LOW_PRIORITY_IDLE_WAIT_MAX_MS,
+    pollMs = LOW_PRIORITY_IDLE_POLL_MS,
+) {
+    const deadline = Date.now() + Math.max(0, Number(maxWaitMs) || 0);
+    for (;;) {
+        if (isGatewayIdleForBackground()) return true;
+        if (Date.now() >= deadline) return false;
+        await sleep(Math.max(20, Number(pollMs) || LOW_PRIORITY_IDLE_POLL_MS));
+    }
+}
+
+function describePendingRequests() {
+    if (pendingMeta.size === 0) return 'none';
+    const now = Date.now();
+    return Array.from(pendingMeta.entries())
+        .slice(0, 6)
+        .map(([seq, meta]) => `${meta.methodName || 'unknown'}#${seq}:${Math.max(0, now - (meta.startedAt || now))}ms`)
+        .join(',');
+}
+
+function describeQueuedRequests() {
+    if (requestQueue.length === 0) return 'none';
+    return requestQueue
+        .slice(0, 8)
+        .map(entry => `${describeRequestClassMarker(entry)}${entry.methodName || 'unknown'}`)
+        .join(',');
+}
+
+function logRequestPressure() {
+    const now = Date.now();
+    if (!shouldLogRequestPressure(requestQueue, now, lastRequestPressureLogAt)) return;
+    lastRequestPressureLogAt = now;
+    logWarn('系统', `Gateway 请求压力: pending=${pendingMeta.size}, queued=${requestQueue.length}, active=${describePendingRequests()}, queuedMethods=${describeQueuedRequests()}`);
+}
+
+function takeDispatchableRequest() {
+    for (let index = requestQueue.length - 1; index >= 0; index -= 1) {
+        if (requestQueue[index].settled) requestQueue.splice(index, 1);
+    }
+    if (requestQueue.length === 0) return null;
+    const index = selectDispatchIndex(requestQueue, Array.from(pendingMeta.values()), Date.now());
+    if (index < 0) return null;
+    return requestQueue.splice(index, 1)[0];
+}
+
+function drainRequestQueue() {
+    while (requestQueue.length > 0) {
+        const entry = takeDispatchableRequest();
+        if (!entry) break;
+        if (entry.settled) continue;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            settleQueuedRequest(entry, new Error(`连接未打开: ${entry.methodName}`));
+            continue;
+        }
+        if (entry.queueWaitKey) networkScheduler.clear(entry.queueWaitKey);
+
+        const seq = clientSeq++;
+        entry.seq = seq;
+        const startedAt = Date.now();
+        pendingMeta.set(seq, {
+            serviceName: entry.serviceName,
+            methodName: entry.methodName,
+            requestClass: entry.requestClass,
+            criticalLane: entry.criticalLane,
+            startedAt,
+        });
+        pendingStartedAt.set(seq, startedAt);
+
+        const releasePending = () => {
+            pendingCallbacks.delete(seq);
+            pendingStartedAt.delete(seq);
+            pendingMeta.delete(seq);
+        };
+
+        sendMsg(entry.serviceName, entry.methodName, entry.bodyBytes, (err, body, meta) => {
+            releasePending();
+            if (err) settleQueuedRequest(entry, err);
+            else settleQueuedRequest(entry, null, { body, meta });
+            drainRequestQueue();
+        }, { ...entry.options, sequence: seq }).then((sent) => {
+            if (sent || entry.settled) return;
+            releasePending();
+            settleQueuedRequest(entry, new Error(`发送失败: ${entry.methodName}`));
+            drainRequestQueue();
+        }).catch((error) => {
+            releasePending();
+            settleQueuedRequest(entry, error instanceof Error ? error : new Error(String(error)));
+            drainRequestQueue();
+        });
+    }
+}
+
 /** Promise 版发送 */
 function sendMsgAsync(serviceName, methodName, bodyBytes, timeout = 20000, options = {}) {
     if (timeout && typeof timeout === 'object') { options = timeout; timeout = 20000; }
-    const run = () => sendQueuedMessage(serviceName, methodName, bodyBytes, timeout, options);
-    return methodName === 'Heartbeat' || serviceName === 'gamepb.acepb.AceService'
+    const normalizedOptions = options && typeof options === 'object' ? { ...options } : {};
+    if (!normalizedOptions.criticalLane) {
+        if (methodName === 'Heartbeat') normalizedOptions.criticalLane = 'heartbeat';
+        else if (serviceName === 'gamepb.acepb.AceService') normalizedOptions.criticalLane = 'ace';
+    }
+    const requestClass = resolveRequestClass({
+        priority: normalizedOptions.priority,
+        requestClass: normalizedOptions.requestClass,
+        criticalLane: normalizedOptions.criticalLane,
+    }, getAmbientRequestClass());
+
+    const run = () => enqueueQueuedMessage(serviceName, methodName, bodyBytes, timeout, normalizedOptions, requestClass);
+    return normalizedOptions.criticalLane === 'heartbeat' || normalizedOptions.criticalLane === 'ace'
         ? run() : runExclusiveAutomationTask(`rpc:${methodName}`, run);
 }
-async function sendQueuedMessage(serviceName, methodName, bodyBytes, timeout, options) {
-    const priority = getRequestPriority(options.priority);
-    assertOperationActive();
-    const release = await requestGate.acquire(priority);
+
+function enqueueQueuedMessage(serviceName, methodName, bodyBytes, timeout, options, requestClass) {
     try {
-      assertOperationActive();
-      return await new Promise((resolve, reject) => {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            reject(new Error(`连接未打开: ${methodName}`));
-            return;
-        }
-
-        if (pendingCallbacks.size >= 10) {
-            reject(new Error(`请求队列已满: ${methodName} (pending=${pendingCallbacks.size})`));
-            return;
-        }
-
-        const seq = clientSeq++;
-        const timeoutKey = `request_timeout_${seq}`;
-        let settled = false;
-
-        networkScheduler.setTimeoutTask(timeoutKey, timeout, () => {
-            if (settled) return;
-            settled = true;
-            pendingCallbacks.delete(seq);
-            pendingStartedAt.delete(seq);
-            const pending = pendingCallbacks.size;
-            reject(new Error(`请求超时: ${methodName} (seq=${seq}, pending=${pending})`));
-        });
-
-        sendMsg(serviceName, methodName, bodyBytes, (err, body, meta) => {
-            networkScheduler.clear(timeoutKey);
-            if (settled) return;
-            settled = true;
-            if (err) reject(err);
-            else resolve({ body, meta });
-        }, { ...options, sequence: seq }).then((sent) => {
-            if (sent || settled) return;
-            networkScheduler.clear(timeoutKey);
-            settled = true;
-            reject(new Error(`发送失败: ${methodName}`));
-        }).catch((error) => {
-            if (settled) return;
-            networkScheduler.clear(timeoutKey);
-            pendingCallbacks.delete(seq);
-            pendingStartedAt.delete(seq);
-            settled = true;
-            reject(error);
-        });
-      });
-    } finally {
-      release();
+        assertOperationActive();
+    } catch (error) {
+        return Promise.reject(error);
     }
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        return Promise.reject(new Error(`连接未打开: ${methodName}`));
+    }
+    if (isClassQueueFull(requestQueue, requestClass)) {
+        return Promise.reject(new Error(
+            `请求等待队列已满: ${methodName} (class=${requestClass}, limit=${maxQueuedForClass(requestClass)}, queued=${requestQueue.length}, pending=${pendingMeta.size})`,
+        ));
+    }
+
+    const requestId = nextQueuedRequestId++;
+    const timeoutMs = Math.max(1, Number(timeout) || 20000);
+    const timeoutKey = `request_timeout_${requestId}`;
+    const queueWaitKey = requestClass === 'background' ? `request_queue_wait_${requestId}` : '';
+
+    return new Promise((resolve, reject) => {
+        const entry = {
+            id: requestId,
+            serviceName,
+            methodName,
+            bodyBytes,
+            options,
+            requestClass,
+            criticalLane: options.criticalLane,
+            enqueuedAt: Date.now(),
+            seq: null,
+            timeoutKey,
+            queueWaitKey,
+            settled: false,
+            resolve,
+            reject,
+        };
+
+        networkScheduler.setTimeoutTask(timeoutKey, timeoutMs, () => {
+            if (entry.settled) return;
+            const stage = entry.seq === null ? 'queued' : 'pending';
+            if (entry.seq !== null) {
+                pendingCallbacks.delete(entry.seq);
+                pendingStartedAt.delete(entry.seq);
+                pendingMeta.delete(entry.seq);
+            } else {
+                const idx = requestQueue.indexOf(entry);
+                if (idx >= 0) requestQueue.splice(idx, 1);
+            }
+            const pending = pendingMeta.size;
+            settleQueuedRequest(entry, new Error(`请求超时: ${methodName} (stage=${stage}, seq=${entry.seq ?? 'none'}, pending=${pending})`));
+            drainRequestQueue();
+        });
+
+        if (queueWaitKey) {
+            networkScheduler.setTimeoutTask(queueWaitKey, LOW_PRIORITY_QUEUE_WAIT_MS, () => {
+                if (entry.settled || entry.seq !== null) return;
+                const idx = requestQueue.indexOf(entry);
+                if (idx >= 0) requestQueue.splice(idx, 1);
+                settleQueuedRequest(entry, new GatewayBusyError(`后台请求已让路: ${methodName} (waited=${LOW_PRIORITY_QUEUE_WAIT_MS}ms)`));
+            });
+        }
+
+        requestQueue.push(entry);
+        drainRequestQueue();
+        if (requestQueue.length > 0) logRequestPressure();
+    });
 }
 
 // ============ 消息处理 ============
@@ -429,6 +622,7 @@ function handleMessage(data) {
             if (cb) {
                 pendingCallbacks.delete(clientSeqVal);
                 pendingStartedAt.delete(clientSeqVal);
+                pendingMeta.delete(clientSeqVal);
                 if (errorCode !== 0) {
                     cb(Object.assign(new Error(`${meta.service_name}.${meta.method_name} 错误: code=${errorCode} ${meta.error_message || ''}`), { name: 'GatewayError', code: errorCode, errorMessage: meta.error_message, serviceName: meta.service_name, methodName: meta.method_name }));
                 } else {
@@ -670,17 +864,18 @@ function handleNotify(msg) {
 
 // ============ 登录 ============
 function buildLoginDeviceInfo(deviceProtocol) {
+    const clientVersion = getClientVersion();
     const custom = deviceProtocol && deviceProtocol.enabled ? deviceProtocol : null;
     if (!custom) {
         return {
-            client_version: CONFIG.clientVersion,
+            client_version: clientVersion,
             sys_software: 'Windows',
         };
     }
 
     const device = resolveDeviceFingerprint(custom);
     return {
-        client_version: CONFIG.clientVersion,
+        client_version: clientVersion,
         sys_software: device.sysSoftware,
         sys_hardware: `${device.deviceBrand} ${device.deviceModel}`,
         network: 'wifi',
@@ -794,17 +989,27 @@ const MAX_HEARTBEAT_MISS = 3;
 
 function getGatewayHealth() {
     const now = Date.now();
+    const load = getGatewayLoad();
     const result = evaluateGatewayHealth({
         connected: isConnected(),
-        heartbeatAgeMs: now - lastHeartbeatResponse,
-        oldestPendingAgeMs: getOldestPendingAgeMs(pendingStartedAt.values(), now),
+        heartbeatAgeMs: heartbeatMissCount > 0 ? HEARTBEAT_TIMEOUT + 1 : now - lastHeartbeatResponse,
+        oldestPendingAgeMs: load.oldestPendingAgeMs,
         heartbeatLimitMs: HEARTBEAT_TIMEOUT,
         pendingLimitMs: 5000,
     });
+    const byPriority = {};
+    for (const item of requestQueue) {
+        byPriority[item.requestClass] = (byPriority[item.requestClass] || 0) + 1;
+    }
     return {
         ...result,
-        pending: pendingCallbacks.size,
-        queue: requestGate.snapshot(),
+        pending: load.pending,
+        load,
+        queue: {
+            active: load.pending,
+            queued: load.queued,
+            byPriority,
+        },
     };
 }
 
@@ -835,7 +1040,7 @@ function startHeartbeat() {
         }
 
         const body = buildHeartbeatBody(userState.gid);
-        sendMsgAsync('gamepb.userpb.UserService', 'Heartbeat', body, 20000, { priority: 'critical' }).then(({ body: replyBody }) => {
+        sendMsgAsync('gamepb.userpb.UserService', 'Heartbeat', body, 20000, { priority: 'critical', criticalLane: 'heartbeat' }).then(({ body: replyBody }) => {
             lastHeartbeatResponse = Date.now();
             heartbeatMissCount = 0;
             try {
@@ -854,7 +1059,7 @@ function startHeartbeat() {
 function buildHeartbeatBody(gid) {
     return Buffer.from(types.HeartbeatRequest.encode(types.HeartbeatRequest.create({
         gid: toLong(gid),
-        client_version: CONFIG.clientVersion,
+        client_version: getClientVersion(),
         field_3: toLong(0),
     })).finish());
 }
@@ -866,7 +1071,7 @@ let reconnectAttempts = 0;
 let networkStopped = false;
 
 function buildWebSocketHeaders(deviceProtocol) {
-    const resourceVersion = String(CONFIG.clientVersion || '').split('_')[0];
+    const resourceVersion = String(getClientVersion() || '').split('_')[0];
     const headers = {
         'Origin': 'https://gate-obt.nqf.qq.com',
         'Referer': `https://appservice.qq.com/1112386029/${resourceVersion}/page-frame.html`,
@@ -943,7 +1148,8 @@ function connect(code, onLoginSuccess) {
         networkEvents.emit('security_error', { message: error.message });
         return;
     }
-    const url = `${CONFIG.serverUrl}?platform=${CONFIG.platform}&os=${deviceFingerprint.os}&ver=${CONFIG.clientVersion}&code=${savedCode}&openID=`;
+    const clientVersion = getClientVersion();
+    const url = `${CONFIG.serverUrl}?platform=${CONFIG.platform}&os=${deviceFingerprint.os}&ver=${clientVersion}&code=${savedCode}&openID=`;
     closeCurrentWs({ terminate: true });
 
     // 输出自定义设备信息日志
@@ -1014,6 +1220,7 @@ function cleanup(reason = '网络清理') {
     userState.globalSceneId = 0;
     shareInfoState.clear();
     stopSecurityRuntime(reason);
+    rejectAllQueuedRequests(`请求已中断: ${reason}`);
     rejectAllPendingRequests(`请求已中断: ${reason}`);
     networkScheduler.clearAll();
     // pendingCallbacks.clear();
@@ -1033,6 +1240,7 @@ function stopNetwork(reason = '停止网络') {
     savedLoginCallback = null;
     reconnectAttempts = 0;
     stopSecurityRuntime(reason);
+    rejectAllQueuedRequests(`请求已中断: ${reason}`);
     rejectAllPendingRequests(`请求已中断: ${reason}`);
     networkScheduler.clearAll();
     closeCurrentWs({ terminate: true });
@@ -1053,6 +1261,10 @@ module.exports = {
     getUserState,
     getWsErrorState,
     getGatewayHealth,
+    getGatewayLoad,
+    isGatewayIdleForBackground,
+    waitForGatewayIdle,
+    GatewayBusyError,
     getAceStatus,
     buildLoginDeviceInfo,
     buildLoginBody,

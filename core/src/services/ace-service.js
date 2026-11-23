@@ -105,6 +105,7 @@ class AceService {
                 'AntiData',
                 request,
                 10000,
+                { priority: 'critical', criticalLane: 'ace' },
             );
             const reply = this.types.AntiDataReply.decode(body);
             const serverData = Buffer.from(reply.data || []);

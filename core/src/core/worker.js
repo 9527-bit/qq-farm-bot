@@ -5,11 +5,12 @@ let lastRanchMarketCheck = 0;
 const process = require('node:process');
 const { parentPort, workerData } = require('node:worker_threads');
 
-const { CONFIG } = require('../config/config');
+const { CONFIG, updateRuntimeConfig } = require('../config/config');
 const { getLevelExpProgress } = require('../config/gameConfig');
 const {
     getAutomation,
     getFriendBlacklist,
+    getSystemConfig,
     getConfigSnapshot,
     applyConfigSnapshot
 } = require('../models/store');
@@ -104,9 +105,11 @@ const {
     getWs,
     getUserState,
     getGatewayHealth,
+    waitForGatewayIdle,
     networkEvents
 } = require('../utils/network');
 const { nextBusinessBackoffMs } = require('../utils/gateway-health');
+const { isGatewayYieldError } = require('../utils/low-priority-gate');
 const { runWithRequestPriority } = require('../utils/request-priority');
 const { loadProto } = require('../utils/proto');
 const { setLogHook, log, toNum } = require('../utils/utils');
@@ -196,9 +199,10 @@ let unifiedSchedulerRunning = false;
 
 /** 判断是否是瞬时网络错误（可忽略） */
 function isTransientNetworkError(err) {
+    if (isGatewayYieldError(err)) return true;
     const msg = String(err && err.message || '');
     if (!msg) return false;
-    return ['连接未打开', '请求超时', '请求已中断', '连接关闭', '发送失败', '请求队列已满']
+    return ['连接未打开', '请求超时', '请求已中断', '连接关闭', '发送失败', '请求队列已满', '请求等待队列已满']
         .some(text => msg.includes(text));
 }
 
@@ -540,6 +544,8 @@ async function runStarActivityAutoClaimsUnlocked() {
 
     starActivityClaimRunning = true;
     try {
+        const idle = await waitForGatewayIdle();
+        if (!idle) return;
         await runWithRequestPriority('background', async () => {
             const {
             getStarActivity,
@@ -1461,6 +1467,10 @@ async function startBot(config) {
     isRunning = true;
 
     const { code, platform, loginType } = config;
+    const savedSystemConfig = getSystemConfig();
+    if (savedSystemConfig) {
+        updateRuntimeConfig({ ...savedSystemConfig, platform: platform || savedSystemConfig.platform || 'qq' });
+    }
     CONFIG.platform = platform || 'qq';
 
     await loadProto();
@@ -1498,11 +1508,12 @@ async function startBot(config) {
     networkEvents.on('kickout', onKickout);
 
     if (onClientVersionUpdate) networkEvents.off('client_version_update', onClientVersionUpdate);
-    onClientVersionUpdate = ({ clientVersion, previous }) => {
+    onClientVersionUpdate = ({ clientVersion, previous, platform: versionPlatform }) => {
         sendToMaster({
             type: 'client_version_update',
             clientVersion: String(clientVersion || ''),
-            previous: String(previous || '')
+            previous: String(previous || ''),
+            platform: String(versionPlatform || CONFIG.platform || 'qq')
         });
     };
     networkEvents.on('client_version_update', onClientVersionUpdate);

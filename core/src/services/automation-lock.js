@@ -1,11 +1,13 @@
 const { AsyncLocalStorage } = require('node:async_hooks');
 const { assertOperationActive } = require('../utils/operation-context');
+
 const context = new AsyncLocalStorage();
 let tail = Promise.resolve();
 let running = false;
-function runExclusiveAutomationTask(name, run) {
+
+function runExclusiveAutomationTask(name, run, options = {}) {
     const current = context.getStore();
-    if (current?.active) {
+    if (!options.detached && current?.active) {
         assertOperationActive();
         return Promise.resolve().then(run);
     }
@@ -19,5 +21,13 @@ function runExclusiveAutomationTask(name, run) {
     tail = pending.catch(() => {});
     return pending;
 }
-function detachedAutomation(run) { return context.run(undefined, run); }
-module.exports = { detachedAutomation, runExclusiveAutomationTask, isAutomationTaskRunning: () => running };
+
+function detachedAutomation(run) {
+    return context.run(undefined, run);
+}
+
+module.exports = {
+    detachedAutomation,
+    runExclusiveAutomationTask,
+    isAutomationTaskRunning: () => running,
+};

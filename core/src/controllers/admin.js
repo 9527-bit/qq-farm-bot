@@ -451,7 +451,7 @@ function startAdminServer(dataProvider) {
   });
   registerLogoutRoute(app, invalidateAdminSessionAndDisconnect);
 
-  registerAdminAdoptionRoutes({ app, provider, getAccountIdFromRequest, canAccessAccount, sendProviderError });
+  registerAdminAdoptionRoutes({ app, provider, store, getAccountIdFromRequest, canAccessAccount, sendProviderError });
   registerAdminFarmResourceRoutes({
     app,
     provider,

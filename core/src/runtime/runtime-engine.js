@@ -120,11 +120,13 @@ function createRuntimeEngine(options = {}) {
         deleteAccount: store.deleteAccount,
         scheduleAutoRelogin: autoCodeRefresh.scheduleRelogin,
         refreshAccountCode: autoCodeRefresh.refreshAccountCode,
-        updateSystemClientVersion: (clientVersion) => {
+        updateSystemClientVersion: (clientVersion, platform = 'qq') => {
             const value = String(clientVersion || '').trim();
+            const isWechat = ['wx', 'wechat'].includes(String(platform || '').trim().toLowerCase());
+            const field = isWechat ? 'wxClientVersion' : 'clientVersion';
             const current = store.getSystemConfig() || store.DEFAULT_SYSTEM_CONFIG || {};
-            if (!value || current.clientVersion === value) return false;
-            const saved = store.setSystemConfig({ ...current, clientVersion: value });
+            if (!value || current[field] === value) return false;
+            const saved = store.setSystemConfig({ ...current, [field]: value });
             if (saved) updateRuntimeConfig(saved);
             return !!saved;
         },
@@ -238,11 +240,19 @@ function createRuntimeEngine(options = {}) {
         if (sysConfig) {
             updateRuntimeConfig(sysConfig);
             const runtimeSystemConfig = getRuntimeConfig();
-            if (runtimeSystemConfig.clientVersion !== sysConfig.clientVersion) {
-                store.setSystemConfig({ ...sysConfig, clientVersion: runtimeSystemConfig.clientVersion });
+            if (
+                runtimeSystemConfig.clientVersion !== sysConfig.clientVersion
+                || runtimeSystemConfig.wxClientVersion !== sysConfig.wxClientVersion
+            ) {
+                store.setSystemConfig({
+                    ...sysConfig,
+                    clientVersion: runtimeSystemConfig.clientVersion,
+                    wxClientVersion: runtimeSystemConfig.wxClientVersion,
+                });
             }
             log('系统', `已加载系统配置: serverUrl=${  sysConfig.serverUrl
                  }, clientVersion=${  runtimeSystemConfig.clientVersion
+                 }, wxClientVersion=${  runtimeSystemConfig.wxClientVersion
                  }, platform=${  sysConfig.platform}`);
         }
 

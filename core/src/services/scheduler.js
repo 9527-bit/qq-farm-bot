@@ -1,4 +1,5 @@
 const { runWithOperationContext } = require('../utils/operation-context');
+const { runWithRequestClass, classForSchedulerNamespace } = require('../utils/request-context');
 const { runExclusiveAutomationTask, detachedAutomation } = require('./automation-lock');
 const { createModuleLogger } = require('./logger');
 const schedulerLogger = createModuleLogger('scheduler');
@@ -147,7 +148,9 @@ function createScheduler(namespace = 'default') {
       current.runCount += 1;
       try {
         await runWithOperationContext(undefined, () => detachedAutomation(() => {
-          const run = () => timers.get(key) === record ? callback() : undefined;
+          const ambientClass = classForSchedulerNamespace(ns);
+          const execute = () => (timers.get(key) === record ? callback() : undefined);
+          const run = () => (ambientClass ? runWithRequestClass(ambientClass, execute) : execute());
           return /^(network|ace-|worker_manager|admin|security)/.test(ns) || ['status_sync', 'kickout_stop', 'ws_error_cleanup'].includes(key) ? run() : runExclusiveAutomationTask(`${ns}:${key}`, run);
         }));
       } catch (err) {
@@ -207,7 +210,9 @@ function createScheduler(namespace = 'default') {
       current.runCount += 1;
       try {
         await runWithOperationContext(undefined, () => detachedAutomation(() => {
-          const run = () => timers.get(key) === record ? callback() : undefined;
+          const ambientClass = classForSchedulerNamespace(ns);
+          const execute = () => (timers.get(key) === record ? callback() : undefined);
+          const run = () => (ambientClass ? runWithRequestClass(ambientClass, execute) : execute());
           return /^(network|ace-|worker_manager|admin|security)/.test(ns) || ['status_sync', 'kickout_stop', 'ws_error_cleanup'].includes(key) ? run() : runExclusiveAutomationTask(`${ns}:${key}`, run);
         }));
       } catch (err) {

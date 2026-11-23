@@ -1,6 +1,18 @@
 # 牧场与牧歌初启接入
 
-来源固定为 `liyangpengs/qq-farm-bot@bd93d3f178413c16aebf8b34d1d85a6b2589f2c3`（2026-11-19）。保留本地多用户、账号归属、卡密、管理页面和原有活动实现。
+初始来源固定为 `liyangpengs/qq-farm-bot@bd93d3f178413c16aebf8b34d1d85a6b2589f2c3`（2026-11-19），并于 2026-11-24 进一步跟进同步 `liyangpengs/qq-farm-bot@480e68f`（2026-11-23）的 P0/P1 能力与修复。全量保留本地多用户、账号归属、卡密、管理页面、内置抓包/NapCat 及原有活动实现。
+
+## 2026-11-24 P0/P1 跟进增量
+
+- **P0（双端独立版本与 QQ TSDK 修复）**：
+  - 修复 `core/src/utils/tsdk-adoption-runtime.js` 中 `normalizeQqHostFeatureState()` 的 `uint8` 字节回绕问题（`((referenceValue + 1) & 0xFF)`）。
+  - 新增 `core/src/utils/client-profile.js`，拆分 QQ (`clientVersion`) 与微信 (`wxClientVersion`) 独立版本号、服务端同步与前端系统配置面板，互不覆盖。
+- **P1-A（五层网络并发调度与后台让路）**：
+  - 升级 `request-priority.js`，新增 `request-context.js`、`low-priority-gate.js`、`request-pressure.js`，在 `network.js` 与 `scheduler.js` 落地五班次（`critical` 含 `heartbeat`/`ace` 双独立槽位、`foreground` 保底 2 槽、`farm`/`friend` 非前台限 1 槽、`background` 空闲派发与 8s 让路、4s 防饿死提升）。
+- **P1-B（最新牧场特性与黑名单）**：
+  - 支持普通与有机罐头分阶段使用时机（`ranch_feed_normal_stage` / `ranch_feed_organic_stage`：`any` / `longest` / `to_production` / `near_harvest`）、满桶跳过（`1003002`）与独立棚舍激活开关（`ranch_activate_shed`，默认关闭）。
+  - 新增账号级 `ranchFriendBlacklist` 持久化与多用户隔离路由（`GET /api/ranch/friend-blacklist`、`POST /api/ranch/friend-blacklist/toggle`），巡查自动过滤并在服务端确认非好友（`1002002`）时持久化拉黑。
+  - 补齐好友牧场可偷/可清理/可帮生产状态徽标、好友赠送牧草、背包物品锁定/解锁（`setItemLock`）、设施沙漏加速（`speedUpUpgrade`）与牧场生涯统计（`careerpb.proto` 字段 16）。
 
 ## 使用入口
 

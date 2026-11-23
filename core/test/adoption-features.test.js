@@ -204,12 +204,83 @@ test('unknown ranch write outcomes retain reservations across module reload and 
 test('new automation switches default off; illustrated-only and currency-only schedules can run', () => {
     const defaults = require('../src/config/ranch-automation').RANCH_AUTOMATION_DEFAULTS;
     assert.ok(Object.entries(defaults).filter(([, value]) => typeof value === 'boolean').every(([, value]) => value === false));
-    for (const key of ['ranch_illustrated', 'ranch_market_organic_poop', 'ranch_market_organic_pinecone']) {
+    for (const key of ['ranch_illustrated', 'ranch_activate_shed', 'ranch_market_organic_poop', 'ranch_market_organic_pinecone']) {
         const auto = { ...defaults, [key]: true };
         const service = load('services/ranch/automation.js', {
-            '../../models/store': { getAutomation: () => auto, getFriendBlacklist: () => [] },
+            '../../models/store': { getAutomation: () => auto, getRanchFriendBlacklist: () => [] },
             './transport': { isUnlocked: () => true },
         });
         assert.equal(service.getRoutineState().doneToday, false, key);
     }
+});
+
+test('ranch feed stage normalization and stage matching cover all 4 feeding timings', () => {
+    const { normalizeRanchSetting, RANCH_NEAR_HARVEST_MS } = require('../src/config/ranch-automation');
+    const { matchesFeedStage } = require('../src/services/ranch/actions');
+    assert.equal(normalizeRanchSetting('ranch_feed_normal_stage', 'longest'), 'longest');
+    assert.equal(normalizeRanchSetting('ranch_feed_organic_stage', 'near_harvest'), 'near_harvest');
+    assert.throws(() => normalizeRanchSetting('ranch_feed_normal_stage', 'invalid'), { code: 'INVALID_CONFIG' });
+
+    const nowMs = 1_795_000_000_000;
+    const growAnimal = { animal_id: 1, stage: 2, mature_ready_at_ms: nowMs + 3600_000 };
+    const nearHarvestAnimal = { animal_id: 1, stage: 4, mature_ready_at_ms: nowMs + RANCH_NEAR_HARVEST_MS - 1000 };
+    const farHarvestAnimal = { animal_id: 1, stage: 4, mature_ready_at_ms: nowMs + RANCH_NEAR_HARVEST_MS + 60_000 };
+
+    assert.equal(matchesFeedStage(growAnimal, 'any', nowMs), true);
+    assert.equal(matchesFeedStage(growAnimal, 'to_production', nowMs), true);
+    assert.equal(matchesFeedStage(nearHarvestAnimal, 'to_production', nowMs), false);
+    assert.equal(matchesFeedStage(nearHarvestAnimal, 'near_harvest', nowMs), true);
+    assert.equal(matchesFeedStage(farHarvestAnimal, 'near_harvest', nowMs), false);
+});
+
+test('ranch friend blacklist routes enforce account ownership and broadcast updates', async () => {
+    const routes = {};
+    const app = {
+        get: (routePath, fn) => { routes[`GET ${routePath}`] = fn; },
+        post: (routePath, fn) => { routes[`POST ${routePath}`] = fn; },
+    };
+    const broadcasted = [];
+    const blacklists = new Map();
+    const fakeStore = {
+        getRanchFriendBlacklist: id => [...(blacklists.get(id) || [])],
+        toggleRanchFriendBlacklist: (id, gid) => {
+            const target = Number(gid);
+            const current = blacklists.get(id) || [];
+            const exists = current.includes(target);
+            const next = exists ? current.filter(x => x !== target) : [...current, target];
+            blacklists.set(id, next);
+            return { gid: target, blacklisted: !exists, blacklist: next };
+        },
+    };
+    require('../src/controllers/admin-adoption-routes').registerAdminAdoptionRoutes({
+        app,
+        store: fakeStore,
+        provider: { broadcastConfig: id => broadcasted.push(id) },
+        getAccountIdFromRequest: req => req.accountId,
+        canAccessAccount: (req, id) => req.allowed === id,
+        sendProviderError: (res, err) => res.status(500).json({ ok: false, error: err.message }),
+    });
+    const invoke = async (key, req) => {
+        const res = { statusCode: 200, body: null, status(code) { this.statusCode = code; return this; }, json(data) { this.body = data; return this; } };
+        await routes[key](req, res);
+        return res;
+    };
+
+    // Unauthorized cross-account request rejected
+    const denied = await invoke('POST /api/ranch/friend-blacklist/toggle', { accountId: 'acc-2', allowed: 'acc-1', body: { gid: 12345 } });
+    assert.equal(denied.statusCode, 403);
+
+    // Owner toggles blacklist on and off
+    const added = await invoke('POST /api/ranch/friend-blacklist/toggle', { accountId: 'acc-1', allowed: 'acc-1', body: { gid: 12345 } });
+    assert.equal(added.statusCode, 200);
+    assert.equal(added.body.data.blacklisted, true);
+    assert.deepEqual(added.body.data.blacklist, [12345]);
+    assert.deepEqual(broadcasted, ['acc-1']);
+
+    const fetched = await invoke('GET /api/ranch/friend-blacklist', { accountId: 'acc-1', allowed: 'acc-1' });
+    assert.deepEqual(fetched.body.data.blacklist, [12345]);
+
+    const removed = await invoke('POST /api/ranch/friend-blacklist/toggle', { accountId: 'acc-1', allowed: 'acc-1', body: { gid: 12345 } });
+    assert.equal(removed.body.data.blacklisted, false);
+    assert.deepEqual(removed.body.data.blacklist, []);
 });

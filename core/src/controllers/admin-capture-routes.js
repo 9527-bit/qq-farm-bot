@@ -790,7 +790,7 @@ function registerAdminCaptureRoutes({
       if (!created) throw new Error("账号保存失败");
 
       if (flow.clientVersion) {
-        syncGatewayClientVersion({ clientVersion: flow.clientVersion }, store, updateRuntimeConfig);
+        syncGatewayClientVersion({ clientVersion: flow.clientVersion }, store, updateRuntimeConfig, flow.platform);
       }
       flow.completed = true;
       flow.result = {

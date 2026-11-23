@@ -476,6 +476,7 @@ const DEFAULT_ACCOUNT_CONFIG = {
     friendQuietHours: DEFAULT_QUIET_HOURS,
     knownFriendGids: [],
     friendBlacklist: [],
+    ranchFriendBlacklist: [],
     plantBlacklist: DEFAULT_PLANT_BLACKLIST,
     fertilizerBuyOrganicCount: 1,
     fertilizerBuyOrganicThresholdHours: 10,
@@ -693,6 +694,7 @@ function cloneAccountConfig(config = DEFAULT_ACCOUNT_CONFIG) {
     }
 
     const friendBlacklist = Array.isArray(config.friendBlacklist) ? config.friendBlacklist : [];
+    const ranchFriendBlacklist = Array.isArray(config.ranchFriendBlacklist) ? config.ranchFriendBlacklist : [];
     const knownFriendGids = normalizeKnownFriendGids(config.knownFriendGids);
     const plantBlacklist = Array.isArray(config.plantBlacklist) ? config.plantBlacklist : [];
 
@@ -707,6 +709,7 @@ function cloneAccountConfig(config = DEFAULT_ACCOUNT_CONFIG) {
         friendQuietHours: { ...config.friendQuietHours || DEFAULT_ACCOUNT_CONFIG.friendQuietHours },
         knownFriendGids,
         friendBlacklist: friendBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0),
+        ranchFriendBlacklist: [...new Set(ranchFriendBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0))],
         plantingStrategy: ALLOWED_PLANTING_STRATEGIES.includes(String(config.plantingStrategy || ''))
             ? String(config.plantingStrategy) : DEFAULT_ACCOUNT_CONFIG.plantingStrategy,
         prioritize2x2Crops: config.prioritize2x2Crops === true,
@@ -866,6 +869,9 @@ function normalizeAccountConfig(raw, fallbackConfig = accountFallbackConfig) {
     // 黑名单
     if (Array.isArray(input.friendBlacklist)) {
         cfg.friendBlacklist = input.friendBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0);
+    }
+    if (Array.isArray(input.ranchFriendBlacklist)) {
+        cfg.ranchFriendBlacklist = [...new Set(input.ranchFriendBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0))];
     }
 
     // 已知好友
@@ -1089,6 +1095,7 @@ function loadGlobalConfig() {
             globalConfig.systemConfig = {
                 serverUrl: String(data.systemConfig.serverUrl || '').trim(),
                 clientVersion: String(data.systemConfig.clientVersion || '').trim(),
+                wxClientVersion: String(data.systemConfig.wxClientVersion || '').trim(),
                 platform: String(data.systemConfig.platform || 'qq').trim(),
                 os: String(data.systemConfig.os || 'iOS').trim()
             };
@@ -1293,6 +1300,7 @@ function getConfigSnapshot(accountId) {
         friendQuietHours: { ...cfg.friendQuietHours },
         knownFriendGids: [...cfg.knownFriendGids || []],
         friendBlacklist: [...cfg.friendBlacklist || []],
+        ranchFriendBlacklist: [...cfg.ranchFriendBlacklist || []],
         plantBlacklist: [...cfg.plantBlacklist || []],
         fertilizerBuyOrganicCount: Math.max(0, Math.min(999, Number(cfg.fertilizerBuyOrganicCount) || 1)),
         fertilizerBuyOrganicThresholdHours: Math.max(0, Math.min(720, Number(cfg.fertilizerBuyOrganicThresholdHours) || 10)),
@@ -1378,6 +1386,9 @@ function applyConfigSnapshot(patch = {}, opts = {}) {
     }
     if (Array.isArray(patch.friendBlacklist)) {
         cfg.friendBlacklist = patch.friendBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0);
+    }
+    if (Array.isArray(patch.ranchFriendBlacklist)) {
+        cfg.ranchFriendBlacklist = [...new Set(patch.ranchFriendBlacklist.map(Number).filter(n => Number.isFinite(n) && n > 0))];
     }
     if (patch.knownFriendGids !== undefined) {
         cfg.knownFriendGids = normalizeKnownFriendGids(patch.knownFriendGids, cfg.knownFriendGids);
@@ -1545,6 +1556,40 @@ function addFriendToBlacklist(accountId, gid) {
     if (blacklist.includes(targetGid)) return false;
     setFriendBlacklist(accountId, [...blacklist, targetGid]);
     return true;
+}
+
+function getRanchFriendBlacklist(accountId) {
+    return [...getAccountConfigSnapshot(accountId).ranchFriendBlacklist || []];
+}
+
+function setRanchFriendBlacklist(accountId, blacklist) {
+    const base = getAccountConfigSnapshot(accountId);
+    const cfg = normalizeAccountConfig(base, accountFallbackConfig);
+    cfg.ranchFriendBlacklist = Array.isArray(blacklist)
+        ? [...new Set(blacklist.map(Number).filter(n => Number.isFinite(n) && n > 0))] : [];
+    setAccountConfigSnapshot(accountId, cfg);
+    return [...cfg.ranchFriendBlacklist];
+}
+
+function addRanchFriendToBlacklist(accountId, gid) {
+    const targetGid = Number(gid);
+    if (!targetGid || targetGid <= 0) return false;
+    const blacklist = getRanchFriendBlacklist(accountId);
+    if (blacklist.includes(targetGid)) return false;
+    setRanchFriendBlacklist(accountId, [...blacklist, targetGid]);
+    return true;
+}
+
+function toggleRanchFriendBlacklist(accountId, gid) {
+    const targetGid = Number(gid);
+    if (!Number.isSafeInteger(targetGid) || targetGid <= 0) {
+        throw Object.assign(new Error('缺少有效的好友 GID'), { code: 'INVALID_ARGUMENT' });
+    }
+    const blacklist = getRanchFriendBlacklist(accountId);
+    const exists = blacklist.includes(targetGid);
+    const next = exists ? blacklist.filter(id => id !== targetGid) : [...blacklist, targetGid];
+    const saved = setRanchFriendBlacklist(accountId, next);
+    return { gid: targetGid, blacklisted: !exists, blacklist: saved };
 }
 
 function getAutoAcceptFriendMinLevel(accountId) {
@@ -1888,11 +1933,13 @@ function getSystemConfig() {
 
 function setSystemConfig(config) {
     if (!config || typeof config !== 'object') return null;
+    const current = globalConfig.systemConfig || {};
     globalConfig.systemConfig = {
-        serverUrl: String(config.serverUrl || '').trim(),
-        clientVersion: String(config.clientVersion || '').trim(),
-        platform: String(config.platform || 'qq').trim(),
-        os: String(config.os || 'iOS').trim()
+        serverUrl: String(config.serverUrl ?? current.serverUrl ?? '').trim(),
+        clientVersion: String(config.clientVersion ?? current.clientVersion ?? '').trim(),
+        wxClientVersion: String(config.wxClientVersion ?? current.wxClientVersion ?? '').trim(),
+        platform: String(config.platform ?? current.platform ?? 'qq').trim(),
+        os: String(config.os ?? current.os ?? 'iOS').trim()
     };
     saveGlobalConfig();
     return { ...globalConfig.systemConfig };
@@ -2131,6 +2178,10 @@ module.exports = {
     getFriendBlacklist,
     setFriendBlacklist,
     addFriendToBlacklist,
+    getRanchFriendBlacklist,
+    setRanchFriendBlacklist,
+    addRanchFriendToBlacklist,
+    toggleRanchFriendBlacklist,
     getAutoAcceptFriendMinLevel,
     getFertilizerBuyOrganicCount,
     getFertilizerBuyOrganicThresholdHours,

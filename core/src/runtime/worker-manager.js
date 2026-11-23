@@ -586,15 +586,17 @@ function createWorkerManager(deps) {
             }
         } else if (msg.type === 'client_version_update') {
             const clientVersion = cleanText(msg.clientVersion);
+            const platform = cleanText(msg.platform || wrk.platform || 'qq').toLowerCase();
             if (clientVersion && typeof updateSystemClientVersion === 'function') {
-                const changed = updateSystemClientVersion(clientVersion);
+                const changed = updateSystemClientVersion(clientVersion, platform);
                 if (changed) {
-                    log('系统', `已根据服务端 WebSocket 回包更新游戏版本: ${clientVersion}`, {
+                    const label = platform === 'wx' || platform === 'wechat' ? '微信' : 'QQ';
+                    log('系统', `已根据服务端 WebSocket 回包更新${label}游戏版本: ${clientVersion}`, {
                         accountId: String(accountId), accountName: wrk.name
                     });
                     addAccountLog('client_version_update',
-                        `服务端已自动更新游戏版本: ${clientVersion}`,
-                        accountId, wrk.name, { previous: cleanText(msg.previous) });
+                        `服务端已自动更新${label}游戏版本: ${clientVersion}`,
+                        accountId, wrk.name, { previous: cleanText(msg.previous), platform });
                 }
             }
         } else if (msg.type === 'automation_patch') {
@@ -608,6 +610,25 @@ function createWorkerManager(deps) {
                     currentWrk.process.send({
                         type: 'config_sync',
                         config: buildConfigSnapshotForAccount(accountId)
+                    });
+                }
+            }
+        } else if (msg.type === 'ranch_friend_blacklist_add') {
+            const targetGid = Number(msg.gid);
+            if (Number.isSafeInteger(targetGid) && targetGid > 0) {
+                const store = require('../models/store');
+                if (typeof store.addRanchFriendToBlacklist === 'function'
+                    && store.addRanchFriendToBlacklist(accountId, targetGid)) {
+                    const currentWrk = workers[accountId];
+                    if (currentWrk && currentWrk.process) {
+                        currentWrk.process.send({
+                            type: 'config_sync',
+                            config: buildConfigSnapshotForAccount(accountId)
+                        });
+                    }
+                    const friendLabel = cleanText(msg.friendName) || `GID:${targetGid}`;
+                    log('牧场', `服务端确认 ${friendLabel} 非好友，已自动加入牧场好友黑名单`, {
+                        accountId: String(accountId), accountName: wrk.name, gid: targetGid
                     });
                 }
             }

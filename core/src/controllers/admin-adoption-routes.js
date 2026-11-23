@@ -1,4 +1,5 @@
-function registerAdminAdoptionRoutes({ app, provider, getAccountIdFromRequest, canAccessAccount, sendProviderError }) {
+function registerAdminAdoptionRoutes({ app, provider, store, getAccountIdFromRequest, canAccessAccount, sendProviderError }) {
+    const resolvedStore = store || require('../models/store');
     const route = (verb, path, run) => app[verb](path, async (req, res) => {
         const accountId = getAccountIdFromRequest(req);
         if (!accountId) return res.status(400).json({ ok: false, error: '缺少账号标识' });
@@ -9,6 +10,16 @@ function registerAdminAdoptionRoutes({ app, provider, getAccountIdFromRequest, c
         } catch (error) { sendProviderError(res, error); }
     });
     route('get', '/api/ranch/options', () => require('../config/ranch-automation').RANCH_ANIMAL_OPTIONS);
+    route('get', '/api/ranch/friend-blacklist', id => ({
+        blacklist: resolvedStore.getRanchFriendBlacklist ? resolvedStore.getRanchFriendBlacklist(id) : [],
+    }));
+    route('post', '/api/ranch/friend-blacklist/toggle', (id, req) => {
+        const result = resolvedStore.toggleRanchFriendBlacklist(id, req.body?.gid);
+        if (provider && typeof provider.broadcastConfig === 'function') {
+            provider.broadcastConfig(id);
+        }
+        return result;
+    });
     route('get', '/api/ranch', (id, req) => provider.getRanchState(id, req.query.view || 'animals', req.query.shopId, req.query.hostGid));
     route('post', '/api/ranch/:action/quote', (id, req) => provider.prepareRanchAction(id, req.params.action, req.body || {}));
     route('post', '/api/ranch/:action', (id, req) => provider.operateRanch(id, req.params.action, req.body || {}));
